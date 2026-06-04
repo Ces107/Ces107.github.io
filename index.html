@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>César Pereiro García — Proyectos</title>
+<meta name="description" content="Ingeniero de software. Herramientas para salud, cumplimiento normativo y negocios locales. Proyectos de código abierto y demos en vivo." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0f15'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='17' fill='%238aa9ff' text-anchor='middle'%3ECP%3C/text%3E%3C/svg%3E" />
+<meta property="og:title" content="César Pereiro García — Proyectos" />
+<meta property="og:description" content="Herramientas para salud, cumplimiento normativo y negocios locales. Código abierto y demos en vivo." />
+<meta name="theme-color" content="#0d0f15" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d0f15;--bg-2:#14171f;--ink:#eef1f7;--soft:#a6adbe;--faint:#828aa0;
+    --brand:#3f63e8;--brand-2:#8aa9ff;--line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.16);
+    --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+    --sans:'Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;
+  }
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;
+    -webkit-font-smoothing:antialiased;min-height:100vh;}
+  a{color:inherit;text-decoration:none}
+  .wrap{width:min(860px,90vw);margin-inline:auto}
+  /* glow */
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(70% 50% at 80% -5%,rgba(63,99,232,.18),transparent 60%)}
+  main{position:relative;z-index:1}
+
+  header{padding:clamp(64px,12vh,140px) 0 clamp(34px,5vw,60px)}
+  .badge{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.05);
+    border:1px solid var(--line);border-radius:999px;padding:7px 15px;font-size:.8rem;
+    font-weight:600;color:var(--soft);margin-bottom:26px}
+  .badge .dot{width:8px;height:8px;border-radius:50%;background:#41d07f;box-shadow:0 0 10px #41d07f}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2.4rem,1.4rem + 4vw,4.2rem);
+    line-height:1.02;letter-spacing:-.02em;margin-bottom:.32em}
+  .lead{font-size:clamp(1.05rem,1rem + .4vw,1.3rem);color:var(--soft);max-width:54ch}
+  .lead b{color:var(--ink);font-weight:600}
+  .head-links{margin-top:28px;display:flex;flex-wrap:wrap;gap:10px 14px;font-size:.92rem;font-weight:600}
+  .head-links a{display:inline-flex;align-items:center;gap:7px;color:var(--brand-2);
+    border:1px solid var(--line-2);border-radius:999px;padding:9px 16px;transition:all .2s}
+  .head-links a:hover{border-color:var(--brand);background:rgba(63,99,232,.10)}
+
+  .sec-label{font-size:.74rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--faint);padding-top:24px;border-top:1px solid var(--line);margin-bottom:8px}
+
+  .projects{display:grid;gap:2px;padding-bottom:30px}
+  .proj{display:grid;grid-template-columns:1fr auto;gap:8px 24px;align-items:baseline;
+    padding:26px 6px;border-bottom:1px solid var(--line);transition:background .2s,padding .2s}
+  .proj:hover{background:rgba(255,255,255,.025);padding-inline:18px 6px}
+  .proj .name{font-family:var(--serif);font-size:clamp(1.4rem,1.1rem + 1vw,2rem);font-weight:600;
+    letter-spacing:-.01em;grid-column:1}
+  .proj .name .live{font-family:var(--sans);font-size:.62em;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;color:#41d07f;border:1px solid rgba(65,208,127,.4);border-radius:999px;
+    padding:3px 9px;margin-left:12px;vertical-align:middle}
+  .proj .desc{grid-column:1;color:var(--soft);font-size:.98rem;max-width:60ch;margin-top:6px}
+  .proj .links{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+    white-space:nowrap}
+  .proj .links a{font-size:.86rem;font-weight:600;color:var(--brand-2);display:inline-flex;align-items:center;gap:6px}
+  .proj .links a.demo{color:var(--ink);background:var(--brand);border-radius:8px;padding:7px 14px;color:#fff}
+  .proj .links a.demo:hover{background:#3458d8}
+  .proj .links a.repo:hover,.proj .links a.ext:hover{color:var(--ink)}
+  .proj .links a .arr{transition:transform .2s}
+  .proj:hover .links a .arr{transform:translateX(3px)}
+
+  footer{padding:40px 0 50px;color:var(--faint);font-size:.88rem;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  footer a{color:var(--soft)}
+  footer a:hover{color:var(--ink)}
+
+  @media (max-width:620px){
+    .proj{grid-template-columns:1fr}
+    .proj .links{grid-column:1;grid-row:auto;flex-direction:row;align-items:center;justify-content:flex-start;margin-top:14px;flex-wrap:wrap}
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="wrap">
+    <header>
+      <span class="badge"><span class="dot" style="background:var(--brand-2);box-shadow:0 0 10px var(--brand)"></span> Salud · Cumplimiento · Negocio local</span>
+      <h1>César Pereiro García</h1>
+      <p class="lead">Ingeniero de software. Construyo <b>herramientas para salud, cumplimiento normativo y negocios locales</b> — de código abierto, con demos que funcionan.</p>
+      <div class="head-links">
+        <a href="https://github.com/Ces107" target="_blank" rel="noopener">GitHub ↗</a>
+        <a href="mailto:cesar0407p@gmail.com">Email</a>
+      </div>
+    </header>
+
+    <p class="sec-label">Proyectos</p>
+    <div class="projects">
+
+      <article class="proj">
+        <h2 class="name">Faro <span class="live">Demo</span></h2>
+        <p class="desc">Generador de presencia digital para negocios locales: web, ficha de Google y WhatsApp en minutos. Cada tipo de negocio, con su propia familia de diseño — y sin que parezca hecha por una IA.</p>
+        <div class="links">
+          <a class="demo" href="https://ces107.github.io/faro/" target="_blank" rel="noopener">Ver demo</a>
+          <a class="repo" href="https://github.com/Ces107/faro" target="_blank" rel="noopener">GitHub <span class="arr">↗</span></a>
+        </div>
+      </article>
+
+      <article class="proj">
+        <h2 class="name">zesFin <span class="live">Demo</span></h2>
+        <p class="desc">Gestor de finanzas personales y calculadora FIRE con enfoque Boglehead. API REST en Spring Boot + frontend en React (Vite, TypeScript, Tailwind).</p>
+        <div class="links">
+          <a class="demo" href="https://ces107.github.io/zesFin" target="_blank" rel="noopener">Ver demo</a>
+          <a class="repo" href="https://github.com/Ces107/zesFin" target="_blank" rel="noopener">GitHub <span class="arr">↗</span></a>
+        </div>
+      </article>
+
+      <article class="proj">
+        <h2 class="name">dcm-anon</h2>
+        <p class="desc">Anonimizador DICOM (PS3.15 Basic Profile) con manifiesto de cumplimiento citado verbatim (RGPD Art. 35 / HIPAA Safe Harbor / EU AI Act), verificador independiente de PHI residual, cadena de auditoría SHA-256 e informe PDF. MIT.</p>
+        <div class="links">
+          <a class="ext" href="https://pypi.org/project/dcm-anonymizer/" target="_blank" rel="noopener">PyPI <span class="arr">↗</span></a>
+          <a class="repo" href="https://github.com/Ces107/dcm-anon" target="_blank" rel="noopener">GitHub <span class="arr">↗</span></a>
+        </div>
+      </article>
+
+      <article class="proj">
+        <h2 class="name">agent-forge</h2>
+        <p class="desc">Fábrica de SDLC autónoma construida con pipelines multi-agente de Claude Code, y el ledger de pagos idempotente de doble entrada que construyó de punta a punta. Cada commit de código es de autoría de un agente, con procedencia verificada por máquina.</p>
+        <div class="links">
+          <a class="repo" href="https://github.com/Ces107/agent-forge" target="_blank" rel="noopener">GitHub <span class="arr">↗</span></a>
+        </div>
+      </article>
+
+      <article class="proj">
+        <h2 class="name">dcm-anon-vault</h2>
+        <p class="desc">API alojada de pseudonimización DICOM (single-tenant) sobre dcm-anonymizer: facturación con Stripe, log de auditoría y remapeo de UID determinista por cliente.</p>
+        <div class="links">
+          <a class="repo" href="https://github.com/Ces107/dcm-anon-vault" target="_blank" rel="noopener">GitHub <span class="arr">↗</span></a>
+        </div>
+      </article>
+
+      <article class="proj">
+        <h2 class="name">fmm-fairness-eval-cli</h2>
+        <p class="desc">CLI de evaluación de equidad y sesgo para IA médica (Foundation Model for Medicine). Métricas de fairness con intervalos de confianza por bootstrap. Investigación.</p>
+        <div class="links">
+          <a class="repo" href="https://github.com/Ces107/fmm-fairness-eval-cli" target="_blank" rel="noopener">GitHub <span class="arr">↗</span></a>
+        </div>
+      </article>
+
+      <article class="proj">
+        <h2 class="name">recepcion-ia</h2>
+        <p class="desc">Recepcionista de IA telefónica para PYMEs: captura nombre, teléfono y motivo, valora la urgencia por vertical y hace handoff a una persona. Demo web con voz. MVP.</p>
+        <div class="links">
+          <a class="repo" href="https://github.com/Ces107/recepcion-ia" target="_blank" rel="noopener">GitHub <span class="arr">↗</span></a>
+        </div>
+      </article>
+
+    </div>
+
+    <footer>
+      <span>© <span id="yr">2026</span> César Pereiro García</span>
+      <span><a href="https://github.com/Ces107" target="_blank" rel="noopener">github.com/Ces107</a></span>
+    </footer>
+  </div>
+</main>
+<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
+</body>
+</html>
