@@ -1,101 +1,485 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>César Pereiro García</title>
-<meta name="description" content="Ingeniero de software. Proyectos y demos." />
-<meta property="og:title" content="César Pereiro García" />
-<meta property="og:description" content="Ingeniero de software. Proyectos y demos." />
-<meta name="theme-color" content="#f3efe6" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>César Pereiro García · Ingeniero de software</title>
+<meta name="description" content="Ingeniero de software. Herramientas en vivo: riesgo de riadas en la Comunitat Valenciana, estudio para controlador aéreo, revisión de webs en móvil, webs para negocios locales y skills para Claude Code.">
+<link rel="canonical" href="https://ces107.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ces107.github.io/">
+<meta property="og:title" content="César Pereiro García · Ingeniero de software">
+<meta property="og:description" content="Construyo herramientas que se usan. Proyectos en vivo, código abierto y skills para Claude Code.">
+<meta property="og:image" content="https://ces107.github.io/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0d10" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2314130f'/%3E%3Ctext x='32' y='42' font-family='Georgia,serif' font-style='italic' font-size='30' fill='%23f6f4ef' text-anchor='middle'%3Ecp%3C/text%3E%3Ccircle cx='50' cy='16' r='5' fill='%23ff6a3d'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="img/faro-d.webp">
 <style>
-  :root{
-    --paper:#f3efe6;--ink:#1b1a17;--dim:#6b665c;--rule:#cfc8b8;
-    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
-    --mono:"Courier New",Courier,monospace;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.45 var(--serif)}
-  a{color:var(--ink);text-underline-offset:2px}
-  main{max-width:46rem;margin:0 auto;padding:2.2rem 18px 3rem}
-  h1{margin:0;font-size:2rem;line-height:1.1}
-  .who{margin:.3rem 0 0;color:var(--dim)}
-  .who a{color:inherit}
-  table{width:100%;border-collapse:collapse;margin-top:2rem;border-top:2px solid var(--ink)}
-  td{padding:.75rem 0;border-bottom:1px solid var(--rule);vertical-align:baseline}
-  td.n{font-weight:700;font-size:1.15rem;white-space:nowrap;padding-right:1.2rem}
-  td.d{color:var(--dim);font-size:.95rem}
-  td.l{font-family:var(--mono);font-size:.85rem;text-align:right;white-space:nowrap;padding-left:1rem}
-  td.l a{margin-left:.9rem}
-  footer{margin-top:1.6rem;font:.8rem var(--mono);color:var(--dim)}
-  @media (max-width:600px){
-    table,tbody,tr,td{display:block}
-    tr{padding:.7rem 0;border-bottom:1px solid var(--rule)}
-    td{padding:0;border:0}
-    td.l{text-align:left;padding:.25rem 0 0}
-    td.l a{margin:0 .9rem 0 0}
-  }
+:root{
+  --bg:#f6f4ef;--bg2:#efece4;--ink:#14130f;--mut:#57534a;--line:#e0dbcf;--card:#fffdf8;--chip:#ece8de;
+  --acc:#2f55e4;--acc-ink:#fff;--hot:#c2410c;--ok:#15803d;
+  --shadow:0 1px 2px rgba(20,19,15,.06),0 24px 60px -20px rgba(20,19,15,.25);
+  --sans:"Inter Tight",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"Instrument Serif","Iowan Old Style",Georgia,serif;
+  --r:22px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0c0d10;--bg2:#111318;--ink:#f3f1eb;--mut:#a8a49a;--line:#23262d;--card:#14161b;--chip:#1c1f26;
+  --acc:#7d9bff;--acc-ink:#0c0d10;--hot:#ff8a5c;--ok:#4ade80;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 30px 70px -25px rgba(0,0,0,.8)}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit}
+.wrap{width:100%;max-width:1200px;margin:0 auto;padding:0 24px}
+.serif{font-family:var(--serif);font-weight:400;font-style:italic;letter-spacing:0}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);
+  background:color-mix(in srgb,var(--bg) 80%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:62px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;text-decoration:none;letter-spacing:-.01em;white-space:nowrap}
+.logo i{width:30px;height:30px;border-radius:9px;background:var(--ink);color:var(--bg);display:grid;place-items:center;
+  font:italic 19px/1 var(--serif);position:relative}
+.logo i::after{content:"";position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--hot);border:2px solid var(--bg)}
+.nav ul{display:flex;gap:4px;list-style:none;margin:0 0 0 auto;padding:0}
+.nav ul a{display:block;padding:8px 12px;border-radius:99px;text-decoration:none;font-size:15px;font-weight:500;color:var(--mut)}
+.nav ul a:hover{color:var(--ink);background:var(--chip)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:99px;padding:13px 22px;font-weight:650;
+  font-size:16px;text-decoration:none;border:1px solid transparent;transition:transform .15s ease,background .15s ease,border-color .15s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn svg{width:18px;height:18px;flex:none}
+.btn-p{background:var(--ink);color:var(--bg)}
+.btn-a{background:var(--acc);color:var(--acc-ink)}
+.btn-g{border-color:var(--line);background:var(--card)}
+.btn-g:hover{border-color:var(--mut)}
+.btn-s{padding:9px 16px;font-size:14.5px}
+.nav .btn{margin-left:6px}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding:84px 0 72px;isolation:isolate}
+.mesh{position:absolute;inset:-20% -10% auto;height:120%;z-index:-2;pointer-events:none;
+  background:
+   radial-gradient(38% 42% at 78% 30%,color-mix(in srgb,var(--acc) 30%,transparent),transparent 70%),
+   radial-gradient(30% 36% at 92% 70%,color-mix(in srgb,var(--hot) 26%,transparent),transparent 70%),
+   radial-gradient(34% 40% at 10% 10%,color-mix(in srgb,var(--ok) 14%,transparent),transparent 70%)}
+.grain{position:absolute;inset:0;z-index:-1;opacity:.35;mix-blend-mode:soft-light;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);gap:48px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:99px;border:1px solid var(--line);
+  background:color-mix(in srgb,var(--card) 80%,transparent);font-size:13.5px;font-weight:600;color:var(--mut)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent);animation:pulse 2.4s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+h1{font-size:clamp(46px,7.4vw,96px);line-height:.95;letter-spacing:-.045em;font-weight:800;margin:22px 0 22px}
+h1 .serif{font-size:1.06em;letter-spacing:-.02em}
+.lead{font-size:clamp(19px,2.1vw,23px);line-height:1.4;color:var(--mut);margin:0 0 32px;max-width:30ch;font-weight:500}
+.lead b{color:var(--ink);font-weight:650}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.stats{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:12px 40px;margin:44px 0 0;padding:0;list-style:none}
+.stats b{display:block;font-size:clamp(30px,3.4vw,42px);line-height:1;letter-spacing:-.04em;font-weight:800}
+.stats b small{font-size:.5em;letter-spacing:0;font-weight:700}
+.stats span{display:block;margin-top:6px;font-size:14px;color:var(--mut);font-weight:500;max-width:15ch;line-height:1.3}
+
+/* frames */
+.browser{border-radius:14px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
+.browser .bar{height:30px;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.browser .bar i{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
+.browser .bar i:nth-child(1){background:#ff5f57}.browser .bar i:nth-child(2){background:#febc2e}.browser .bar i:nth-child(3){background:#28c840}
+.browser .bar span{margin:0 auto;font-size:11px;line-height:16px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:6px;
+  padding:1px 12px;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phone{border-radius:34px;padding:7px;background:#0b0b0d;box-shadow:var(--shadow),inset 0 0 0 1.5px #2a2a30;position:relative}
+.phone img{border-radius:27px;width:100%}
+.phone::before{content:"";position:absolute;top:15px;left:50%;transform:translateX(-50%);width:30%;height:16px;border-radius:12px;background:#0b0b0d;z-index:2}
+
+/* hero collage */
+.collage{position:relative;aspect-ratio:1/0.92;min-width:0}
+.collage>*{position:absolute}
+.c1{left:0;top:6%;width:86%;animation:float 9s ease-in-out infinite}
+.c2{right:0;top:0;width:30%;animation:float 11s ease-in-out -3s infinite}
+.c3{left:6%;bottom:0;width:27%;animation:float 10s ease-in-out -6s infinite}
+.c4{right:6%;bottom:2%;width:50%;z-index:1;animation:float 12s ease-in-out -2s infinite}
+.tag{position:absolute;z-index:3;display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;background:var(--card);
+  border:1px solid var(--line);box-shadow:var(--shadow);font-size:13px;font-weight:650;white-space:nowrap}
+.tag em{font-style:normal;width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.t1{left:30%;top:-1%}.t2{right:-2%;top:52%}.t2 em{background:var(--hot)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+/* strip */
+.strip{border-block:1px solid var(--line);background:var(--bg2)}
+.strip .wrap{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;justify-content:center;padding-block:18px;font-size:14.5px;color:var(--mut);font-weight:600}
+.strip b{color:var(--ink);font-weight:700}
+
+/* sections */
+section{scroll-margin-top:70px}
+.sec{padding:110px 0 40px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--hot)}
+h2{font-size:clamp(36px,5vw,64px);line-height:1;letter-spacing:-.04em;font-weight:800;margin:12px 0 0}
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap;margin-bottom:56px}
+.sec-head p{margin:0;color:var(--mut);max-width:32ch;font-size:18px}
+
+/* featured projects */
+.proj{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:center;padding:48px 0;border-top:1px solid var(--line)}
+.proj:nth-of-type(even) .shot{order:-1}
+.num{font:italic 24px/1 var(--serif);color:var(--mut)}
+.proj h3{font-size:clamp(34px,4.2vw,54px);line-height:1;letter-spacing:-.04em;margin:10px 0 14px;font-weight:800}
+.proj p{font-size:clamp(19px,1.9vw,22px);line-height:1.38;margin:0 0 22px;font-weight:500;max-width:26ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 26px;padding:0;list-style:none}
+.chips li{padding:6px 12px;border-radius:99px;background:var(--chip);font-size:14px;font-weight:600;color:var(--mut)}
+.chips li.live{color:var(--ok);display:flex;align-items:center;gap:7px}
+.chips li.live::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.acts{display:flex;flex-wrap:wrap;gap:10px}
+.shot{position:relative;padding:0 9% 6% 0;min-width:0;isolation:isolate}
+.shot .phone{position:absolute;right:0;bottom:0;width:27%}
+.shot .browser{transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.proj:hover .shot .browser{transform:translateY(-6px) rotate(-.4deg)}
+.bg-tint{position:absolute;inset:8% 4% -2% 6%;border-radius:40px;z-index:-1;filter:blur(40px);opacity:.45}
+
+/* tools */
+.tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.tool{position:relative;display:flex;flex-direction:column;gap:10px;padding:26px;border-radius:var(--r);background:var(--card);
+  border:1px solid var(--line);transition:transform .2s ease,border-color .2s ease,box-shadow .2s}
+.tool:hover{transform:translateY(-3px);border-color:var(--mut);box-shadow:var(--shadow)}
+.tool h3{margin:0;font-size:22px;letter-spacing:-.025em;font-weight:750;overflow-wrap:anywhere}
+.tool p{margin:0;color:var(--mut);font-size:16px;line-height:1.45}
+.tool .links{display:flex;gap:14px;margin-top:auto;padding-top:10px;font-size:14.5px;font-weight:650}
+.tool .links a{text-decoration:none;border-bottom:1.5px solid var(--line)}
+.tool .links a:hover{border-color:var(--ink)}
+.ico{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:var(--chip)}
+.ico svg{width:22px;height:22px}
+.tool.all{text-decoration:none;background:var(--chip);border-style:dashed}
+.tool.big{grid-column:span 3;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:center;padding:40px;
+  background:#14130f;color:#f3f1eb;border-color:#14130f}
+@media (prefers-color-scheme:dark){.tool.big{background:#1a1d24;border-color:#2c313b}}
+.tool.big p{color:#c9c5bb;font-size:19px;max-width:34ch}
+.tool.big h3{font-size:clamp(30px,3.6vw,44px);letter-spacing:-.04em;line-height:1.02}
+.tool.big .kicker{color:#ff8a5c}
+.term{border-radius:16px;background:#0e1014;border:1px solid #262a33;color:#d6d3cb;font:14px/1.7 ui-monospace,"Cascadia Code",Consolas,monospace;
+  padding:18px 20px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(0,0,0,.6);min-width:0}
+.term .p{color:#7d9bff}.term .o{color:#4ade80}.term .d{color:#9a978f}
+.term div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tool.big .btn{background:#f3f1eb;color:#14130f}
+
+/* contact */
+.contact{padding:120px 0 60px;text-align:center}
+.contact h2{font-size:clamp(44px,8vw,110px)}
+.contact p{color:var(--mut);font-size:20px;margin:18px auto 34px;max-width:28ch}
+.contact .cta{justify-content:center}
+.mail{font:italic clamp(22px,3vw,34px)/1.2 var(--serif);text-decoration:none;border-bottom:1px solid var(--line);display:inline-block;margin-bottom:30px;overflow-wrap:anywhere}
+.mail:hover{border-color:var(--ink)}
+footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--mut);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer a{text-decoration:none}footer a:hover{color:var(--ink)}
+
+/* reveal */
+.js .rv{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+.js .rv.in{opacity:1;transform:none}
+
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px;border-radius:8px}
+
+@media (max-width:980px){
+  .hero{padding:48px 0 56px}
+  .hero .wrap{grid-template-columns:1fr;gap:44px}
+  .collage{max-width:620px;width:100%;margin:0 auto}
+  .proj{grid-template-columns:1fr;gap:28px;padding:44px 0}
+  .proj:nth-of-type(even) .shot{order:0}
+  .tools{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tool.big{grid-column:span 2;grid-template-columns:1fr;padding:30px}
+}
+@media (max-width:640px){
+  body{font-size:16px}
+  .wrap{padding:0 16px}
+  .nav ul{display:none}
+  .nav .btn{margin-left:auto}
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px}
+  .stats span{font-size:12.5px}
+  .cta .btn{flex:1 1 auto}
+  .sec{padding:80px 0 20px}
+  .sec-head{margin-bottom:28px}
+  .tools{grid-template-columns:1fr}
+  .tool.big{grid-column:auto;padding:24px}
+  .term{font-size:12.5px;padding:14px 16px}
+  .tool{padding:20px;gap:8px}
+  .ico{width:38px;height:38px;border-radius:11px}
+  .t1{left:22%}.t2{right:0}
+  .tag{font-size:12px;padding:6px 10px}
+  .contact{padding:90px 0 40px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .js .rv{opacity:1;transform:none}
+}
 </style>
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
-<main>
-  <h1>César Pereiro García</h1>
-  <p class="who">Ingeniero de software · <a href="https://github.com/Ces107">github.com/Ces107</a> · <a href="https://www.agensi.io/creators/cesar-pereiro">skills en Agensi</a> · <a href="mailto:cesar0407p@gmail.com">correo</a></p>
 
-  <table>
-    <tr>
-      <td class="n">riuà</td>
-      <td class="d">Riesgo de lluvia extrema y riadas en la Comunitat Valenciana.</td>
-      <td class="l"><a href="https://ces107.github.io/riua/">abrir</a><a href="https://github.com/Ces107/riua">código</a></td>
-    </tr>
-    <tr>
-      <td class="n">atc-oposicion</td>
-      <td class="d">Web de estudio para la oposición de controlador aéreo.</td>
-      <td class="l"><a href="https://ces107.github.io/atc-oposicion/">abrir</a></td>
-    </tr>
-    <tr>
-      <td class="n">Faro</td>
-      <td class="d">Webs para negocios locales.</td>
-      <td class="l"><a href="https://ces107.github.io/faro/">demo</a><a href="https://github.com/Ces107/faro">código</a></td>
-    </tr>
-    <tr>
-      <td class="n">zesFin</td>
-      <td class="d">Finanzas personales y calculadora FIRE.</td>
-      <td class="l"><a href="https://ces107.github.io/zesFin">demo</a><a href="https://github.com/Ces107/zesFin">código</a></td>
-    </tr>
-    <tr>
-      <td class="n">dcm-anon</td>
-      <td class="d">Anonimizador DICOM con manifiesto de cumplimiento.</td>
-      <td class="l"><a href="https://pypi.org/project/dcm-anonymizer/">PyPI</a><a href="https://github.com/Ces107/dcm-anon">código</a></td>
-    </tr>
-    <tr>
-      <td class="n">agent-forge</td>
-      <td class="d">Fábrica de software con agentes y su ledger de pagos.</td>
-      <td class="l"><a href="https://www.agensi.io/creators/cesar-pereiro">Agensi</a><a href="https://github.com/Ces107/agent-forge">código</a></td>
-    </tr>
-    <tr>
-      <td class="n">Skills para Claude Code</td>
-      <td class="d">22 skills: revisión de código, auditoría web, SEO, tests.</td>
-      <td class="l"><a href="https://www.agensi.io/creators/cesar-pereiro">Agensi</a></td>
-    </tr>
-    <tr>
-      <td class="n">dcm-anon-vault</td>
-      <td class="d">API de pseudonimización DICOM.</td>
-      <td class="l"><a href="https://github.com/Ces107/dcm-anon-vault">código</a></td>
-    </tr>
-    <tr>
-      <td class="n">fmm-fairness-eval-cli</td>
-      <td class="d">Evaluación de sesgo para IA médica.</td>
-      <td class="l"><a href="https://github.com/Ces107/fmm-fairness-eval-cli">código</a></td>
-    </tr>
-    <tr>
-      <td class="n">recepcion-ia</td>
-      <td class="d">Recepcionista telefónica para pymes.</td>
-      <td class="l"><a href="https://github.com/Ces107/recepcion-ia">código</a></td>
-    </tr>
-  </table>
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="César Pereiro, inicio"><i aria-hidden="true">cp</i>César Pereiro</a>
+    <ul>
+      <li><a href="#proyectos">Proyectos</a></li>
+      <li><a href="#herramientas">Herramientas</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ul>
+    <a class="btn btn-p btn-s" href="https://github.com/Ces107">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+      GitHub
+    </a>
+  </div>
+</header>
 
-  <footer>2026</footer>
+<main id="top">
+  <section class="hero" aria-labelledby="h">
+    <div class="mesh" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="wrap">
+      <div>
+        <span class="pill"><span class="dot" aria-hidden="true"></span>5 proyectos en vivo</span>
+        <h1 id="h">César Pereiro <span class="serif">García</span></h1>
+        <p class="lead">Ingeniero de software. <b>Construyo herramientas que se usan.</b></p>
+        <div class="cta">
+          <a class="btn btn-p" href="#proyectos">Ver proyectos
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg></a>
+          <a class="btn btn-g" href="https://github.com/Ces107">GitHub</a>
+          <a class="btn btn-g" href="https://www.agensi.io/creators/cesar-pereiro">Skills en Agensi</a>
+        </div>
+        <ul class="stats">
+          <li><b>10</b><span>proyectos públicos</span></li>
+          <li><b>22</b><span>skills para Claude Code</span></li>
+          <li><b>10<small> min</small></b><span>entre datos nuevos en riuà</span></li>
+        </ul>
+      </div>
+
+      <div class="collage" aria-hidden="true">
+        <div class="browser c1"><div class="bar"><i></i><i></i><i></i><span>ces107.github.io/faro</span></div>
+          <img src="img/faro-d.webp" width="1280" height="800" alt="" fetchpriority="high"></div>
+        <div class="phone c2"><img src="img/riua-m.webp" width="540" height="1169" alt=""></div>
+        <div class="phone c3"><img src="img/launchcheck-m.webp" width="540" height="1169" alt=""></div>
+        <div class="browser c4"><div class="bar"><i></i><i></i><i></i><span>atc-oposicion</span></div>
+          <img src="img/atc-d.webp" width="1280" height="800" alt=""></div>
+        <span class="tag t1"><em></em>riuà · datos cada 10 min</span>
+        <span class="tag t2"><em></em>Fallos marcados en móvil</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="strip">
+    <div class="wrap">
+      <span><b>Python</b></span><span><b>Java</b> · Spring</span><span><b>JavaScript</b></span><span>GitHub Actions</span><span>Playwright</span><span>DICOM</span><span>Claude Code</span>
+    </div>
+  </div>
+
+  <section id="proyectos" class="sec" aria-labelledby="hp">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <div><div class="kicker">Proyectos</div><h2 id="hp">Abiertos. <span class="serif">Funcionando.</span></h2></div>
+        <p>Pulsa y úsalos. Sin registro.</p>
+      </div>
+
+      <article class="proj rv">
+        <div>
+          <div class="num">01</div>
+          <h3>riuà</h3>
+          <p>Lluvia extrema y riadas en la Comunitat Valenciana, en un mapa.</p>
+          <ul class="chips"><li class="live">En vivo</li><li>Cada 10 min</li><li>Mapa</li><li>Código abierto</li></ul>
+          <div class="acts">
+            <a class="btn btn-a" href="https://ces107.github.io/riua/">Abrir riuà</a>
+            <a class="btn btn-g" href="https://github.com/Ces107/riua">Código</a>
+          </div>
+        </div>
+        <div class="shot">
+          <div class="bg-tint" style="background:#c9a96a" aria-hidden="true"></div>
+          <div class="browser"><div class="bar"><i></i><i></i><i></i><span>ces107.github.io/riua</span></div>
+            <img src="img/riua-d.webp" width="1280" height="800" alt="riuà: mapa de la Comunitat Valenciana con el aviso de lluvia por municipio" loading="lazy"></div>
+          <div class="phone"><img src="img/riua-m.webp" width="540" height="1169" alt="riuà en el móvil" loading="lazy"></div>
+        </div>
+      </article>
+
+      <article class="proj rv">
+        <div>
+          <div class="num">02</div>
+          <h3>atc-oposicion</h3>
+          <p>El temario de controlador aéreo, ordenado y con plan diario.</p>
+          <ul class="chips"><li class="live">En vivo</li><li>Temario</li><li>Simulacro</li><li>Plan de hoy</li></ul>
+          <div class="acts">
+            <a class="btn btn-a" href="https://ces107.github.io/atc-oposicion/">Abrir</a>
+          </div>
+        </div>
+        <div class="shot">
+          <div class="bg-tint" style="background:#3b63c9" aria-hidden="true"></div>
+          <div class="browser"><div class="bar"><i></i><i></i><i></i><span>ces107.github.io/atc-oposicion</span></div>
+            <img src="img/atc-d.webp" width="1280" height="800" alt="Web de estudio ATC con el índice del temario" loading="lazy"></div>
+          <div class="phone"><img src="img/atc-m.webp" width="540" height="1169" alt="La web de estudio en el móvil" loading="lazy"></div>
+        </div>
+      </article>
+
+      <article class="proj rv">
+        <div>
+          <div class="num">03</div>
+          <h3>Launch Check</h3>
+          <p>Mira tu web en un móvil con los fallos marcados.</p>
+          <ul class="chips"><li class="live">En vivo</li><li>Gratis</li><li>Móvil real</li><li>Código abierto</li></ul>
+          <div class="acts">
+            <a class="btn btn-a" href="https://launch-check-upz2.onrender.com">Probar con mi web</a>
+            <a class="btn btn-g" href="https://github.com/Ces107/agent-forge/tree/main/skills/launch-check">Código</a>
+          </div>
+        </div>
+        <div class="shot">
+          <div class="bg-tint" style="background:#22c55e" aria-hidden="true"></div>
+          <div class="browser"><div class="bar"><i></i><i></i><i></i><span>launch-check-upz2.onrender.com</span></div>
+            <img src="img/launchcheck-d.webp" width="1280" height="800" alt="Launch Check: una web en un móvil con tres fallos marcados" loading="lazy"></div>
+          <div class="phone"><img src="img/launchcheck-m.webp" width="540" height="1169" alt="Launch Check en el móvil" loading="lazy"></div>
+        </div>
+      </article>
+
+      <article class="proj rv">
+        <div>
+          <div class="num">04</div>
+          <h3>Faro</h3>
+          <p>Webs para negocios locales que no parecen hechas por IA.</p>
+          <ul class="chips"><li class="live">Demo</li><li>7 estilos</li><li>Sin cookies</li></ul>
+          <div class="acts">
+            <a class="btn btn-a" href="https://ces107.github.io/faro/">Ver demo</a>
+            <a class="btn btn-g" href="https://github.com/Ces107/faro">Código</a>
+          </div>
+        </div>
+        <div class="shot">
+          <div class="bg-tint" style="background:#4f6bff" aria-hidden="true"></div>
+          <div class="browser"><div class="bar"><i></i><i></i><i></i><span>ces107.github.io/faro</span></div>
+            <img src="img/faro-d.webp" width="1280" height="800" alt="Faro: portada con ejemplos de webs para un bar y un gimnasio" loading="lazy"></div>
+          <div class="phone"><img src="img/faro-m.webp" width="540" height="1169" alt="Faro en el móvil" loading="lazy"></div>
+        </div>
+      </article>
+
+      <article class="proj rv">
+        <div>
+          <div class="num">05</div>
+          <h3>zesFin</h3>
+          <p>Tu patrimonio de un vistazo, y cuándo podrías dejar de trabajar.</p>
+          <ul class="chips"><li class="live">Demo</li><li>Finanzas personales</li><li>Calculadora FIRE</li></ul>
+          <div class="acts">
+            <a class="btn btn-a" href="https://ces107.github.io/zesFin">Ver demo</a>
+            <a class="btn btn-g" href="https://github.com/Ces107/zesFin">Código</a>
+          </div>
+        </div>
+        <div class="shot">
+          <div class="bg-tint" style="background:#10b981" aria-hidden="true"></div>
+          <div class="browser"><div class="bar"><i></i><i></i><i></i><span>ces107.github.io/zesFin</span></div>
+            <img src="img/zesfin-d.webp" width="1280" height="800" alt="zesFin: panel de patrimonio" loading="lazy"></div>
+          <div class="phone"><img src="img/zesfin-m.webp" width="540" height="1169" alt="zesFin en el móvil" loading="lazy"></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="herramientas" class="sec" aria-labelledby="ht">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <div><div class="kicker">Herramientas</div><h2 id="ht">Para <span class="serif">desarrolladores.</span></h2></div>
+        <p>Instalar y usar.</p>
+      </div>
+
+      <div class="tools">
+        <div class="tool big rv">
+          <div>
+            <div class="kicker">Agensi</div>
+            <h3>22 skills para Claude Code</h3>
+            <p style="margin:12px 0 24px">Revisión de código, auditoría web, SEO y tests.</p>
+            <a class="btn" href="https://www.agensi.io/creators/cesar-pereiro">Ver skills en Agensi
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
+          </div>
+          <div class="term" aria-hidden="true">
+            <div><span class="p">❯</span> claude</div>
+            <div class="d">› revisa esto antes de subirlo</div>
+            <div><span class="o">✓</span> code-review · con prueba</div>
+            <div><span class="o">✓</span> tests · ejecutados</div>
+            <div><span class="o">✓</span> web-audit · móvil y SEO</div>
+            <div class="d">listo para revisar</div>
+          </div>
+        </div>
+
+        <div class="tool rv">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg></div>
+          <h3>agent-forge</h3>
+          <p>Fábrica de software con agentes y su ledger de pagos.</p>
+          <div class="links"><a href="https://www.agensi.io/creators/cesar-pereiro">Agensi</a><a href="https://github.com/Ces107/agent-forge">Código</a></div>
+        </div>
+
+        <div class="tool rv">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="10" r="3"/><path d="M6 19c1.5-3 4-4 6-4s4.5 1 6 4"/></svg></div>
+          <h3>dcm-anon</h3>
+          <p>Anonimizador DICOM con manifiesto de cumplimiento.</p>
+          <div class="links"><a href="https://pypi.org/project/dcm-anonymizer/">PyPI</a><a href="https://github.com/Ces107/dcm-anon">Código</a></div>
+        </div>
+
+        <div class="tool rv">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+          <h3>dcm-anon-vault</h3>
+          <p>API de pseudonimización DICOM.</p>
+          <div class="links"><a href="https://github.com/Ces107/dcm-anon-vault">Código</a></div>
+        </div>
+
+        <div class="tool rv">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M5 7l-3 7a4 4 0 0 0 6 0zM19 7l-3 7a4 4 0 0 0 6 0z"/></svg></div>
+          <h3>fmm-fairness-eval-cli</h3>
+          <p>Evaluación de sesgo para IA médica.</p>
+          <div class="links"><a href="https://github.com/Ces107/fmm-fairness-eval-cli">Código</a></div>
+        </div>
+
+        <div class="tool rv">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.8 2z"/></svg></div>
+          <h3>recepcion-ia</h3>
+          <p>Recepcionista telefónica para pymes.</p>
+          <div class="links"><a href="https://github.com/Ces107/recepcion-ia">Código</a></div>
+        </div>
+
+        <a class="tool rv all" href="https://github.com/Ces107">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <h3>Todo el código</h3>
+          <p>github.com/Ces107</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="contacto" class="contact" aria-labelledby="hc">
+    <div class="wrap rv">
+      <div class="kicker">Contacto</div>
+      <h2 id="hc">¿<span class="serif">Hablamos</span>?</h2>
+      <p>Proyectos, ideas o una herramienta a medida.</p>
+      <a class="mail" href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a>
+      <div class="cta">
+        <a class="btn btn-p" href="mailto:cesar0407p@gmail.com">Escribir un correo</a>
+        <a class="btn btn-g" href="https://github.com/Ces107">GitHub</a>
+        <a class="btn btn-g" href="https://www.agensi.io/creators/cesar-pereiro">Agensi</a>
+      </div>
+    </div>
+  </section>
 </main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 César Pereiro García</span>
+    <span><a href="https://github.com/Ces107">github.com/Ces107</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var els=document.querySelectorAll('.rv');
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return;}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{rootMargin:'0px 0px -8% 0px',threshold:.08});
+  els.forEach(function(e){io.observe(e)});
+})();
+</script>
 </body>
 </html>
