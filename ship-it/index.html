@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#15122a">
+<title>Ship It!</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game" aria-label="Ship It! game"></canvas>
+<div id="share" hidden>
+  <div class="sheet">
+    <img id="shareImg" alt="Launch report">
+    <div class="row">
+      <a id="shareDl" class="btn primary" download="ship-it-launch-report.png" href="#">Download</a>
+      <button id="shareNative" class="btn" type="button" hidden>Share</button>
+      <button id="shareClose" class="btn ghost" type="button" aria-label="Close">&#x2715;</button>
+    </div>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

@@ -221,6 +221,69 @@ a.li:hover b{text-decoration:underline;text-underline-offset:3px}
 .press b{font-size:clamp(22px,2.4vw,28px);line-height:1.15;letter-spacing:-.025em}
 .press span{font-weight:650;font-size:15px}
 
+/* effects */
+#fx{position:absolute;inset:0;z-index:-1;width:100%;height:100%;pointer-events:none}
+.progress{position:fixed;left:0;top:0;height:3px;width:100%;transform-origin:0 50%;transform:scaleX(0);z-index:60;
+  background:linear-gradient(90deg,var(--acc),var(--hot))}
+.glow{position:relative;isolation:isolate}
+.glow::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--acc) 14%,transparent),transparent 45%)}
+.glow:hover::after{opacity:1}
+.lab .lt.glow::after{background:radial-gradient(300px circle at var(--mx,50%) var(--my,50%),rgba(255,138,92,.16),transparent 50%)}
+.tilt{transform-style:preserve-3d;transition:transform .25s cubic-bezier(.2,.7,.2,1);will-change:transform}
+
+/* games */
+.game{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:48px;align-items:center;padding:44px 0;border-top:1px solid var(--line)}
+.game.rev{grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr)}.game.rev .stage{order:2}
+.game h3{font-size:clamp(34px,4.2vw,54px);line-height:1;letter-spacing:-.04em;margin:10px 0 14px;font-weight:800}
+.game p{font-size:clamp(18px,1.8vw,21px);line-height:1.4;margin:0 0 22px;font-weight:500;max-width:30ch}
+.gnums{display:flex;gap:28px;margin:0 0 24px;flex-wrap:wrap}
+.gnums b{display:block;font-size:30px;line-height:1;letter-spacing:-.03em;font-weight:800}
+.gnums span{font-size:13.5px;color:var(--mut);font-weight:550}
+.win{border-radius:10px;overflow:hidden;background:#0b0f10;border:1px solid #2b3338;box-shadow:var(--shadow),0 0 0 1px rgba(0,0,0,.2)}
+.win .tb{display:flex;align-items:center;gap:10px;height:32px;padding:0 0 0 12px;background:#1b2124;color:#d8dee0;font:600 12.5px var(--sans)}
+.win .tb img{width:16px;height:16px;border-radius:3px}
+.win .tb .ctl{margin-left:auto;display:flex;height:100%}
+.win .tb .ctl i{width:44px;display:grid;place-items:center;font-style:normal;font-size:13px;color:#aeb6b9}
+.win .tb .ctl i:last-child:hover{background:#c42b1c;color:#fff}
+.win .scr{position:relative;aspect-ratio:16/9;background:#0b0f10}
+.win .scr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .45s ease}
+.win .scr img.out{opacity:0}
+.thumbs{display:flex;gap:10px;margin-top:14px}
+.thumbs button{flex:1;padding:0;border:2px solid transparent;border-radius:10px;overflow:hidden;cursor:pointer;background:none;opacity:.6;
+  transition:opacity .2s,border-color .2s,transform .2s}
+.thumbs button:hover{opacity:1;transform:translateY(-2px)}.thumbs button[aria-pressed=true]{opacity:1;border-color:var(--acc)}
+.thumbs img{aspect-ratio:16/9;object-fit:cover;width:100%}
+.arcade{position:relative;border-radius:22px;padding:14px;background:linear-gradient(145deg,#2a2440,#12101c);box-shadow:var(--shadow);
+  border:1px solid #3a3358}
+.arcade .scr{position:relative;aspect-ratio:630/500;border-radius:12px;overflow:hidden;background:#15121f}
+.arcade .scr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .45s ease}
+.arcade .scr img.out{opacity:0}
+.arcade .leds{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.arcade .leds i{width:8px;height:8px;border-radius:50%;background:#4b4470;transition:background .3s}.arcade .leds i.on{background:#facc15;box-shadow:0 0 10px #facc15}
+.play{position:absolute;inset:0;display:grid;place-items:center;text-decoration:none;opacity:0;transition:opacity .25s;background:rgba(10,8,20,.45)}
+.arcade:hover .play,.play:focus-visible{opacity:1}
+.play span{display:flex;align-items:center;gap:10px;padding:14px 24px;border-radius:99px;background:#facc15;color:#1a1400;font-weight:800;font-size:18px;
+  box-shadow:0 10px 40px rgba(250,204,21,.45)}
+.fde{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start}
+.fde .launcher{width:200px;border-radius:8px;box-shadow:var(--shadow)}
+.term.big{font-size:14px;line-height:1.65;white-space:normal}
+.term.big div{white-space:normal;overflow:visible}
+.term .y{color:#facc15}.term .r{color:#fda4af}
+.dl small{font-weight:500;opacity:.75;margin-left:4px}
+
+/* agensi ticker */
+.ticker{grid-column:1/-1;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);margin-top:4px}
+.ticker .row{display:flex;gap:10px;width:max-content;animation:tick 70s linear infinite}
+.ticker .row.b{animation-direction:reverse;animation-duration:80s;margin-top:10px}
+.ticker:hover .row{animation-play-state:paused}
+.ticker a{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:99px;border:1px solid #34373f;background:#1b1d22;color:#ecebe6;
+  text-decoration:none;font-size:14.5px;font-weight:600;white-space:nowrap;transition:border-color .2s,background .2s}
+.ticker a:hover{border-color:#ff8a5c;background:#24262c}
+.ticker a i{font-style:normal;font-size:11.5px;color:#4ade80;font-weight:700}
+@keyframes tick{to{transform:translateX(-50%)}}
+
 /* contact */
 .contact{padding:120px 0 60px;text-align:center}
 .contact h2{font-size:clamp(44px,8vw,110px)}
@@ -247,6 +310,7 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink)}
   .tools{grid-template-columns:repeat(2,minmax(0,1fr))}
   .tool.big{grid-column:span 2;grid-template-columns:1fr;padding:30px}
   .apps,.lab-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .game,.game.rev{grid-template-columns:1fr;gap:28px}.game.rev .stage{order:0}
   .lab{padding:36px}.lab-head{grid-template-columns:1fr;gap:24px}
   .two{grid-template-columns:1fr}
 }
@@ -270,23 +334,29 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink)}
   .contact{padding:90px 0 40px}
   .apps,.lab-grid{grid-template-columns:1fr}
   .app .art{height:170px}
+  .fde{grid-template-columns:1fr}.fde .launcher{width:170px}
+  .term.big{font-size:12.5px}.thumbs{gap:6px}
+  .gnums{gap:20px}.gnums b{font-size:26px}
   .lab{padding:26px 18px;border-radius:24px}.lab-nums{gap:24px}.lab-nums b{font-size:36px}
   .list{padding:6px 18px}.li{grid-template-columns:1fr}.li em{grid-row:auto;grid-column:1}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .js .rv{opacity:1;transform:none}
+  .ticker{overflow-x:auto}
 }
 </style>
 <script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
+<div class="progress" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="wrap">
     <a class="logo" href="#top" aria-label="César Pereiro, inicio"><i aria-hidden="true">cp</i>César Pereiro</a>
     <ul>
       <li><a href="#proyectos">Proyectos</a></li>
+      <li><a href="#juegos">Juegos</a></li>
       <li><a href="#apps">Apps</a></li>
       <li><a href="#lab">Laboratorio</a></li>
       <li><a href="#herramientas">Herramientas</a></li>
@@ -303,6 +373,7 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink)}
   <section class="hero" aria-labelledby="h">
     <div class="mesh" aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>
+    <canvas id="fx" aria-hidden="true"></canvas>
     <div class="wrap">
       <div>
         <span class="pill"><span class="dot" aria-hidden="true"></span>5 proyectos en vivo</span>
@@ -315,9 +386,9 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink)}
           <a class="btn btn-g" href="https://www.agensi.io/creators/cesar-pereiro">Skills en Agensi</a>
         </div>
         <ul class="stats">
-          <li><b>29</b><span>repositorios públicos</span></li>
-          <li><b>11</b><span>paquetes en PyPI</span></li>
-          <li><b>22</b><span>skills para Claude Code</span></li>
+          <li><b data-count="29">29</b><span>repositorios públicos</span></li>
+          <li><b data-count="11">11</b><span>paquetes en PyPI</span></li>
+          <li><b data-count="22">22</b><span>skills para Claude Code</span></li>
         </ul>
       </div>
 
@@ -438,6 +509,91 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink)}
           <div class="browser"><div class="bar"><i></i><i></i><i></i><span>ces107.github.io/zesFin</span></div>
             <img src="img/zesfin-d.webp" width="1280" height="800" alt="zesFin: panel de patrimonio" loading="lazy"></div>
           <div class="phone"><img src="img/zesfin-m.webp" width="540" height="1169" alt="zesFin en el móvil" loading="lazy"></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="juegos" class="sec" aria-labelledby="hg">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <div><div class="kicker">Juegos y simuladores</div><h2 id="hg">Para jugar <span class="serif">y entrenar.</span></h2></div>
+        <p>Windows, navegador y móvil.</p>
+      </div>
+
+      <article class="game rv">
+        <div class="stage">
+          <div class="win tilt" data-gallery="atc">
+            <div class="tb"><img src="img/atcsim-icon.png" alt="" width="16" height="16">ATC Sim<span class="ctl" aria-hidden="true"><i>—</i><i>☐</i><i>✕</i></span></div>
+            <div class="scr"><img src="img/atcsim-radar.webp" width="1280" height="720" alt="ATC Sim: sector de radar con aviones, tiras de vuelo y una alerta de fallo de radio" loading="lazy"></div>
+          </div>
+          <div class="thumbs" role="group" aria-label="Capturas de ATC Sim">
+            <button type="button" aria-pressed="true" data-for="atc" data-src="img/atcsim-radar.webp" data-alt="Sector de radar con una alerta de fallo de radio"><img src="img/atcsim-radar.webp" alt="" loading="lazy"></button>
+            <button type="button" aria-pressed="false" data-for="atc" data-src="img/atcsim-r31.webp" data-alt="Zona restringida R-31 activa en mitad del tráfico"><img src="img/atcsim-r31.webp" alt="" loading="lazy"></button>
+            <button type="button" aria-pressed="false" data-for="atc" data-src="img/atcsim-debrief.webp" data-alt="Informe al terminar: 90 sobre 100, objetivo cumplido"><img src="img/atcsim-debrief.webp" alt="" loading="lazy"></button>
+            <button type="button" aria-pressed="false" data-for="atc" data-src="img/atcsim-menu.webp" data-alt="Menú: práctica, adaptativo y escalera de niveles"><img src="img/atcsim-menu.webp" alt="" loading="lazy"></button>
+          </div>
+        </div>
+        <div>
+          <div class="num">01</div>
+          <h3>ATC Sim</h3>
+          <p>Controla un sector de radar: separa el tráfico mientras te llegan alertas, colaciones y emergencias.</p>
+          <div class="gnums"><div><b>10</b><span>niveles</span></div><div><b>~30</b><span>aviones a la vez</span></div><div><b>9</b><span>habilidades medidas</span></div></div>
+          <ul class="chips"><li class="live">Descargable</li><li>Windows</li><li>Python · pygame</li></ul>
+          <div class="acts">
+            <a class="btn btn-a dl" href="https://ces107.github.io/atc-oposicion/descargas/ATC-Sim-Setup.exe">Descargar para Windows<small>16 MB</small></a>
+            <a class="btn btn-g" href="https://ces107.github.io/atc-oposicion/practica/aptitude/game-sector-sim.html">Versión web</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="game rev rv">
+        <div class="stage">
+          <div class="arcade tilt" data-gallery="ship" data-auto="2600">
+            <div class="scr"><img src="img/shipit-chaos.webp" width="630" height="500" alt="Ship It!: bugs, correos y peticiones de última hora alrededor de un portátil" loading="lazy">
+              <a class="play" href="ship-it/"><span>▶ Jugar ahora</span></a></div>
+            <div class="leds" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div hidden>
+            <button data-for="ship" data-src="img/shipit-chaos.webp"></button><button data-for="ship" data-src="img/shipit-start.webp"></button>
+            <button data-for="ship" data-src="img/shipit-report.webp"></button><button data-for="ship" data-src="img/shipit-week.webp"></button>
+            <button data-for="ship" data-src="img/shipit-zen.webp"></button>
+          </div>
+        </div>
+        <div>
+          <div class="num">02</div>
+          <h3>Ship It!</h3>
+          <p>Lanza tu MVP antes de que acabe la cuenta atrás: aplasta bugs y di que no a las ideas de última hora.</p>
+          <div class="gnums"><div><b>60<small style="font-size:.5em"> s</small></b><span>por partida</span></div><div><b>3</b><span>dificultades</span></div><div><b>0</b><span>instalación</span></div></div>
+          <ul class="chips"><li class="live">Gratis</li><li>Navegador</li><li>Móvil</li><li>HTML5</li></ul>
+          <div class="acts">
+            <a class="btn btn-a" href="ship-it/">▶ Jugar ahora</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="game rv">
+        <div class="stage">
+          <div class="fde">
+            <img class="launcher tilt" src="img/fde-launcher.webp" width="340" height="330" alt="Lanzador de fde-lab para Windows: idioma, modo con agente de IA, jugar, abrir terminal y ver informe" loading="lazy">
+            <div class="term big" aria-label="Primeros segundos de una partida">
+              <div><span class="p">bastion$</span> fde chat "#inc-2609" --read</div>
+              <div class="y">16:10 · Nuria</div>
+              <div>Hola, perdona el asalto. Asesoría Mediterránea dice que sus clientes están recibiendo facturas duplicadas en el portal…</div>
+              <div class="y">16:13 · Carla</div>
+              <div>Yo veo errores de la AEAT en el ledger desde las 15:50 más o menos. ¿Te ayudo en algo?</div>
+              <div class="y">16:16 · Nuria</div>
+              <div>Tengo al gerente de la gestoría al teléfono cada diez minutos. ¿Tenemos hora de solución?</div>
+              <div><span class="p">bastion$</span> <span class="d">▌</span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="num">03</div>
+          <h3>fde-lab</h3>
+          <p>Un incidente de producción de verdad: servicios, base de datos y colas fallando, y clientes escribiendo.</p>
+          <div class="gnums"><div><b>sha256</b><span>verdad sellada al empezar</span></div><div><b>R0–R4</b><span>riesgo de cada comando</span></div></div>
+          <ul class="chips"><li>Go</li><li>Docker</li><li>Windows</li><li class="priv">En desarrollo</li></ul>
         </div>
       </article>
     </div>
@@ -618,6 +774,56 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink)}
             <div><span class="o">✓</span> web-audit · móvil y SEO</div>
             <div class="d">listo para revisar</div>
           </div>
+          <div class="ticker" aria-label="Las 22 skills, enlazadas una a una">
+            <div class="row">
+              <a href="https://www.agensi.io/skills/ai-code-review-skill-every-bug-gets-a-failing-test">AI Code Review <i>★</i></a>
+              <a href="https://www.agensi.io/skills/launch-check-is-your-ai-built-app-safe-to-launch">Launch Check <i>gratis</i></a>
+              <a href="https://www.agensi.io/skills/done-gate-stop-claude-code-saying-done-without-tests">Done Gate <i>gratis</i></a>
+              <a href="https://www.agensi.io/skills/website-design-auditor-make-ai-built-sites-look-pro">Website Design Auditor <i>★</i></a>
+              <a href="https://www.agensi.io/skills/geo-seo-audit-crawler-get-found-by-ai-search">GEO + SEO Audit <i>★</i></a>
+              <a href="https://www.agensi.io/skills/landing-page-designer-your-ai-builds-pro-pages">Landing Page Designer</a>
+              <a href="https://www.agensi.io/skills/verify-gate-no-done-without-real-exit-codes">Verify Gate <i>gratis</i></a>
+              <a href="https://www.agensi.io/skills/claude-code-hooks-block-done-until-tests-really-pass">Proof-of-Done</a>
+              <a href="https://www.agensi.io/skills/adversarial-code-review-findings-need-a-failing-test">Adversarial Review</a>
+              <a href="https://www.agensi.io/skills/claude-code-multi-agent-pipeline-spec-to-verified-build">Multi-Agent Pipeline</a>
+              <a href="https://www.agensi.io/skills/requirements-traceability-gate-every-spec-has-a-test">Spec Trace Gate</a>
+              <a href="https://www.agensi.io/skills/ai-code-review-skill-every-bug-gets-a-failing-test" aria-hidden="true" tabindex="-1">AI Code Review <i>★</i></a>
+              <a href="https://www.agensi.io/skills/launch-check-is-your-ai-built-app-safe-to-launch" aria-hidden="true" tabindex="-1">Launch Check <i>gratis</i></a>
+              <a href="https://www.agensi.io/skills/done-gate-stop-claude-code-saying-done-without-tests" aria-hidden="true" tabindex="-1">Done Gate <i>gratis</i></a>
+              <a href="https://www.agensi.io/skills/website-design-auditor-make-ai-built-sites-look-pro" aria-hidden="true" tabindex="-1">Website Design Auditor <i>★</i></a>
+              <a href="https://www.agensi.io/skills/geo-seo-audit-crawler-get-found-by-ai-search" aria-hidden="true" tabindex="-1">GEO + SEO Audit <i>★</i></a>
+              <a href="https://www.agensi.io/skills/landing-page-designer-your-ai-builds-pro-pages" aria-hidden="true" tabindex="-1">Landing Page Designer</a>
+              <a href="https://www.agensi.io/skills/verify-gate-no-done-without-real-exit-codes" aria-hidden="true" tabindex="-1">Verify Gate <i>gratis</i></a>
+              <a href="https://www.agensi.io/skills/claude-code-hooks-block-done-until-tests-really-pass" aria-hidden="true" tabindex="-1">Proof-of-Done</a>
+              <a href="https://www.agensi.io/skills/adversarial-code-review-findings-need-a-failing-test" aria-hidden="true" tabindex="-1">Adversarial Review</a>
+              <a href="https://www.agensi.io/skills/claude-code-multi-agent-pipeline-spec-to-verified-build" aria-hidden="true" tabindex="-1">Multi-Agent Pipeline</a>
+              <a href="https://www.agensi.io/skills/requirements-traceability-gate-every-spec-has-a-test" aria-hidden="true" tabindex="-1">Spec Trace Gate</a>
+            </div>
+            <div class="row b">
+              <a href="https://www.agensi.io/skills/claude-code-safety-guard-block-destructive-commands">Safety Guard</a>
+              <a href="https://www.agensi.io/skills/claude-code-memory-saver-rules-survive-compaction">Memory Saver</a>
+              <a href="https://www.agensi.io/skills/diff-coverage-checker-tests-for-every-changed-line">Diff Coverage</a>
+              <a href="https://www.agensi.io/skills/fake-package-blocker-stop-ai-hallucinated-dependencies">Fake Package Blocker</a>
+              <a href="https://www.agensi.io/skills/flaky-test-finder-catch-the-test-that-breaks-others">Flaky Test Finder</a>
+              <a href="https://www.agensi.io/skills/log-analyzer-gigabytes-of-logs-to-the-real-error">Log Analyzer</a>
+              <a href="https://www.agensi.io/skills/payments-ledger-test-suite-catch-double-charges-races">Payments Ledger Tests</a>
+              <a href="https://www.agensi.io/skills/performance-regression-detector-prove-it-got-slower">Performance Regression</a>
+              <a href="https://www.agensi.io/skills/safe-database-migration-checker-no-table-locks">Safe DB Migrations</a>
+              <a href="https://www.agensi.io/skills/skill-security-scanner-check-skills-before-install">Skill Security Scanner</a>
+              <a href="https://www.agensi.io/skills/smart-test-runner-run-only-the-tests-you-affected">Smart Test Runner</a>
+              <a href="https://www.agensi.io/skills/claude-code-safety-guard-block-destructive-commands" aria-hidden="true" tabindex="-1">Safety Guard</a>
+              <a href="https://www.agensi.io/skills/claude-code-memory-saver-rules-survive-compaction" aria-hidden="true" tabindex="-1">Memory Saver</a>
+              <a href="https://www.agensi.io/skills/diff-coverage-checker-tests-for-every-changed-line" aria-hidden="true" tabindex="-1">Diff Coverage</a>
+              <a href="https://www.agensi.io/skills/fake-package-blocker-stop-ai-hallucinated-dependencies" aria-hidden="true" tabindex="-1">Fake Package Blocker</a>
+              <a href="https://www.agensi.io/skills/flaky-test-finder-catch-the-test-that-breaks-others" aria-hidden="true" tabindex="-1">Flaky Test Finder</a>
+              <a href="https://www.agensi.io/skills/log-analyzer-gigabytes-of-logs-to-the-real-error" aria-hidden="true" tabindex="-1">Log Analyzer</a>
+              <a href="https://www.agensi.io/skills/payments-ledger-test-suite-catch-double-charges-races" aria-hidden="true" tabindex="-1">Payments Ledger Tests</a>
+              <a href="https://www.agensi.io/skills/performance-regression-detector-prove-it-got-slower" aria-hidden="true" tabindex="-1">Performance Regression</a>
+              <a href="https://www.agensi.io/skills/safe-database-migration-checker-no-table-locks" aria-hidden="true" tabindex="-1">Safe DB Migrations</a>
+              <a href="https://www.agensi.io/skills/skill-security-scanner-check-skills-before-install" aria-hidden="true" tabindex="-1">Skill Security Scanner</a>
+              <a href="https://www.agensi.io/skills/smart-test-runner-run-only-the-tests-you-affected" aria-hidden="true" tabindex="-1">Smart Test Runner</a>
+            </div>
+          </div>
         </div>
 
         <div class="tool rv">
@@ -729,6 +935,135 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink)}
   if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return;}
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{rootMargin:'0px 0px -8% 0px',threshold:.08});
   els.forEach(function(e){io.observe(e)});
+})();
+
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var fine = window.matchMedia('(pointer: fine)').matches;
+
+  // scroll progress
+  var bar = document.querySelector('.progress');
+  function prog(){ var h = document.documentElement.scrollHeight - innerHeight; bar.style.transform = 'scaleX(' + (h > 0 ? scrollY / h : 0) + ')'; }
+  addEventListener('scroll', prog, {passive:true}); prog();
+
+  // count-up numbers
+  var nums = document.querySelectorAll('[data-count]');
+  if (!reduce && 'IntersectionObserver' in window) {
+    var co = new IntersectionObserver(function(es){ es.forEach(function(e){
+      if (!e.isIntersecting) return; co.unobserve(e.target);
+      var el = e.target, to = +el.dataset.count, t0 = performance.now();
+      (function step(t){ var k = Math.min(1, (t - t0) / 1400); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(step); })(t0);
+    }); }, {threshold:.6});
+    nums.forEach(function(n){ n.textContent = '0'; co.observe(n); });
+  }
+
+  // galleries: thumbnails swap the main screen; data-auto cycles it
+  document.querySelectorAll('[data-gallery]').forEach(function(g){
+    var id = g.dataset.gallery, img = g.querySelector('.scr img'), btns = document.querySelectorAll('[data-for="' + id + '"]');
+    var leds = g.querySelectorAll('.leds i'), i = 0, timer = null;
+    function show(n){
+      i = (n + btns.length) % btns.length; var b = btns[i];
+      btns.forEach(function(x){ if (x.hasAttribute('aria-pressed')) x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      leds.forEach(function(l, j){ l.classList.toggle('on', j === i); });
+      if (img.getAttribute('src') === b.dataset.src) return;
+      img.classList.add('out');
+      setTimeout(function(){ img.src = b.dataset.src; if (b.dataset.alt) img.alt = b.dataset.alt; img.classList.remove('out'); }, reduce ? 0 : 220);
+    }
+    btns.forEach(function(b, j){ b.addEventListener('click', function(){ show(j); if (timer) { clearInterval(timer); timer = null; } }); });
+    if (g.dataset.auto && !reduce) {
+      timer = setInterval(function(){ if (!document.hidden) show(i + 1); }, +g.dataset.auto);
+      g.addEventListener('mouseenter', function(){ clearInterval(timer); });
+      g.addEventListener('mouseleave', function(){ timer = setInterval(function(){ if (!document.hidden) show(i + 1); }, +g.dataset.auto); });
+    }
+  });
+
+  if (reduce || !fine) { drawField(true); return; }
+
+  // cursor glow on cards
+  document.querySelectorAll('.tool,.app,.lt,.list,.game .win,.arcade').forEach(function(el){
+    el.classList.add('glow');
+    el.addEventListener('pointermove', function(e){ var r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (e.clientX - r.left) + 'px'); el.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
+  });
+
+  // 3D tilt on screens
+  document.querySelectorAll('.tilt,.shot').forEach(function(el){
+    el.classList.add('tilt');
+    el.addEventListener('pointermove', function(e){ var r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      el.style.transform = 'perspective(1100px) rotateY(' + (x * 7) + 'deg) rotateX(' + (-y * 6) + 'deg) translateZ(0)'; });
+    el.addEventListener('pointerleave', function(){ el.style.transform = ''; });
+  });
+
+  // magnetic primary buttons
+  document.querySelectorAll('.btn-p,.btn-a').forEach(function(b){
+    b.addEventListener('pointermove', function(e){ var r = b.getBoundingClientRect();
+      b.style.transform = 'translate(' + ((e.clientX - r.left - r.width / 2) * .18) + 'px,' + ((e.clientY - r.top - r.height / 2) * .28) + 'px)'; });
+    b.addEventListener('pointerleave', function(){ b.style.transform = ''; });
+  });
+
+  drawField(false);
+
+  // hero particle field: drifting points joined by faint lines, pulled toward the cursor (gravity), click = shockwave
+  function drawField(still){
+    var cv = document.getElementById('fx'); if (!cv) return;
+    var hero = cv.parentElement, ctx = cv.getContext('2d'), dpr = Math.min(2, devicePixelRatio || 1);
+    var W = 0, H = 0, P = [], mouse = {x:-9999, y:-9999, on:false}, rings = [], running = true, looping = false, ink = '20,19,15', acc = '47,85,228', hot = '194,65,12';
+    function colors(){
+      var dark = matchMedia('(prefers-color-scheme: dark)').matches;
+      ink = dark ? '243,241,235' : '20,19,15'; acc = dark ? '125,155,255' : '47,85,228'; hot = dark ? '255,138,92' : '194,65,12';
+    }
+    function size(){
+      var r = hero.getBoundingClientRect(); W = r.width; H = r.height;
+      cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var n = Math.round(Math.min(120, W * H / 9500)); P = [];
+      for (var i = 0; i < n; i++) P.push({x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3,
+        r: 1 + Math.random() * 1.6, c: Math.random() < .12 ? 'hot' : Math.random() < .3 ? 'acc' : 'ink'});
+    }
+    colors(); size();
+    addEventListener('resize', function(){ size(); if (still) frame(); });
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', colors);
+    if (!still) {
+      hero.addEventListener('pointermove', function(e){ var r = hero.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.on = true; });
+      hero.addEventListener('pointerleave', function(){ mouse.on = false; });
+      hero.addEventListener('pointerdown', function(e){ var r = hero.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+        rings.push({x:x, y:y, t:0});
+        P.forEach(function(p){ var dx = p.x - x, dy = p.y - y, d = Math.sqrt(dx * dx + dy * dy) + 1;
+          if (d < 260) { var f = (260 - d) / 260 * 7; p.vx += dx / d * f; p.vy += dy / d * f; } }); });
+      new IntersectionObserver(function(es){ running = es[0].isIntersecting; if (running && !looping) { looping = true; requestAnimationFrame(loop); } }).observe(hero);
+    }
+    function col(p, a){ return 'rgba(' + (p.c === 'hot' ? hot : p.c === 'acc' ? acc : ink) + ',' + a + ')'; }
+    function frame(){
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < P.length; i++) {
+        var p = P[i];
+        if (!still) {
+          if (mouse.on) { var dx = mouse.x - p.x, dy = mouse.y - p.y, d2 = dx * dx + dy * dy, d = Math.sqrt(d2) + .001;
+            if (d < 340) { var g = Math.min(.22, 900 / (d2 + 2500)); p.vx += dx / d * g; p.vy += dy / d * g; } }
+          p.vx *= .975; p.vy *= .975; p.vx += (Math.random() - .5) * .02; p.vy += (Math.random() - .5) * .02;
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < -10) p.x = W + 10; else if (p.x > W + 10) p.x = -10;
+          if (p.y < -10) p.y = H + 10; else if (p.y > H + 10) p.y = -10;
+        }
+        for (var j = i + 1; j < P.length; j++) {
+          var q = P[j], ex = p.x - q.x, ey = p.y - q.y, e2 = ex * ex + ey * ey;
+          if (e2 < 12100) { ctx.strokeStyle = 'rgba(' + ink + ',' + (0.13 * (1 - e2 / 12100)) + ')'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); }
+        }
+        if (mouse.on) { var mx = p.x - mouse.x, my = p.y - mouse.y, m2 = mx * mx + my * my;
+          if (m2 < 26000) { ctx.strokeStyle = 'rgba(' + acc + ',' + (0.35 * (1 - m2 / 26000)) + ')'; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke(); } }
+        ctx.fillStyle = col(p, p.c === 'ink' ? .45 : .8); ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+      }
+      for (var k = rings.length - 1; k >= 0; k--) { var R = rings[k]; R.t += 1;
+        var rad = R.t * 9, a = Math.max(0, 1 - R.t / 34);
+        ctx.strokeStyle = 'rgba(' + hot + ',' + (a * .7) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(R.x, R.y, rad, 0, 6.283); ctx.stroke();
+        if (a <= 0) rings.splice(k, 1); }
+      if (mouse.on) { var gr = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 120);
+        gr.addColorStop(0, 'rgba(' + acc + ',.16)'); gr.addColorStop(1, 'rgba(' + acc + ',0)'); ctx.fillStyle = gr; ctx.fillRect(mouse.x - 120, mouse.y - 120, 240, 240); }
+    }
+    function loop(){ if (!running) { looping = false; return; } if (!document.hidden) frame(); requestAnimationFrame(loop); }
+    if (still) frame();
+  }
 })();
 </script>
 </body>

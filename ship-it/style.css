@@ -1,0 +1,60 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #15122a;
+  color: #f5f2ff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+canvas#game {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  touch-action: none;
+  cursor: crosshair;
+}
+#share {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 8, 24, 0.82);
+  padding: 16px;
+  box-sizing: border-box;
+  z-index: 10;
+}
+#share[hidden] { display: none; }
+#share .sheet {
+  max-width: min(920px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+#share img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  -webkit-touch-callout: default;
+  user-select: auto;
+}
+#share .row { display: flex; gap: 10px; justify-content: center; }
+.btn {
+  font: 700 16px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 2px solid #3ddc97;
+  background: transparent;
+  color: #f5f2ff;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn.primary { background: #3ddc97; color: #10261c; }
+.btn.ghost { border-color: #5a5480; }
+.btn:focus-visible { outline: 3px solid #ffd23f; outline-offset: 2px; }
