@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1d5aa6">
+<meta name="description" content="Atascazo: saca los coches del parking y súbelos al camión de su color. Operación Salida cada día.">
+<title>Atascazo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1' y='4' width='30' height='24' rx='5' fill='%231d5aa6'/%3E%3Crect x='3' y='6' width='26' height='20' rx='4' fill='none' stroke='white' stroke-width='1.5'/%3E%3Crect x='8' y='11' width='16' height='10' rx='4' fill='%23e8484b'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 6 4 11l5 5M5 11h9.5a5.5 5.5 0 0 1 0 11H12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-slot" viewBox="0 0 24 24"><rect x="3" y="4" width="13" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M7.5 16V8h2.6a2.4 2.4 0 0 1 0 4.8H7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M20 7v8M16 11h8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-paint" viewBox="0 0 24 24"><rect x="3" y="3.5" width="15" height="6.5" rx="2" /><path d="M18 6.7h2.5V13H11v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><rect x="9" y="15.5" width="4" height="6" rx="1.4"/></symbol>
+  <symbol id="i-crane" viewBox="0 0 24 24"><path d="M12 2v9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M12 11a4 4 0 1 1-4 4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M4 2h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="#f2bf16"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#c99410" stroke-width="2"/></symbol>
+  <symbol id="i-moves" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 3v6l4 2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-tap" viewBox="0 0 24 24"><path d="M9 11V5.5a1.8 1.8 0 0 1 3.6 0V10l4.2.9a2 2 0 0 1 1.6 2.3l-.9 5.4A2.4 2.4 0 0 1 15.1 21h-4.4a2.4 2.4 0 0 1-2-1.1L5.4 15a1.6 1.6 0 0 1 2.5-2z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></symbol>
+  <symbol id="i-again" viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.2-5.1M5 4v4h4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-ad" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 4v11M7.5 8.5 12 4l4.5 4.5M5 13v6h14v-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+</svg>
+
+<div id="app">
+  <header id="hud">
+    <button class="ic" id="b-home" aria-label="Inicio"><svg><use href="#i-home"/></svg></button>
+    <div class="sign small" id="hud-level"><b id="hud-n">1</b><span id="hud-pack"></span></div>
+    <div class="chip" id="hud-moves" aria-label="Movimientos"><svg><use href="#i-tap"/></svg><span id="moves">0</span></div>
+    <button class="ic" id="b-sound" aria-label="Sonido"><svg><use href="#i-sound"/></svg></button>
+  </header>
+  <main id="stage"><canvas id="cv"></canvas></main>
+  <nav id="boosters">
+    <button class="bst" data-b="undo" aria-label="Deshacer"><svg><use href="#i-undo"/></svg><b></b></button>
+    <button class="bst" data-b="slot" aria-label="Plaza extra"><svg><use href="#i-slot"/></svg><b></b></button>
+    <button class="bst" data-b="shuffle" aria-label="Repintar"><svg><use href="#i-paint"/></svg><b></b></button>
+    <button class="bst" data-b="crane" aria-label="Grúa"><svg><use href="#i-crane"/></svg><b></b></button>
+  </nav>
+
+  <section id="menu" class="panel show">
+    <div class="logo sign big"><span class="logo-t">ATASCAZO</span><span class="logo-arrow"></span></div>
+    <div class="logo-sub">Operación Salida</div>
+    <button class="sign card" id="m-play"><svg><use href="#i-play"/></svg><span id="m-play-n">1</span><small id="m-play-pack"></small></button>
+    <button class="sign card green" id="m-daily"><svg><use href="#i-cal"/></svg><span id="m-daily-n">#1</span><small id="m-daily-s"></small></button>
+    <div class="dock">
+      <button class="ic big" id="m-levels" aria-label="Niveles"><svg><use href="#i-grid"/></svg></button>
+      <div class="chip" id="m-coins"><svg><use href="#i-coin"/></svg><span id="coins">0</span></div>
+      <div class="chip" id="m-stars"><svg class="star"><use href="#i-star"/></svg><span id="stars-total">0</span></div>
+    </div>
+  </section>
+
+  <section id="levels" class="panel sheet">
+    <div class="sheet-head"><button class="ic" id="lv-back" aria-label="Volver"><svg><use href="#i-home"/></svg></button></div>
+    <div id="lv-list"></div>
+  </section>
+
+  <section id="win" class="panel over">
+    <div class="caption" id="w-cap"></div>
+    <div class="stars" id="w-stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div>
+    <div class="row stats"><span class="chip"><svg><use href="#i-tap"/></svg><span id="w-moves">0</span></span><span class="chip"><svg><use href="#i-coin"/></svg><span id="w-coins">0</span></span></div>
+    <div class="share-line" id="w-share-line"></div>
+    <div class="row">
+      <button class="btn" id="w-home" aria-label="Inicio"><svg><use href="#i-home"/></svg></button>
+      <button class="btn" id="w-again" aria-label="Otra vez"><svg><use href="#i-again"/></svg></button>
+      <button class="btn pri" id="w-share" aria-label="Compartir"><svg><use href="#i-share"/></svg></button>
+      <button class="btn pri" id="w-next" aria-label="Siguiente"><svg><use href="#i-play"/></svg></button>
+    </div>
+  </section>
+
+  <section id="lose" class="panel over">
+    <div class="caption" id="l-cap"></div>
+    <div class="reason sign small" id="l-reason"></div>
+    <div class="row">
+      <button class="btn pri wide" id="l-cont" aria-label="Continuar"><svg><use href="#i-ad"/></svg><span>+2</span><svg><use href="#i-slot"/></svg></button>
+    </div>
+    <div class="row">
+      <button class="btn" id="l-undo" aria-label="Deshacer"><svg><use href="#i-undo"/></svg></button>
+      <button class="btn" id="l-again" aria-label="Reintentar"><svg><use href="#i-again"/></svg></button>
+      <button class="btn" id="l-home" aria-label="Inicio"><svg><use href="#i-home"/></svg></button>
+    </div>
+  </section>
+
+  <div class="banner sign" id="banner"></div>
+  <div class="toast" id="toast"></div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
