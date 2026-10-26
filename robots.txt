@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ces107.github.io/calendario-laboral-2027/sitemap.xml
