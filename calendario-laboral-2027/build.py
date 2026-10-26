@@ -11,13 +11,17 @@ import datetime as dt
 import hashlib
 import html
 import json
+import os
 import sys
 from pathlib import Path
 from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent
-SITE = "https://ces107.github.io"
-BASE = "/calendario-laboral-2027/"
+# Where the site is served. Defaults: ces107.github.io/calendario-laboral-2027/. For the own domain:
+#   CL_SITE=https://elcalendariolaboral.es CL_BASE=/ python build.py
+SITE = os.environ.get("CL_SITE", "https://ces107.github.io").rstrip("/")
+BASE = os.environ.get("CL_BASE", "/calendario-laboral-2027/")
+HOST = SITE.split("://", 1)[1]
 URL = SITE + BASE
 YEAR = 2027
 MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
@@ -258,13 +262,13 @@ def top_html(nav=True):
 
 
 def ics_text(hols, label, slug_key):
-    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//ces107.github.io//Calendario laboral 2027//ES",
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", f"PRODID:-//{HOST}//Calendario laboral 2027//ES",
              "CALSCALE:GREGORIAN", "METHOD:PUBLISH", f"X-WR-CALNAME:Festivos 2027 · {label}"]
     for h in hols:
         d = dt.date.fromisoformat(h["date"])
         n = d + dt.timedelta(1)
         name = h["name"].replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;")
-        lines += ["BEGIN:VEVENT", f"UID:{d:%Y%m%d}-{slug_key}@ces107.github.io", "DTSTAMP:20261026T000000Z",
+        lines += ["BEGIN:VEVENT", f"UID:{d:%Y%m%d}-{slug_key}@{HOST}", "DTSTAMP:20261026T000000Z",
                   f"DTSTART;VALUE=DATE:{d:%Y%m%d}", f"DTEND;VALUE=DATE:{n:%Y%m%d}", f"SUMMARY:{name}",
                   "TRANSP:TRANSPARENT", "END:VEVENT"]
     lines.append("END:VCALENDAR")
@@ -272,7 +276,7 @@ def ics_text(hols, label, slug_key):
 
 
 def gcal(ics_path):
-    return "https://calendar.google.com/calendar/r?cid=" + quote("webcal://ces107.github.io" + BASE + ics_path, safe="")
+    return "https://calendar.google.com/calendar/r?cid=" + quote("webcal://" + HOST + BASE + ics_path, safe="")
 
 
 # ---------------------------------------------------------------- region page
@@ -466,7 +470,7 @@ def og_image(path, label, sub, hols):
     d.text((102, 496), "España", font=font(26, "sb"), fill=INK)
     d.ellipse((240, 500, 266, 526), fill=REG)
     d.text((278, 496), "Comunidad", font=font(26, "sb"), fill=INK)
-    d.text((64, 568), "ces107.github.io/calendario-laboral-2027", font=font(24, "r"), fill=MUT)
+    d.text((64, 568), (HOST + BASE).rstrip("/"), font=font(24, "r"), fill=MUT)
     # 12 mini months (3 cols x 4 rows)
     kind = {h["date"]: h["kind"] for h in hols}
     x0, y0, cw, ch, c, gx, gy = 740, 56, 13, 13, 3, 30, 30
