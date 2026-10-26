@@ -29,6 +29,11 @@
   <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <!-- gamekit draws boosters as #i-<booster id> (shop, chests, rewards): the repaint booster's id is "shuffle" -->
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><rect x="3" y="3.5" width="15" height="6.5" rx="2" /><path d="M18 6.7h2.5V13H11v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><rect x="9" y="15.5" width="4" height="6" rx="1.4"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2.2-4.8.2 1.6 1 2.6 2 2.8C10.6 8.6 11 5.6 12 3z"/></symbol>
+  <symbol id="i-quest" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 9 1.5 1.5L13 7.5M8.5 15h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 9h16l-1.2 10.2a1 1 0 0 1-1 .8H6.2a1 1 0 0 1-1-.8zM8.5 9V7.5a3.5 3.5 0 0 1 7 0V9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
 </svg>
 
 <div id="app">
@@ -47,14 +52,22 @@
   </nav>
 
   <section id="menu" class="panel show">
+    <div class="m-top">
+      <button class="chip flame" id="m-streak" aria-label="Racha"><svg><use href="#i-flame"/></svg><span id="m-streak-v">0</span></button>
+      <div class="chip" id="m-stars"><svg class="star"><use href="#i-star"/></svg><span id="stars-total">0</span></div>
+      <span class="m-sp"></span>
+      <button class="chip" id="m-coins" aria-label="Monedas"><svg><use href="#i-coin"/></svg><span id="coins">0</span></button>
+    </div>
     <div class="logo sign big"><span class="logo-t">ATASCAZO</span><span class="logo-arrow"></span></div>
     <div class="logo-sub">Operación Salida</div>
+    <div class="gk-xp gk-tok" id="m-xp"></div>
     <button class="sign card" id="m-play"><svg><use href="#i-play"/></svg><span id="m-play-n">1</span><small id="m-play-pack"></small></button>
     <button class="sign card green" id="m-daily"><svg><use href="#i-cal"/></svg><span id="m-daily-n">#1</span><small id="m-daily-s"></small></button>
-    <div class="dock">
+    <div class="dock gk-tok" id="m-dock"></div>
+    <div class="dock gk-tok">
       <button class="ic big" id="m-levels" aria-label="Niveles"><svg><use href="#i-grid"/></svg></button>
-      <div class="chip" id="m-coins"><svg><use href="#i-coin"/></svg><span id="coins">0</span></div>
-      <div class="chip" id="m-stars"><svg class="star"><use href="#i-star"/></svg><span id="stars-total">0</span></div>
+      <button class="ic big" id="m-quests" aria-label="Misiones"><svg><use href="#i-quest"/></svg><b class="badge" id="m-quests-badge"></b></button>
+      <button class="ic big" id="m-shop" aria-label="Tienda"><svg><use href="#i-shop"/></svg></button>
     </div>
   </section>
 
@@ -66,7 +79,9 @@
   <section id="win" class="panel over">
     <div class="caption" id="w-cap"></div>
     <div class="stars" id="w-stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div>
-    <div class="row stats"><span class="chip"><svg><use href="#i-tap"/></svg><span id="w-moves">0</span></span><span class="chip"><svg><use href="#i-coin"/></svg><span id="w-coins">0</span></span></div>
+    <div class="row stats"><span class="chip"><svg><use href="#i-tap"/></svg><span id="w-moves">0</span></span><span class="chip" id="w-coins"></span>
+      <button class="btn pri small" id="w-double" aria-label="Doble" hidden><svg><use href="#i-ad"/></svg><span>×2</span></button></div>
+    <div class="w-rank" id="w-rank"></div>
     <div class="share-line" id="w-share-line"></div>
     <div class="row">
       <button class="btn" id="w-home" aria-label="Inicio"><svg><use href="#i-home"/></svg></button>
@@ -92,6 +107,7 @@
   <div class="banner sign" id="banner"></div>
   <div class="toast" id="toast"></div>
 </div>
+<script>window.GAMEKIT_ADS = 'none'; window.GAMEKIT_IAP = 'none'; window.GAMEKIT_API = 'https://gamekit-api.onrender.com';</script>
 <script src="game.js"></script>
 </body>
 </html>

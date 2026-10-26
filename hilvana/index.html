@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#f7f2e8">
+<title>Hilvana</title>
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body data-screen="home">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="#e0a400"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#a86a00" stroke-width="2"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2.2-4.8.2 1.6 1 2.6 2 2.8C10.6 8.6 11 5.6 12 3z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-quest" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 9 1.5 1.5L13 7.5M8.5 15h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 9h16l-1.2 10.2a1 1 0 0 1-1 .8H6.2a1 1 0 0 1-1-.8zM8.5 9V7.5a3.5 3.5 0 0 1 7 0V9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <!-- boosters, drawn by gamekit as #i-<id> in the shop, chests and rewards -->
+  <symbol id="i-hint" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V17h5.2v-1.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" fill="#e0a400"/><rect x="9.4" y="18.2" width="5.2" height="2.6" rx="1.2" fill="#6b7280"/></symbol>
+  <symbol id="i-reveal" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.5 16.5 12 7.5l3.5 9M9.8 13.4h4.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-ad" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z"/></symbol>
+</svg>
+<main id="app">
+
+  <section id="home" class="screen" aria-label="Inicio">
+    <div class="h-top">
+      <button class="h-chip flame" id="h-streak" aria-label="Racha"><svg><use href="#i-flame"/></svg><b id="h-streak-v">0</b></button>
+      <span class="h-sp"></span>
+      <button class="h-chip" id="h-coins-chip" aria-label="Monedas"><svg><use href="#i-coin"/></svg><b id="h-coins-v">0</b></button>
+    </div>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><span>H</span><span>I</span><span>L</span><span>V</span><span>A</span><span>N</span><span>A</span></div>
+    </div>
+    <div class="gk-xp gk-tok" id="h-xp"></div>
+    <button id="go-level" class="tile tile-main">
+      <span class="tile-icon" aria-hidden="true">▶</span>
+      <span class="tile-text"><b id="home-level">Nivel 1</b><small id="home-pack"></small></span>
+    </button>
+    <button id="go-daily" class="tile">
+      <span class="tile-icon" aria-hidden="true">🗓️</span>
+      <span class="tile-text"><b>Palabra del día</b><small id="home-daily"></small></span>
+    </button>
+    <button id="go-regional" class="tile">
+      <span class="tile-icon" aria-hidden="true">🌎</span>
+      <span class="tile-text"><b>¿Cómo se dice?</b><small id="home-regional"></small></span>
+    </button>
+    <div class="h-dock gk-tok" id="h-dock"></div>
+    <div class="h-dock gk-tok">
+      <button class="h-ic" id="h-levels" aria-label="Niveles"><svg><use href="#i-grid"/></svg></button>
+      <button class="h-ic" id="h-quests" aria-label="Misiones"><svg><use href="#i-quest"/></svg><b class="badge" id="h-quests-badge"></b></button>
+      <button class="h-ic" id="h-shop" aria-label="Tienda"><svg><use href="#i-shop"/></svg></button>
+    </div>
+    <button id="go-credits" class="link-btn" aria-label="Créditos">ⓘ</button>
+  </section>
+
+  <section id="play" class="screen" aria-label="Nivel">
+    <header class="bar">
+      <button class="icon-btn back" aria-label="Volver">‹</button>
+      <div class="bar-title"><b id="lvl-title">Nivel 1</b><small id="lvl-pack"></small></div>
+      <div class="coins" aria-label="Monedas"><span aria-hidden="true">🪙</span> <b id="coins">0</b></div>
+    </header>
+    <div id="grid-wrap"><div id="grid" role="grid" aria-label="Crucigrama"></div></div>
+    <div id="preview" aria-live="polite"></div>
+    <div class="wheel-zone">
+      <button id="btn-bonus" class="side-btn left-top" aria-label="Palabras extra"><span aria-hidden="true">★</span><b id="bonus-count">0</b></button>
+      <button id="btn-shuffle" class="side-btn left" aria-label="Mezclar">⟲</button>
+      <div id="wheel"></div>
+      <button id="btn-reveal" class="side-btn right-top" aria-label="Revelar letra"><svg><use href="#i-reveal"/></svg><b id="reveal-cost">40</b></button>
+      <button id="btn-hint" class="side-btn right" aria-label="Pista"><span aria-hidden="true">💡</span><b id="hint-cost">25</b></button>
+    </div>
+  </section>
+
+  <section id="daily" class="screen" aria-label="Palabra del día">
+    <header class="bar">
+      <button class="icon-btn back" aria-label="Volver">‹</button>
+      <div class="bar-title"><b>Palabra del día</b><small id="daily-num"></small></div>
+      <div class="bar-spacer"></div>
+    </header>
+    <div id="board" aria-label="Intentos"></div>
+    <div id="keyboard" aria-label="Teclado"></div>
+  </section>
+
+  <section id="regional" class="screen" aria-label="¿Cómo se dice en tu país?">
+    <header class="bar">
+      <button class="icon-btn back" aria-label="Volver">‹</button>
+      <div class="bar-title"><b>¿Cómo se dice?</b><small id="reg-num"></small></div>
+      <div class="bar-spacer"></div>
+    </header>
+    <div id="reg-dots" aria-hidden="true"></div>
+    <div id="reg-card"></div>
+  </section>
+
+  <section id="credits" class="screen" aria-label="Créditos">
+    <header class="bar">
+      <button class="icon-btn back" aria-label="Volver">‹</button>
+      <div class="bar-title"><b>Créditos</b></div>
+      <div class="bar-spacer"></div>
+    </header>
+    <div class="credits-body">
+      <p><b>Hilvana</b> © César Pereiro. Código, diseño y sonidos originales.</p>
+      <details open><summary>Diccionario</summary>
+        <p>Lista de palabras derivada de los diccionarios ortográficos <b>RLA-ES</b> v2.9 (Santiago Bosio y colaboradores, github.com/sbosio/rla-es), usados bajo la <b>Mozilla Public License 2.0</b>. Los ficheros de datos de palabras (data/words.js, data/levels.js, data/daily.js) se distribuyen bajo MPL-2.0; su forma fuente está disponible en el repositorio público indicado en la ficha de la app. El resto de la aplicación no está sujeto a esa licencia.</p>
+      </details>
+      <details><summary>Frecuencias</summary>
+        <p>Google Books Ngram Viewer (books.google.com/ngrams), CC BY 3.0. Frases de Tatoeba (tatoeba.org), CC BY 2.0 FR. Solo se usaron recuentos de frecuencia.</p>
+      </details>
+      <details><summary>¿Cómo se dice?</summary>
+        <p id="credits-regional">Datos de uso regional recopilados por nosotros a partir de fuentes lingüísticas públicas.</p>
+      </details>
+    </div>
+  </section>
+
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="overlay" hidden><div class="sheet" role="dialog" aria-modal="true"></div></div>
+<!--DATA-->
+<script src="data/words.js"></script>
+<script src="data/levels.js"></script>
+<script src="data/daily.js"></script>
+<script src="data/regional.js"></script>
+<!--/DATA-->
+<script>window.GAMEKIT_ADS = 'none'; window.GAMEKIT_IAP = 'none'; window.GAMEKIT_API = 'https://gamekit-api.onrender.com';</script>
+<script src="game.js"></script>
+</body>
+</html>

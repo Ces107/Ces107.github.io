@@ -1,6 +1,6 @@
-/* Teselo 1.0.0 | (c) Cesar Pereiro | all code and sounds original, no third-party assets */
+/* Teselo 1.1.0 | (c) Cesar Pereiro | all code and sounds original, no third-party assets */
 
-/* ---- meta/util.js ---- */
+/* ---- gamekit/meta/util.js ---- */
 /* gamekit util: seeded RNG, string hash, calendar days, deep merge. Platform layer: no game code. */
 (function (root) {
   'use strict';
@@ -52,7 +52,7 @@
   else root.GamekitUtil = U;
 })(this);
 
-/* ---- economy/config.js ---- */
+/* ---- gamekit/economy/config.js ---- */
 /* gamekit platform defaults: economy, meta loops, ads and store numbers shared by every game.
  * A game adds its own section (boosters, skins, quest pool, coin rates per mode, extra products) in its
  * game config; Gamekit merges both (GamekitUtil.merge(GamekitConfig, gameConfig, ['products', 'skins'])).
@@ -209,14 +209,14 @@
   else root.GamekitConfig = CONFIG;
 })(this);
 
-/* ---- economy/economy.js ---- */
+/* ---- gamekit/economy/economy.js ---- */
 /* gamekit economy: one soft currency (coins), boosters, cosmetics, piggy bank, reward granting.
  * Pure logic over a plain state object that lives inside the save (save.data.economy).
  *
  *   var eco = GamekitEconomy.create(state, config, { onChange, track, onGrant, now })
  *   eco.coins, eco.earn(n, source), eco.spend(n, sink) -> bool
  *   eco.boosters(id), eco.useBooster(id) -> bool, eco.buyBooster(id) -> bool, eco.addBooster(id, n, source)
- *   eco.owns(skin), eco.buySkin(skin) -> bool (coin skins only), eco.equip(skin), eco.equipped('block'|'board')
+ *   eco.owns(skin), eco.buySkin(skin) -> bool (coin skins only), eco.equip(skin), eco.equipped(kind)
  *   eco.noAds            remove_ads bought, or inside a timed no-ads window (starter pack)
  *   eco.piggy, eco.piggyBreakable()
  *   eco.grant(reward, source) -> what was granted
@@ -230,7 +230,10 @@
   function defaults(cfg) {
     var b = {};
     Object.keys(cfg.boosters.start).forEach(function (k) { b[k] = cfg.boosters.start[k]; });
-    return { coins: 0, boosters: b, skins: ['calm', 'paper'], equipped: { block: 'calm', board: 'paper' },
+    // every free skin (price 0) is owned from the start; the first free skin of each kind is equipped
+    var free = cfg.skins.filter(function (s) { return s.price === 0; }), eq = {};
+    free.forEach(function (s) { if (!eq[s.kind]) eq[s.kind] = s.id; });
+    return { coins: 0, boosters: b, skins: free.map(function (s) { return s.id; }), equipped: eq,
       noAds: false, noAdsUntil: 0, passPremium: {}, piggy: 0, owned: [], earned: 0, spent: 0 };
   }
 
@@ -352,7 +355,7 @@
   else root.GamekitEconomy = Economy;
 })(this);
 
-/* ---- meta/remote.js ---- */
+/* ---- gamekit/meta/remote.js ---- */
 /* gamekit remote config stub: tune config.js numbers without a release.
  *
  * Overrides are flat dotted keys, e.g. { "ads.interstitialMinGapMs": 240000, "boosters.price.bomb": 100 }.
@@ -412,7 +415,7 @@
   else root.GamekitRemote = Remote;
 })(this);
 
-/* ---- meta/analytics.js ---- */
+/* ---- gamekit/meta/analytics.js ---- */
 /* gamekit analytics stub. The game calls Analytics.track(name, params); nothing leaves the device until a
  * provider is registered (Firebase / GameAnalytics in the Android wrapper; portals have their own stats).
  *
@@ -451,7 +454,7 @@
   else root.Analytics = A;
 })(this);
 
-/* ---- meta/save.js ---- */
+/* ---- gamekit/meta/save.js ---- */
 /* gamekit save: one versioned JSON document in localStorage, with a backup copy, migrations and
  * export/import strings (for a later cloud save: upload save.exportString(), download, importString()).
  *
@@ -572,7 +575,7 @@
   else root.GamekitSave = Save;
 })(this);
 
-/* ---- meta/meta.js ---- */
+/* ---- gamekit/meta/meta.js ---- */
 /* gamekit meta loops: login streak with freezes, daily/weekly quests, season pass, earned chests.
  * Pure logic over save.data.meta; time comes in through deps.now() and deps.today() so tests can drive it.
  *
@@ -581,7 +584,7 @@
  *   meta.liveStreak()             what the flame shows now
  *   meta.buyFreeze()              coins -> one streak freeze (max config.streak.maxFreezes)
  *   meta.refresh()                re-roll quests on a new day/week, roll the pass on a new season
- *   meta.progress(metric, n)      -> quests just completed  (metrics: lines pieces games levels stars combo3 daily gems boosters)
+ *   meta.progress(metric, n)      -> quests just completed  (platform metrics: games levels stars daily boosters; any other = the game's)
  *   meta.claimQuest(id)           -> granted reward (all daily claimed -> chest)
  *   meta.addXp(n), meta.passTier(), meta.claimPass(tier, 'free'|'premium')
  *   meta.earnChest(type), meta.startUnlock(i), meta.chestState(i), meta.openChest(i), meta.adSkip(i), meta.chestContents(type)
@@ -592,6 +595,8 @@
 (function (root) {
   'use strict';
   var U = root.GamekitUtil || (typeof require === 'function' ? require('./util.js') : null);
+  // result.stats keys that are bookkeeping, or metrics the platform counts itself (see onGameEnd)
+  var NOT_METRICS = ['score', 'movesLeft', 'progress', 'timeMs', 'level', 'games', 'levels', 'stars', 'daily'];
 
   function defaults(cfg) {
     return {
@@ -860,15 +865,16 @@
 
       // ---- hooks the game calls ----
       onGameEnd: function (mode, stats) {
-        // stats: { score, lines, pieces, maxCombo, gems, boosters }
+        // stats: { <game metric>: n, ... } e.g. Teselo { lines, pieces, combo3, gems }, Atascazo { cars, nocrane }.
+        // Every positive number is a quest metric, except the bookkeeping keys below and the metrics the platform
+        // counts itself (games levels stars daily; boosters when the game reports them).
         meta.lastStreak = meta.touchStreak(); // { count, frozen, gift } for the result screen
         var done = [];
         done = done.concat(meta.progress('games', 1));
-        done = done.concat(meta.progress('lines', stats.lines || 0));
-        done = done.concat(meta.progress('pieces', stats.pieces || 0));
-        if (stats.combo3) done = done.concat(meta.progress('combo3', stats.combo3));
-        if (stats.gems) done = done.concat(meta.progress('gems', stats.gems));
-        if (stats.boosters) done = done.concat(meta.progress('boosters', stats.boosters));
+        Object.keys(stats).forEach(function (k) {
+          if (NOT_METRICS.indexOf(k) >= 0 || typeof stats[k] !== 'number' || !(stats[k] > 0)) return;
+          done = done.concat(meta.progress(k, stats[k]));
+        });
         if (mode === 'daily') { done = done.concat(meta.progress('daily', 1)); meta.addXp(cfg.pass.xp.daily); }
         meta.addXp(cfg.pass.xp.game);
         return done;
@@ -899,7 +905,7 @@
   else root.GamekitMeta = Meta;
 })(this);
 
-/* ---- meta/fun.js ---- */
+/* ---- gamekit/meta/fun.js ---- */
 /* gamekit "fun" loops: daily prize wheel, player level (lifetime XP), streak multiplier + streak gifts,
  * lucky moments, lucky chest upgrades. Pure logic over save.data.fun; platform layer, no game code.
  *
@@ -1108,7 +1114,7 @@
   else root.GamekitFun = Fun;
 })(this);
 
-/* ---- meta/league.js ---- */
+/* ---- gamekit/meta/league.js ---- */
 /* gamekit weekly league + ranking rivals. Pure logic over save.data.league; platform layer, no game code.
  *
  *   var lg = GamekitLeague.create(state, cfg, { economy, meta, today, now, seed, track })
@@ -1354,7 +1360,7 @@
   else root.GamekitLeague = League;
 })(this);
 
-/* ---- meta/online.js ---- */
+/* ---- gamekit/meta/online.js ---- */
 /* gamekit online: rankings / leagues / ranking rewards through gamekit-api, offline-first.
  * Platform layer, no game code. The ONLY platform file allowed to make network requests (build.py checks it).
  *
@@ -1570,7 +1576,7 @@
   else root.GamekitOnline = Online;
 })(this);
 
-/* ---- ads/ads.js ---- */
+/* ---- gamekit/ads/ads.js ---- */
 /* gamekit ads adapter.
  *
  * The game only ever calls this small interface:
@@ -1812,7 +1818,7 @@
   else root.Ads = api;
 })(this);
 
-/* ---- iap/iap.js ---- */
+/* ---- gamekit/iap/iap.js ---- */
 /* gamekit payments adapter (stub). The game only calls:
  *   IAP.init(products)      -> Promise; products from config.products ({id, type, price, grant})
  *   IAP.available           -> false on the web build: the shop hides real-money items
@@ -1914,7 +1920,7 @@
   else root.IAP = api;
 })(this);
 
-/* ---- meta/platform.js ---- */
+/* ---- gamekit/meta/platform.js ---- */
 /* gamekit platform core (no UI, no game code). One object the game talks to; see src/PLATFORM.md.
  *
  *   var P = Gamekit.create({ config, saveDefaults, today })
@@ -2160,12 +2166,14 @@
   else root.Gamekit = Gamekit;
 })(this);
 
-/* ---- shell/shell.js ---- */
+/* ---- gamekit/shell/shell.js ---- */
 /* gamekit UI shell: screens + HUD chips, toast, level map, quests / chests / pass sheet, shop, booster bar,
  * result-screen economy (coins, double coins, continue) and settings (sound, theme, privacy, restore).
- * Platform layer: it never touches game code; the game passes what it needs in `opts` (see src/PLATFORM.md).
+ * Platform layer: it never touches game code; the game passes what it needs in `opts` (see gamekit/PLATFORM.md).
  *
  *   var shell = GamekitShell.create(P, opts)
+ *   opts.ids: { '<default id>': '<id in this page>' } remaps the element ids below (embedded games use the gk-* ids
+ *   that GamekitEmbed.mount() creates). Every element is optional: a missing one is skipped.
  */
 (function (root) {
   'use strict';
@@ -2186,9 +2194,11 @@
   };
 
   function create(P, opts) {
-    var doc = root.document, $ = function (id) { return doc.getElementById(id); };
+    var IDS = opts.ids || {};
+    var doc = root.document, $ = function (id) { return id ? doc.getElementById(IDS[id] || id) : null; };
     var cfg = P.cfg, eco = P.eco, meta = P.meta, Ads = P.ads, IAP = P.iap;
-    var lang = String(root.navigator.language || 'en').toLowerCase().indexOf('es') === 0 ? 'es' : 'en';
+    // opts.lang: a game that only exists in one language (Atascazo, Hilvana) pins the platform texts to it
+    var lang = opts.lang || (String(root.navigator.language || 'en').toLowerCase().indexOf('es') === 0 ? 'es' : 'en');
     var TX = Object.assign({}, TEXTS[lang], (opts.texts || {})[lang] || {});
     var sfx = Object.assign({ coin: noop, win: noop, bad: noop, pick: noop, tick: noop }, opts.sfx || {});
     var ico = function (id, cls) { return '<svg' + (cls ? ' class="' + cls + '"' : '') + '><use href="#i-' + id + '"/></svg>'; };
@@ -2197,17 +2207,21 @@
     function noop() {}
 
     // ---------- screens ----------
-    // def: { el: element id or null, hud: { menu, score, coins, streak, boosters: bool | fn } , onShow }
+    // def: { el: element id or null, hud: { menu, score, coins, streak, boosters: bool | fn }, onShow, sheet }
+    // sheet: a platform sheet (body class gk-open while it is up; embedded games show the gamekit bar then)
     var SHEETS = {
-      levels: { el: 'levels', hud: { coins: true }, onShow: function () { renderLevels(); } },
-      quests: { el: 'quests', hud: { coins: true }, onShow: function () { renderQuests(); } },
-      shop: { el: 'shop', hud: { coins: true }, onShow: function () { renderShop(); } }
+      levels: { el: 'levels', hud: { coins: true }, sheet: true, onShow: function () { renderLevels(); } },
+      quests: { el: 'quests', hud: { coins: true }, sheet: true, onShow: function () { renderQuests(); } },
+      shop: { el: 'shop', hud: { coins: true }, sheet: true, onShow: function () { renderShop(); } }
     };
+    var base = null;   // last screen that is not a platform sheet (the gamekit bar's back button returns there)
     function register(name, def) { screens[name] = def; }
     Object.keys(SHEETS).forEach(function (k) { register(k, SHEETS[k]); });
     function show(name) {
       var prev = screen, def = screens[name], hud = def.hud || {}, b = doc.body.classList;
       screen = name;
+      if (!def.sheet) base = name;
+      b.toggle('gk-open', !!def.sheet);
       Object.keys(screens).forEach(function (k) { var d = screens[k]; if (d.el && $(d.el)) $(d.el).classList.toggle('show', k === name); });
       b.toggle('in-menu', !!hud.menu);
       b.toggle('hide-score', !hud.score);
@@ -2226,10 +2240,13 @@
     // ---------- HUD ----------
     var coinHold = false;   // the engagement UI ticks the number up while coins fly in
     function refresh() {
-      if (!coinHold) $('coins').textContent = eco.coins;
-      $('streak-v').textContent = meta.liveStreak();
-      $('streak').classList.toggle('cold', !meta.playedToday());
-      $('streak').classList.toggle('repair', meta.canRepairStreak() && Ads.rewardedReady());
+      var cn = $('coins'), sv = $('streak-v'), sc = $('streak');
+      if (!coinHold && cn) cn.textContent = eco.coins;
+      if (sv) sv.textContent = meta.liveStreak();
+      if (sc) {
+        sc.classList.toggle('cold', !meta.playedToday());
+        sc.classList.toggle('repair', meta.canRepairStreak() && Ads.rewardedReady());
+      }
       if (opts.quests && $(opts.quests.button)) {
         var on = P.unlocked('quests');
         $(opts.quests.button).hidden = !on;
@@ -2245,6 +2262,7 @@
 
     function toast(html) {
       var el = $('toast');
+      if (!el) return;
       el.innerHTML = html;
       el.classList.add('show');
       clearTimeout(toast.t);
@@ -2324,7 +2342,7 @@
         b.classList.toggle('cur', n === unlockedTo);
         b.querySelector('i').innerHTML = lock ? ico('lock', 'lk') : [0, 1, 2].map(function (k) { return ico('star', k < st ? 'on' : ''); }).join('');
       });
-      $('lv-stars').textContent = P.progress.total();
+      if ($('lv-stars')) $('lv-stars').textContent = P.progress.total();
       var cur = grid.querySelector('.lv.cur');
       if (cur) setTimeout(function () { cur.scrollIntoView({ block: 'center' }); }, 30);
     }
@@ -2352,6 +2370,7 @@
     }
     function questText(q) { return (TX.q[q.metric] || q.metric + ' {n}').replace('{n}', q.target); }
     function renderQuests() {
+      if (!$('qlist') || !$('chests') || !$('pass')) return;
       var showChests = P.unlocked('chests'), html = '';
       if (showChests) {
         for (var i = 0; i < cfg.chests.slots; i++) {
@@ -2412,6 +2431,7 @@
 
     // ---------- shop ----------
     function renderShop() {
+      if (!$('shoplist')) return;
       var h = '', theme = currentTheme();
       if (Ads.rewardedReady() && (meta.canDailyGift() || meta.canShopCoins())) {
         h += '<h4>' + TX.free + '</h4><div class="srow">';
@@ -2529,14 +2549,15 @@
       summary = summary || {};
       res.coins = summary.coins || 0;
       res.onRevive = cont && cont.onRevive;
-      $('o-coins').innerHTML = res.coins > 0 ? '+' + res.coins + ' ' + ico('coin') : '';
-      $('o-double').hidden = !P.canDouble(res.coins);
+      if ($('o-coins')) $('o-coins').innerHTML = res.coins > 0 ? '+' + res.coins + ' ' + ico('coin') : '';
+      if ($('o-double')) $('o-double').hidden = !P.canDouble(res.coins);
       var b = $('o-cont');
-      b.hidden = !(cont && cont.available);
-      if (!b.hidden) {
+      if (b) b.hidden = !(cont && cont.available);
+      if (b && !b.hidden) {
         var offer = P.continueOffer();
         res.byAd = offer.byAd;
-        b.innerHTML = offer.byAd ? ico('ad', 'adi') + '<span>' + TX.cont + '</span>' : '<span>' + TX.cont + '</span> ' + offer.coins + ' ' + ico('coin');
+        var label = opts.contLabel ? opts.contLabel() : '<span>' + TX.cont + '</span>';
+        b.innerHTML = offer.byAd ? ico('ad', 'adi') + label : label + ' ' + offer.coins + ' ' + ico('coin');
         b.disabled = !offer.affordable;
       }
       if (summary.chest) setTimeout(function () { toast(ico('chest') + ' +1'); }, 900);
@@ -2555,7 +2576,8 @@
       P.doubleCoins(res.coins, function (ok) {
         b.disabled = false;
         if (!ok) return;
-        $('o-coins').innerHTML = '+' + res.coins * 2 + ' ' + ico('coin');
+        if ($('o-coins')) $('o-coins').innerHTML = '+' + res.coins * 2 + ' ' + ico('coin');
+        if (opts.onDoubled) opts.onDoubled(res.coins * 2);
         b.hidden = true;
         sfx.coin();
       });
@@ -2570,6 +2592,10 @@
       holdCoins: function (on) { coinHold = !!on; },
       chestOpener: null,   // set by the engagement UI (shell/fun-ui.js)
       onResult: null,
+      id: function (defaultId) { return IDS[defaultId] || defaultId; },   // element id in this page
+      el: $,
+      back: function () { show(base && screens[base] ? base : 'menu'); },
+      get base() { return base; },
       get screen() { return screen; }
     };
     return api;
@@ -2580,7 +2606,7 @@
   else root.GamekitShell = Shell;
 })(this);
 
-/* ---- shell/fx.js ---- */
+/* ---- gamekit/shell/fx.js ---- */
 /* gamekit FX: reward-moment juice shared by every game. Platform layer, no game code.
  *
  *   var fx = GamekitFx.create({ muted: () => bool })
@@ -2816,7 +2842,7 @@
   else root.GamekitFx = Fx;
 })(this);
 
-/* ---- shell/fun-ui.js ---- */
+/* ---- gamekit/shell/fun-ui.js ---- */
 /* gamekit engagement UI: prize wheel, chest opening, level-up, streak sheet + gifts, lucky banner, weekly league,
  * ranking, profile. Platform layer: no game code; the game passes hooks in `opts`.
  *
@@ -2876,11 +2902,14 @@
 
   function attach(P, shell, opts) {
     opts = opts || {};
-    var doc = root.document, $ = function (id) { return doc.getElementById(id); };
+    // shell.el remaps the shell's default ids (coins, streak, o-coins...) for embedded games
+    var doc = root.document, $ = function (id) { return shell.el ? shell.el(id) : doc.getElementById(id); };
     var T = TX[shell.lang] || TX.en, cfg = P.cfg, eco = P.eco, meta = P.meta, fun = P.fun, lg = P.league, on = P.online;
     var fx = root.GamekitFx.create({ muted: function () { return !!P.settings.muted; } });
     var ico = shell.ico, sico = function (id, cls) { return '<svg' + (cls ? ' class="' + cls + '"' : '') + '><use href="#gk-i-' + id + '"/></svg>'; };
-    var app = $('app') || doc.body;
+    var app = (opts.host && $(opts.host)) || $('app') || doc.body;
+    var ME_COL = opts.meColor || '#5f9d8c';
+    var fmtScore = function (s) { return opts.formatScore ? opts.formatScore(s, period) : s; };
     var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
     var rarityOf = function (type) { return (cfg.chests.types[type] || {}).rarity || 'common'; };
     var GameKit = root.GamekitOnline;
@@ -2913,11 +2942,11 @@
     var ov = doc.createElement('div'); ov.id = 'gk-ov'; ov.className = 'gk-ov'; app.appendChild(ov);
     var banner = doc.createElement('div'); banner.id = 'gk-lucky'; banner.className = 'gk-lucky'; app.appendChild(banner);
 
-    shell.register('wheel', { el: 'gk-wheel', hud: { coins: true }, onShow: function () { sizeWheel(); renderSpins(); } });
-    shell.register('league', { el: 'gk-league', hud: { coins: true }, onShow: function () { renderLeague(true); P.syncLeague(); } });
-    shell.register('ranking', { el: 'gk-rank', hud: { coins: true }, onShow: function () { renderRank(); } });
-    shell.register('profile', { el: 'gk-profile', hud: {}, onShow: function () { renderProfile(); } });
-    shell.register('streakinfo', { el: 'gk-streak', hud: { coins: true, streak: true }, onShow: function () { renderStreak(); } });
+    shell.register('wheel', { el: 'gk-wheel', hud: { coins: true }, sheet: true, onShow: function () { sizeWheel(); renderSpins(); } });
+    shell.register('league', { el: 'gk-league', hud: { coins: true }, sheet: true, onShow: function () { renderLeague(true); P.syncLeague(); } });
+    shell.register('ranking', { el: 'gk-rank', hud: { coins: true }, sheet: true, onShow: function () { renderRank(); } });
+    shell.register('profile', { el: 'gk-profile', hud: {}, sheet: true, onShow: function () { renderProfile(); } });
+    shell.register('streakinfo', { el: 'gk-streak', hud: { coins: true, streak: true }, sheet: true, onShow: function () { renderStreak(); } });
 
     function tap(el, fn) { if (typeof el === 'string') el = $(el); if (el) el.addEventListener('click', function (e) { fx.sfx.pop(); fn(e); }); }
 
@@ -3008,7 +3037,7 @@
 
     // ================= WHEEL =================
     var wcv = $('gk-wheel-cv'), wg = wcv.getContext('2d'), WS = 300, wDPR = 1, angle = 0, spinning = false, flap = 0, winSeg = -1, winT = 0, bulbT = 0;
-    var SEGCOL = ['#7fb3a3', '#86a8d8', '#e5b567', '#a99bd8', '#e39a85', '#9cc27a', '#d98fb0', '#f4d06f'];
+    var SEGCOL = opts.wheelColors || ['#7fb3a3', '#86a8d8', '#e5b567', '#a99bd8', '#e39a85', '#9cc27a', '#d98fb0', '#f4d06f'];
     function segs() {
       var o = fun.odds(), a = 0;
       return o.map(function (s, i) {
@@ -3412,12 +3441,12 @@
       var mode = opts.rankMode || 'daily', day = P.today(), C = cfg.ranking, prof = on.profile;
       var rows = (data && data.top ? data.top : []).map(function (e) {
         var p = root.GamekitLeague._person(cfgRng(e.name));
-        return { name: e.name, country: e.country, score: e.score, me: e.me, color: e.me ? '#5f9d8c' : p.color, initial: e.me ? '★' : String(e.name || '?').charAt(0).toUpperCase() };
+        return { name: e.name, country: e.country, score: e.score, me: e.me, color: e.me ? ME_COL : p.color, initial: e.me ? '★' : String(e.name || '?').charAt(0).toUpperCase() };
       });
       var mine = data && data.me, local = opts.localScore ? opts.localScore(period) : null;
       if (!rows.some(function (r) { return r.me; })) {
         var sc = mine ? mine.score : local;
-        if (sc != null && !prof.hidden) rows.push({ name: prof.nickname, country: prof.showFlag ? prof.country : '', score: sc, me: true, color: '#5f9d8c', initial: '★' });
+        if (sc != null && !prof.hidden) rows.push({ name: prof.nickname, country: prof.showFlag ? prof.country : '', score: sc, me: true, color: ME_COL, initial: '★' });
       }
       var real = data ? data.total : rows.length, fill = Math.max(0, (C.fillTo || 0) - Math.max(real, rows.length));
       var hour = period === 'daily' ? new Date().getHours() + new Date().getMinutes() / 60 : null;
@@ -3432,10 +3461,10 @@
       R.rows.slice(0, 50).forEach(function (r) {
         var medal = r.rank <= 3 ? ' m' + r.rank : '';
         h += '<div class="gk-row' + (r.me ? ' me' : '') + medal + '"' + (r.cpu ? ' data-cpu="1"' : '') + '><span class="gk-rk">' + r.rank + '</span>' + avatar(r) +
-          '<span class="gk-nm">' + esc(r.name) + (r.me ? ' · ' + T.you : '') + (r.cpu ? '<svg class="gk-cpu" aria-label="' + T.cpuShort + '"><title>' + T.cpuShort + '</title><use href="#gk-i-cpu"/></svg>' : '') + '</span><span></span><b class="gk-xp">' + r.score + '</b></div>';
+          '<span class="gk-nm">' + esc(r.name) + (r.me ? ' · ' + T.you : '') + (r.cpu ? '<svg class="gk-cpu" aria-label="' + T.cpuShort + '"><title>' + T.cpuShort + '</title><use href="#gk-i-cpu"/></svg>' : '') + '</span><span></span><b class="gk-xp">' + fmtScore(r.score) + '</b></div>';
       });
       var me = R.rows.filter(function (r) { return r.me; })[0];
-      if (me && me.rank > 50) h += '<div class="gk-div">…</div><div class="gk-row me"><span class="gk-rk">' + me.rank + '</span>' + avatar(me) + '<span class="gk-nm">' + esc(me.name) + '</span><span></span><b class="gk-xp">' + me.score + '</b></div>';
+      if (me && me.rank > 50) h += '<div class="gk-div">…</div><div class="gk-row me"><span class="gk-rk">' + me.rank + '</span>' + avatar(me) + '<span class="gk-nm">' + esc(me.name) + '</span><span></span><b class="gk-xp">' + fmtScore(me.score) + '</b></div>';
       $('gk-rk-rows').innerHTML = h || '<p class="gk-note">' + T.none + '</p>';
       $('gk-rk-status').innerHTML = '<span>' + (on.online === false || !on.enabled ? sico('cloud') + ' ' + T.offline : '') + '</span>' + (R.bots ? '<span class="gk-cpuline">' + sico('cpu', 'gk-cpu') + ' ' + T.cpu + '</span>' : '');
       var played = opts.localScore && opts.localScore('daily') != null;

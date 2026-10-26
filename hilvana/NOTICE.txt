@@ -1,0 +1,15 @@
+Hilvana 0.2.0
+(c) Cesar Pereiro. All rights reserved, except the files listed below.
+
+data/words.js, data/levels.js, data/daily.js
+  Subject to the Mozilla Public License 2.0 (LICENSES/MPL-2.0.txt). Derived from the RLA-ES Spanish
+  spelling dictionaries v2.9 (Santiago Bosio and contributors, https://github.com/sbosio/rla-es),
+  distributed under GPL-3.0+ / LGPL-3.0+ / MPL-1.1+; used under MPL 2.0 per the "or later" option.
+  Word frequencies: Google Books Ngram Viewer data (CC BY 3.0, http://books.google.com/ngrams) and
+  Tatoeba sentence counts (CC BY 2.0 FR, https://tatoeba.org). The Source Code Form of these files is the
+  files themselves plus tools/build_dict.py, tools/blocklist.txt and tools/gen_levels.js, available at
+  the public repository named in the store listing.
+
+data/regional.js
+  Regional vocabulary compiled by the Hilvana team from public linguistic sources (listed inside the
+  file). Facts of usage only.

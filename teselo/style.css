@@ -1,4 +1,4 @@
-/* ---- shell/shell.css ---- */
+/* ---- gamekit/shell/shell.css ---- */
 /* gamekit shell styles: theme tokens, base, HUD chips, panels and sheets (map, quests, shop), booster bar,
  * result-screen buttons, toast. Games restyle through the tokens on :root and add their own file after this one. */
 :root {
@@ -134,7 +134,7 @@ svg path[fill="none"], svg rect[fill="none"] { stroke-width: 2; stroke-linecap: 
 .chip.flame.repair { box-shadow: 0 0 0 2px #e0875a; }
 .item small { display: block; }
 
-/* ---- shell/fun.css ---- */
+/* ---- gamekit/shell/fun.css ---- */
 /* gamekit engagement UI: wheel, chest opening, level-up, streak, league, ranking, profile, FX layer.
  * Calm palette everywhere; reward moments get light, motion and colour. Respects prefers-reduced-motion. */
 :root { --r-common: #8fa3ad; --r-rare: #4f8fe0; --r-epic: #9b6bd6; --r-legendary: #f0a830; --up: #3fae7d; --down: #d9735e; }
