@@ -55,6 +55,7 @@
   <section id="menu" class="panel show">
     <div class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <h1>Teselo</h1>
+    <div class="gk-xp" id="m-xp"></div>
     <button class="card" id="m-adv">
       <span class="k" data-t="adventure">Adventure</span>
       <span class="sub" id="m-adv-sub"></span>
@@ -69,7 +70,7 @@
       <span class="k" data-t="endless">Endless</span>
       <span class="sub" id="m-endless-sub"></span>
     </button>
-    <div class="dock">
+    <div class="dock" id="m-dock">
       <button class="ic big" id="m-quests" aria-label="Quests"><svg><use href="#i-quest"/></svg><b class="badge" id="m-quests-badge"></b></button>
       <button class="ic big" id="m-shop" aria-label="Shop"><svg><use href="#i-shop"/></svg></button>
     </div>
@@ -110,7 +111,7 @@
   </section>
   <div class="toast" id="toast"></div>
 </div>
-<script>window.GAMEKIT_ADS = 'none'; window.GAMEKIT_IAP = 'none';</script>
+<script>window.GAMEKIT_ADS = 'none'; window.GAMEKIT_IAP = 'none'; window.GAMEKIT_API = 'https://gamekit-api.onrender.com';</script>
 <script src="game.js"></script>
 </body>
 </html>
