@@ -2,9 +2,12 @@
 (function () {
   'use strict';
   var D = JSON.parse(document.getElementById('cal-data').textContent);
-  var Y = D.year, N = 365, BASE = '/calendario-laboral-2027/', SITE = 'ces107.github.io';
+  var Y = D.year, N = 365, BASE = document.documentElement.getAttribute('data-base') || '/calendario-laboral-2027/';
+  var HOST = location.host || 'ces107.github.io';
   var MON3 = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  var MONL = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   var WD3 = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  var WDL = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   var ISO = [], WDAY = [], MON = [], DOM = [];
   for (var i = 0; i < N; i++) {
     var dt = new Date(Date.UTC(Y, 0, 1 + i));
@@ -14,11 +17,13 @@
   var REG = {}; D.regions.forEach(function (r) { REG[r.slug] = r; });
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var weekend = function (i) { return WDAY[i] === 0 || WDAY[i] === 6; };
 
   function get(k) { try { return localStorage.getItem('cl27.' + k); } catch (e) { return null; } }
   function put(k, v) { try { if (v == null) localStorage.removeItem('cl27.' + k); else localStorage.setItem('cl27.' + k, v); } catch (e) { /* sin almacenamiento */ } }
 
-  var S = { region: null, zone: null, locals: ['', ''], n: 4, sel: null };
+  var S = { region: null, zone: null, locals: ['', ''], n: 4, sel: null, vac: {}, vtot: 22, vmode: false };
+  var key = function () { return S.region || 'es'; };
 
   /* ------------------------------------------------------------ datos */
   function holidays() {
@@ -34,7 +39,7 @@
       if (o && o.add) out.push({ date: o.add.date, name: o.add.name, kind: 'r' });
     }
     var boe = out.length;
-    if (S.region) S.locals.forEach(function (d) { if (d && IDX[d] != null) out.push({ date: d, name: 'Festivo local', kind: 'l' }); });
+    if (S.region) S.locals.forEach(function (d) { if (d && IDX[d] != null && !out.some(function (h) { return h.date === d; })) out.push({ date: d, name: 'Festivo local', kind: 'l' }); });
     out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     out.boe = boe;
     return out;
@@ -43,7 +48,7 @@
   function offDays(hols) {
     var hd = {}; hols.forEach(function (h) { hd[h.date] = h.kind; });
     var off = [];
-    for (var i = 0; i < N; i++) off.push(WDAY[i] === 0 || WDAY[i] === 6 || !!hd[ISO[i]]);
+    for (var i = 0; i < N; i++) off.push(weekend(i) || !!hd[ISO[i]]);
     return { off: off, hd: hd };
   }
 
@@ -117,100 +122,155 @@
     for (var i = it.s; i <= it.e; i++) h += '<i class="' + (hd[ISO[i]] || (t[i] ? 'w' : 'o')) + '"></i>';
     return '<span class="strip" aria-hidden="true">' + h + '</span>';
   }
+  function costHtml(c) {
+    return c === 0 ? '<span class="cost free">Sin gastar vacaciones</span>' : '<span class="cost">' + c + ' día' + (c > 1 ? 's' : '') + ' de vacaciones</span>';
+  }
+  function same(a, b) { return a && b && a.s === b.s && a.e === b.e && a.cost === b.cost; }
   function item(it, hols, hd, id, what) {
-    var cost = it.cost === 0 ? '<span class="cost free">0 días</span>' : '<span class="cost">' + it.cost + ' día' + (it.cost > 1 ? 's' : '') + '</span>';
-    var on = S.sel && S.sel.s === it.s && S.sel.e === it.e && S.sel.cost === it.cost;
-    return '<li><button type="button" class="it" data-k="' + id + '" aria-pressed="' + on + '">' +
-      '<span class="big"><b>' + it.len + '</b><span>libres</span></span>' +
-      '<span class="when">' + frange(it.s, it.e) + '</span>' + cost +
-      '<span class="what">' + esc(what) + '</span>' + strip(it, hd) + '</button></li>';
+    var on = same(S.sel, it), taken = it.take.length && it.take.every(function (x) { return S.vac[ISO[x]]; });
+    var add = on ? '<div class="add">' + (it.cost ? '<button class="btn p" type="button" data-add="' + id + '">' +
+      (taken ? 'Ya está en tus vacaciones' : 'Añadir ' + it.cost + ' día' + (it.cost > 1 ? 's' : '') + ' a mis vacaciones') + '</button>' : '') +
+      '<a class="btn" href="#m' + (MON[it.s] + 1) + '">Ver en el calendario</a></div>' : '';
+    return '<li' + (on ? ' class="on"' : '') + '><button type="button" class="it" data-k="' + id + '" aria-expanded="' + on + '">' +
+      '<span class="pl"><span class="when">' + frange(it.s, it.e) + '</span><span class="what">' + esc(what) + '</span></span>' +
+      strip(it, hd) + '<span class="pr"><b>' + it.len + '</b><span>días libres</span>' + costHtml(it.cost) + '</span></button>' + add + '</li>';
   }
 
   /* ------------------------------------------------------------ render */
   var CELLS = {};
   Array.prototype.forEach.call(document.querySelectorAll('.g b[data-d]'), function (el) { CELLS[el.getAttribute('data-d')] = el; });
-  var TODAY = (function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })();
+  var NOW = new Date();
+  var TODAY = NOW.getFullYear() + '-' + ('0' + (NOW.getMonth() + 1)).slice(-2) + '-' + ('0' + NOW.getDate()).slice(-2);
   var PITEMS = [], VITEMS = [], icsUrl = null;
 
   function paintYear(hols) {
     var hd = {};
     hols.forEach(function (h) { if (!hd[h.date]) hd[h.date] = h; });
+    var lab = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     for (var i = 0; i < N; i++) {
       var el = CELLS[ISO[i]], h = hd[ISO[i]], c = [];
-      if (WDAY[i] === 0 || WDAY[i] === 6) c.push('we');
+      if (weekend(i)) c.push('we');
       if (h) c.push(h.kind);
+      else if (S.vac[ISO[i]] && !weekend(i)) c.push('vac');
+      if (S.sel && i >= S.sel.s && i <= S.sel.e && !h && !weekend(i) && !S.vac[ISO[i]]) c.push('pk');
       if (S.sel && i >= S.sel.s && i <= S.sel.e) c.push('sel');
-      if (S.sel && S.sel.take.indexOf(i) >= 0) c.push('pk');
       if (ISO[i] === TODAY) c.push('today');
       el.className = c.join(' ');
-      if (h) el.title = h.name; else el.removeAttribute('title');
+      if (h) el.title = h.name; else if (S.vac[ISO[i]]) el.title = 'Vacaciones'; else el.removeAttribute('title');
+      if (!weekend(i) && !h && !S.vac[ISO[i]]) lab[MON[i]]++;
     }
     for (var m = 0; m < 12; m++) {
       var ul = document.querySelector('#m' + (m + 1) + ' .hl'), html = '';
       hols.forEach(function (h) {
-        if (+h.date.slice(5, 7) === m + 1) html += '<li><i class="' + h.kind + '"></i><b>' + (+h.date.slice(8)) + '</b><span>' + esc(h.name) + '</span></li>';
+        if (+h.date.slice(5, 7) === m + 1) html += '<li><i class="sw ' + h.kind + '"></i><b>' + (+h.date.slice(8)) + '</b><span>' + esc(h.name) + '</span></li>';
       });
       ul.innerHTML = html;
+      document.querySelector('[data-lab="' + (m + 1) + '"]').textContent = lab[m];
     }
-    $('lg-v').hidden = !S.sel;
+    return lab.reduce(function (a, b) { return a + b; }, 0);
+  }
+
+  function nextHoliday(hols) {
+    var h = hols.filter(function (x) { return x.date >= TODAY; })[0];
+    if (!h) { $('nx-name').textContent = 'Fin de 2027'; $('nx-date').textContent = ''; $('nx-in').textContent = ''; return; }
+    var i = IDX[h.date];
+    $('nx-name').textContent = h.name;
+    $('nx-date').textContent = WDL[WDAY[i]] + ', ' + DOM[i] + ' de ' + MONL[MON[i]] + ' de ' + Y;
+    var t0 = Date.UTC(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()), days = Math.round((Date.UTC(Y, 0, 1 + i) - t0) / 864e5);
+    $('nx-in').textContent = days === 0 ? 'Es hoy' : days === 1 ? 'Mañana' : 'Faltan ' + days + ' días';
+  }
+
+  function vacCount() {
+    return Object.keys(S.vac).filter(function (d) { return S.vac[d] && IDX[d] != null && !weekend(IDX[d]); }).length;
+  }
+  function paintVac() {
+    var used = vacCount();
+    $('v-used').textContent = used;
+    $('v-bar').style.width = Math.min(100, used / Math.max(1, S.vtot) * 100) + '%';
+    $('v-bar').parentNode.classList.toggle('over', used > S.vtot);
+    $('vclear').hidden = !used;
+  }
+
+  function tableRows(hols) {
+    var tag = { n: 'Nacional', r: 'Comunidad', l: 'Local' };
+    return hols.map(function (h) {
+      var i = IDX[h.date];
+      return '<tr><td class="dt"><b>' + DOM[i] + '</b> ' + MON3[MON[i]] + '</td><td class="d">' + WDL[WDAY[i]] + '</td><td>' + esc(h.name) +
+        '</td><td class="t"><span class="tag ' + h.kind + '">' + tag[h.kind] + '</span></td></tr>';
+    }).join('');
   }
 
   function render() {
     var hols = holidays(), r = S.region && REG[S.region], hd = offDays(hols).hd;
-    paintYear(hols);
+    var lab = paintYear(hols);
     $('rn').textContent = r ? r.name : 'España';
-    Array.prototype.forEach.call(document.querySelectorAll('#pick .chip'), function (a) { a.setAttribute('aria-current', a.getAttribute('data-s') === S.region ? 'true' : 'false'); });
+    $('region').value = S.region || '';
+    nextHoliday(hols);
+    paintVac();
+    $('ftab').innerHTML = tableRows(hols);
+    $('f-sub').textContent = r ? 'en ' + r.name : 'en toda España';
 
-    var z = r && D.zones[S.region], zb = $('zones');
+    var z = r && D.zones[S.region];
     if (z) {
-      zb.innerHTML = '<b>' + esc(z.label) + '</b>' + z.options.map(function (o) {
-        return '<button type="button" class="chip" data-z="' + o.slug + '" aria-pressed="' + (S.zone === o.slug) + '">' + esc(o.name) + '</button>';
-      }).join('');
-      zb.hidden = false;
-    } else { zb.hidden = true; zb.innerHTML = ''; }
+      $('zone-l').textContent = z.label;
+      $('zone').innerHTML = (S.region === 'canarias' ? '<option value="">Elige tu isla…</option>' : '') +
+        z.options.map(function (o) { return '<option value="' + o.slug + '"' + (S.zone === o.slug ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }).join('');
+      $('zone-f').hidden = false;
+    } else { $('zone-f').hidden = true; }
 
     $('s-f').textContent = r ? hols.boe + (S.region === 'canarias' && !S.zone ? '+1' : '') : 9;
+    $('s-lab').textContent = r ? lab : '–';
     $('s-l').textContent = S.locals.filter(Boolean).length + '/2';
 
     if (!r) {
       $('s-p').textContent = '–';
-      $('plist').innerHTML = '<li class="empty">↑ Comunidad</li>';
-      $('vlist').innerHTML = ''; $('vhead').textContent = '';
+      $('plist').innerHTML = '<li class="empty">Elige tu comunidad para ver sus puentes.</li>';
+      $('vlist').innerHTML = ''; $('vhead').textContent = 'Elige tu comunidad para calcularlo.';
       $('p-sub').textContent = '';
       $('dl').setAttribute('aria-disabled', 'true'); $('gc').setAttribute('aria-disabled', 'true');
       return;
     }
     PITEMS = bridges(hols);
     $('s-p').textContent = PITEMS.length;
-    $('p-sub').textContent = r.name;
-    $('plist').innerHTML = PITEMS.map(function (it, k) { return item(it, hols, hd, 'p' + k, names(hols, it)); }).join('') || '<li class="empty">—</li>';
+    $('p-sub').textContent = 'en ' + r.name;
+    $('plist').innerHTML = PITEMS.map(function (it, k) { return item(it, hols, hd, 'p' + k, names(hols, it)); }).join('') || '<li class="empty">Sin puentes este año.</li>';
 
     VITEMS = plan(hols, S.n, 5);
     var b = VITEMS[0];
-    $('vhead').innerHTML = b ? 'Con <b>' + b.cost + '</b> día' + (b.cost > 1 ? 's' : '') + ' te llevas <b>' + b.len + '</b> libres' : '';
-    $('vlist').innerHTML = VITEMS.map(function (it, k) { return item(it, hols, hd, 'v' + k, names(hols, it) || '—'); }).join('');
+    $('vhead').innerHTML = b ? 'Con <b>' + b.cost + '</b> día' + (b.cost > 1 ? 's' : '') + ' de vacaciones te llevas <b>' + b.len + '</b> días libres seguidos.' : '';
+    $('vlist').innerHTML = VITEMS.map(function (it, k) { return item(it, hols, hd, 'v' + k, names(hols, it) || 'Sin festivos en medio'); }).join('');
 
     // exportar
     if (icsUrl) URL.revokeObjectURL(icsUrl);
-    var label = r.name + (z && S.zone ? ' · ' + z.options.filter(function (o) { return o.slug === S.zone; })[0].name : '');
+    var zn = z && S.zone ? z.options.filter(function (o) { return o.slug === S.zone; })[0] : null;
+    var label = r.name + (zn ? ' · ' + zn.name : '');
     icsUrl = URL.createObjectURL(new Blob([ics(hols, label)], { type: 'text/calendar;charset=utf-8' }));
     var dl = $('dl');
     dl.href = icsUrl; dl.download = 'festivos-2027-' + S.region + (S.zone && S.zone !== 'general' ? '-' + S.zone : '') + '.ics';
     dl.removeAttribute('aria-disabled');
     var file = 'ics/' + S.region + (S.zone && S.zone !== 'general' ? '-' + S.zone : '') + '.ics';
-    $('gc').href = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent('webcal://' + SITE + BASE + file);
+    $('gc').href = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent('webcal://' + HOST + BASE + file);
     $('gc').removeAttribute('aria-disabled');
   }
 
   function ics(hols, label) {
     var p = function (n) { return ('0' + n).slice(-2); };
-    var L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ces107.github.io//Calendario laboral 2027//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Festivos 2027 · ' + label];
-    hols.forEach(function (h) {
-      var i = IDX[h.date], d = h.date.replace(/-/g, ''), nx = new Date(Date.UTC(Y, 0, 2 + i));
-      var e = nx.getUTCFullYear() + p(nx.getUTCMonth() + 1) + p(nx.getUTCDate());
-      L.push('BEGIN:VEVENT', 'UID:' + d + '-' + h.kind + '-' + S.region + '@ces107.github.io', 'DTSTAMP:20261026T000000Z',
-        'DTSTART;VALUE=DATE:' + d, 'DTEND;VALUE=DATE:' + e, 'SUMMARY:' + h.name.replace(/[\\,;]/g, function (c) { return '\\' + c; }), 'TRANSP:TRANSPARENT', 'END:VEVENT');
-    });
+    var ymd = function (i) { var d = new Date(Date.UTC(Y, 0, 1 + i)); return d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate()); };
+    var L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//' + HOST + '//Calendario laboral 2027//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Festivos 2027 · ' + label];
+    function ev(uid, s, e, name) {
+      L.push('BEGIN:VEVENT', 'UID:' + uid + '@' + HOST, 'DTSTAMP:20261026T000000Z', 'DTSTART;VALUE=DATE:' + ymd(s), 'DTEND;VALUE=DATE:' + ymd(e + 1),
+        'SUMMARY:' + name.replace(/[\\,;]/g, function (c) { return '\\' + c; }), 'TRANSP:TRANSPARENT', 'END:VEVENT');
+    }
+    hols.forEach(function (h) { var i = IDX[h.date]; ev(h.date.replace(/-/g, '') + '-' + h.kind + '-' + S.region, i, i, h.name); });
+    // mis vacaciones: un evento por tramo (dos días de vacaciones con solo fines de semana o festivos en medio son el mismo tramo)
+    var hd = offDays(hols).hd, blocks = [];
+    Object.keys(S.vac).filter(function (d) { return S.vac[d] && IDX[d] != null; }).map(function (d) { return IDX[d]; })
+      .sort(function (a, b) { return a - b; }).forEach(function (d) {
+        var last = blocks[blocks.length - 1], joined = !!last;
+        if (last) for (var g = last.e + 1; g < d; g++) if (!weekend(g) && !hd[ISO[g]]) joined = false;
+        if (joined) last.e = d; else blocks.push({ s: d, e: d });
+      });
+    blocks.forEach(function (b) { ev('vac-' + ymd(b.s) + '-' + S.region, b.s, b.e, 'Vacaciones'); });
     L.push('END:VCALENDAR');
     return L.join('\r\n') + '\r\n';
   }
@@ -224,54 +284,55 @@
     try { l = JSON.parse(get('loc.' + S.region) || '[]') || []; } catch (e) { l = []; }
     S.locals = [l[0] || '', l[1] || ''].map(function (d) { return IDX[d] != null ? d : ''; });
     $('l0').value = S.locals[0]; $('l1').value = S.locals[1];
+    loadVac();
   }
+  function loadVac() {
+    S.vac = {};
+    try { (JSON.parse(get('vac.' + key()) || '[]') || []).forEach(function (d) { if (IDX[d] != null) S.vac[d] = 1; }); } catch (e) { S.vac = {}; }
+  }
+  function saveVac() { put('vac.' + key(), JSON.stringify(Object.keys(S.vac).filter(function (d) { return S.vac[d]; }))); }
 
   function setRegion(slug, push) {
-    if (!REG[slug]) return;
-    S.region = slug; S.sel = null;
-    put('region', slug);
-    loadRegionState();
+    if (slug && !REG[slug]) return;
+    S.region = slug || null; S.sel = null;
+    put('region', slug || null);
+    if (S.region) loadRegionState(); else { S.locals = ['', '']; loadVac(); }
     if (push !== false) {
-      try { history.replaceState(null, '', '?ccaa=' + slug + location.hash); } catch (e) { /* file:// */ }
+      try { history.replaceState(null, '', S.region ? '?ccaa=' + slug + location.hash : location.pathname + location.hash); } catch (e) { /* file:// */ }
     }
-    document.title = 'Calendario laboral 2027 ' + REG[slug].name + ': festivos y puentes';
+    document.title = S.region ? 'Calendario laboral 2027 ' + REG[slug].name + ': festivos y puentes' : 'Calendario laboral 2027: festivos y puentes por comunidad';
     render();
   }
 
-  function togglePick(open) {
-    var p = $('pick'), b = $('chg');
-    p.hidden = !open; b.setAttribute('aria-expanded', String(open));
+  var toastT = null;
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 2600);
   }
 
   /* ------------------------------------------------------------ eventos */
-  $('pick').addEventListener('click', function (e) {
-    var a = e.target.closest('a[data-s]');
-    if (!a) return;
-    e.preventDefault();
-    setRegion(a.getAttribute('data-s'));
-    togglePick(false);
-  });
-  $('chg').addEventListener('click', function () { togglePick($('pick').hidden); });
-  $('zones').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-z]');
-    if (!b) return;
-    S.zone = b.getAttribute('data-z'); S.sel = null;
+  $('region').addEventListener('change', function () { setRegion(this.value); });
+  $('zone').addEventListener('change', function () {
+    S.zone = this.value || null; S.sel = null;
     put('zone.' + S.region, S.zone);
     render();
   });
 
   function onPick(list) {
     return function (e) {
+      var add = e.target.closest('[data-add]');
+      if (add) {
+        var it = list()[+add.getAttribute('data-add').slice(1)];
+        it.take.forEach(function (x) { S.vac[ISO[x]] = 1; });
+        saveVac(); render();
+        toast('Añadido a tus vacaciones: ' + it.take.length + ' día' + (it.take.length > 1 ? 's' : ''));
+        return;
+      }
       var b = e.target.closest('[data-k]');
       if (!b) return;
-      var k = +b.getAttribute('data-k').slice(1), it = list()[k];
-      var same = S.sel && S.sel.s === it.s && S.sel.e === it.e && S.sel.cost === it.cost;
-      S.sel = same ? null : it;
+      var x = list()[+b.getAttribute('data-k').slice(1)];
+      S.sel = same(S.sel, x) ? null : x;
       render();
-      if (!same) {
-        var m = document.getElementById('m' + (MON[it.s] + 1));
-        if (m) m.scrollIntoView({ block: 'center' });
-      }
     };
   }
   $('plist').addEventListener('click', onPick(function () { return PITEMS; }));
@@ -290,7 +351,7 @@
     $('l' + k).addEventListener('change', function () {
       var v = this.value;
       S.locals[k] = IDX[v] != null ? v : '';
-      if (!S.region) return;
+      if (!S.region) { toast('Elige primero tu comunidad'); this.value = ''; S.locals[k] = ''; return; }
       put('loc.' + S.region, JSON.stringify(S.locals));
       render();
     });
@@ -303,32 +364,53 @@
     if (S.region) put('loc.' + S.region, JSON.stringify(S.locals));
     render();
   });
+
+  // mis vacaciones
+  $('vmode').addEventListener('click', function () {
+    S.vmode = !S.vmode;
+    this.setAttribute('aria-pressed', String(S.vmode));
+    this.querySelector('span').textContent = S.vmode ? 'Listo' : 'Marcar días en el calendario';
+    document.body.classList.toggle('vmode', S.vmode);
+    $('vhint').hidden = !S.vmode;
+    if (S.vmode) $('ano').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  $('year').addEventListener('click', function (e) {
+    if (!S.vmode) return;
+    var c = e.target.closest('b[data-d]');
+    if (!c) return;
+    var d = c.getAttribute('data-d'), i = IDX[d];
+    if (weekend(i) || /\b(n|r|l)\b/.test(c.className)) return;
+    if (S.vac[d]) delete S.vac[d]; else S.vac[d] = 1;
+    saveVac(); render();
+  });
+  $('v-total').addEventListener('change', function () {
+    S.vtot = Math.max(1, Math.min(40, parseInt(this.value, 10) || 22)); this.value = S.vtot; put('vtot', String(S.vtot)); paintVac();
+  });
+  $('vclear').addEventListener('click', function () { S.vac = {}; saveVac(); render(); toast('Vacaciones borradas'); });
+
   ['dl', 'gc'].forEach(function (id) {
     $(id).addEventListener('click', function (e) {
-      if (this.getAttribute('aria-disabled') === 'true') { e.preventDefault(); togglePick(true); $('pick').scrollIntoView({ block: 'center' }); }
+      if (this.getAttribute('aria-disabled') === 'true') { e.preventDefault(); $('region').focus(); toast('Elige primero tu comunidad'); }
     });
   });
   $('pr').addEventListener('click', function () { window.print(); });
-
-  // pestañas: marca la sección visible
-  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabs a'));
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (es) {
-      es.forEach(function (en) {
-        if (en.isIntersecting) tabs.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + en.target.id); });
-      });
-    }, { rootMargin: '-45% 0px -50% 0px' });
-    tabs.forEach(function (a) { var s = document.querySelector(a.getAttribute('href')); if (s) io.observe(s); });
-  }
+  $('sh').addEventListener('click', function () {
+    var url = location.origin + BASE + (S.region ? '?ccaa=' + S.region : ''), title = document.title;
+    if (navigator.share) { navigator.share({ title: title, url: url }).catch(function () { /* cancelado */ }); return; }
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { toast('Enlace copiado'); }, function () { toast(url); });
+    else toast(url);
+  });
 
   /* ------------------------------------------------------------ inicio */
   var q = null;
   try { q = new URLSearchParams(location.search).get('ccaa'); } catch (e) { q = null; }
   var n0 = parseInt(get('n'), 10);
   if (n0 >= 1 && n0 <= 30) { S.n = n0; $('vn').value = n0; }
+  var t0 = parseInt(get('vtot'), 10);
+  if (t0 >= 1 && t0 <= 40) { S.vtot = t0; $('v-total').value = t0; }
   var start = REG[q] ? q : (REG[get('region')] ? get('region') : null);
-  if (start) { setRegion(start, false); togglePick(false); } else { render(); togglePick(true); }
+  setRegion(start, false);
 
   // para pruebas automáticas
-  window.CL27 = { plan: function (n) { return plan(holidays(), n, 5); }, bridges: function () { return bridges(holidays()); }, holidays: holidays, iso: ISO };
+  window.CL27 = { plan: function (n) { return plan(holidays(), n, 5); }, bridges: function () { return bridges(holidays()); }, holidays: holidays, iso: ISO, ics: function () { return ics(holidays(), 'test'); } };
 })();

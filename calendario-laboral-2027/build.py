@@ -111,10 +111,13 @@ def fmt_range(i, j):
 
 # ---------------------------------------------------------------- html parts
 
-LOGO = ('<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" style="fill:var(--ink)"/>'
-        '<rect x="6" y="9" width="18" height="15" rx="3.5" style="fill:var(--bg)"/>'
-        '<rect x="9.5" y="5.5" width="2.6" height="6" rx="1.3" style="fill:var(--bg)"/><rect x="17.9" y="5.5" width="2.6" height="6" rx="1.3" style="fill:var(--bg)"/>'
-        '<rect x="9" y="14" width="5" height="5" rx="1.2" style="fill:var(--n)"/><circle cx="18.5" cy="16.5" r="2.6" style="fill:var(--r)"/></svg>')
+LOGO = ('<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" style="fill:var(--brand)"/>'
+        '<rect x="6" y="8" width="16" height="14" rx="2.5" fill="none" style="stroke:#fff" stroke-width="2"/>'
+        '<path d="M10 5.5v4M18 5.5v4M6 12.5h16" style="stroke:#fff" stroke-width="2" stroke-linecap="round"/>'
+        '<rect x="9" y="15" width="4" height="4" rx="1" fill="#fff"/></svg>')
+ICON_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+ICON_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+MONTHS_T = [m.capitalize() for m in MONTHS]
 THEME_BTN = ('<button class="ib" id="theme" type="button" aria-label="Tema claro u oscuro">'
              '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/>'
              '<path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>')
@@ -130,12 +133,19 @@ ICON_OPEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-6
 
 
 def legend(local=True, vac=False):
-    li = ['<li><i class="sw n"></i>España</li>', '<li><i class="sw r"></i>Comunidad</li>']
+    li = ['<li><i class="sw n"></i>Nacional</li>', '<li><i class="sw r"></i>Comunidad</li>']
     if local:
         li.append('<li><i class="sw l"></i>Local</li>')
     if vac:
-        li.append('<li class="noprint" id="lg-v" hidden><i class="sw v"></i>Vacaciones</li>')
+        li.append('<li><i class="sw v"></i>Vacaciones</li>')
     return '<ul class="legend">' + "".join(li) + "</ul>"
+
+
+def workdays(m, hmap):
+    first = dt.date(YEAR, m, 1)
+    nd = ((dt.date(YEAR + (m == 12), m % 12 + 1, 1)) - first).days
+    return sum(1 for d in range(nd) if (first + dt.timedelta(d)).weekday() < 5
+               and (first + dt.timedelta(d)).isoformat() not in hmap)
 
 
 def month_html(m, hmap):
@@ -156,10 +166,19 @@ def month_html(m, hmap):
         c = f' class="{" ".join(cls)}"' if cls else ""
         cells.append(f'<b data-d="{iso}"{c}{t}>{d}</b>')
     cells += ["<i></i>"] * (42 - first.weekday() - nd)
-    lis = "".join(f'<li><i class="{h["kind"]}"></i><b>{int(h["date"][8:])}</b><span>{E(h["name"])}</span></li>'
+    lis = "".join(f'<li><i class="sw {h["kind"]}"></i><b>{int(h["date"][8:])}</b><span>{E(h["name"])}</span></li>'
                   for iso, h in sorted(hmap.items()) if int(iso[5:7]) == m)
-    return (f'<section class="m" id="m{m}" aria-label="{MONTHS[m - 1]}"><h3>{MONTHS[m - 1]}</h3><div class="g">{"".join(cells)}</div>'
-            f'<ul class="hl">{lis}</ul></section>')
+    return (f'<section class="m" id="m{m}" aria-label="{MONTHS[m - 1]}"><header><h3>{MONTHS_T[m - 1]}</h3>'
+            f'<span class="lab"><b data-lab="{m}">{workdays(m, hmap)}</b> laborables</span></header>'
+            f'<div class="g">{"".join(cells)}</div><ul class="hl">{lis}</ul></section>')
+
+
+def hol_rows(hols):
+    tag = {"n": "Nacional", "r": "Comunidad", "l": "Local"}
+    return "".join(
+        f'<tr><td class="dt"><b>{d.day}</b> {MON3[d.month - 1]}</td><td class="d">{WD[d.weekday()]}</td>'
+        f'<td>{E(h["name"])}</td><td class="t"><span class="tag {h["kind"]}">{tag[h["kind"]]}</span></td></tr>'
+        for h in hols for d in [dt.date.fromisoformat(h["date"])])
 
 
 def year_html(hmap):
@@ -175,11 +194,15 @@ def strip_html(it, hols):
     return '<span class="strip" aria-hidden="true">' + "".join(out) + "</span>"
 
 
+def cost_html(c):
+    return ('<span class="cost free">Sin gastar vacaciones</span>' if c == 0
+            else f'<span class="cost">{c} día{"s" if c > 1 else ""} de vacaciones</span>')
+
+
 def puente_li(it, hols):
-    cost = '<span class="cost free">0 días</span>' if it["cost"] == 0 else f'<span class="cost">{it["cost"]} día{"s" if it["cost"] > 1 else ""}</span>'
-    return (f'<li><div class="it"><span class="big"><b>{it["len"]}</b><span>libres</span></span>'
-            f'<span class="when">{fmt_range(it["s"], it["e"])}</span>{cost}'
-            f'<span class="what">{E(" · ".join(it["names"]))}</span>{strip_html(it, hols)}</div></li>')
+    return (f'<li><div class="it"><span class="pl"><span class="when">{fmt_range(it["s"], it["e"])}</span>'
+            f'<span class="what">{E(" · ".join(it["names"]))}</span></span>{strip_html(it, hols)}'
+            f'<span class="pr"><b>{it["len"]}</b><span>días libres</span>{cost_html(it["cost"])}</span></div></li>')
 
 
 def footer_html(data, current=None):
@@ -187,22 +210,23 @@ def footer_html(data, current=None):
     regs = "".join(f'<li><a href="{BASE}{r["slug"]}/"{cur if r["slug"] == current else ""}>{E(r["name"])}</a></li>'
                    for r in data["regions"])
     s = data["source"]
-    return (f'<footer><div class="wrap"><h2>Calendario laboral 2027 por comunidad</h2><ul class="regs">{regs}</ul>'
-            f'<p class="src">Fuente: <a href="{s["url"]}" rel="noopener">{s["id"]}</a> · {E(s["boe"])}. '
-            f'Festivos locales: los fija cada municipio.</p></div></footer>')
+    return (f'<footer class="foot"><div class="wrap"><h2>Calendario laboral 2027 por comunidad</h2><ul class="regs">{regs}</ul>'
+            f'<div class="fb"><p>Fuente oficial: <a href="{s["url"]}" rel="noopener">{s["id"]}</a>, {E(s["boe"])}. '
+            f'Los 2 festivos locales los fija cada ayuntamiento.</p>'
+            f'<p>Calendario laboral 2027 · <a href="https://ces107.github.io/">ces107.github.io</a></p></div></div></footer>')
 
 
 def head_html(title, desc, canonical, og_img, extra=""):
     return f"""<!doctype html>
-<html lang="es">
+<html lang="es" data-base="{BASE}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>{E(title)}</title>
 <meta name="description" content="{E(desc)}">
 <link rel="canonical" href="{canonical}">
-<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0e0f12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="es_ES">
 <meta property="og:site_name" content="Calendario laboral 2027">
@@ -216,6 +240,8 @@ def head_html(title, desc, canonical, og_img, extra=""):
 <link rel="manifest" href="{BASE}manifest.webmanifest">
 <link rel="icon" href="{BASE}icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="{BASE}icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="{BASE}app.css?v={{CSSV}}">
 {HEAD_JS}
 {extra}
@@ -223,9 +249,12 @@ def head_html(title, desc, canonical, og_img, extra=""):
 """
 
 
-def top_html():
-    return (f'<div class="wrap top"><a class="brand" href="{BASE}">{LOGO}<span>Calendario laboral 2027</span></a>'
-            f'<span class="sp"></span>{THEME_BTN}</div>')
+def top_html(nav=True):
+    links = ('<nav class="tn" aria-label="Secciones"><a href="#ano">Calendario</a><a href="#festivos">Festivos</a>'
+             '<a href="#puentes">Puentes</a>' + ('<a href="#vacaciones">Vacaciones</a>' if nav == "app" else "") + '</nav>') if nav else ""
+    return (f'<header class="bar"><div class="wrap bar-in"><a class="brand" href="{BASE}">{LOGO}<span>Calendario laboral <b>2027</b></span></a>'
+            f'<span class="boe" title="Resolución de 8 de octubre de 2026 (BOE-A-2026-21254)">{ICON_CHECK}Datos oficiales · BOE</span>'
+            f'{links}<span class="sp"></span>{THEME_BTN}</div></header>')
 
 
 def ics_text(hols, label, slug_key):
@@ -286,36 +315,41 @@ def region_page(data, r):
     zone_html = ""
     if zone:
         zrows = "".join(
-            f'<tr><td>{d.day} {MON3[d.month - 1]}</td><td class="d">{WD[d.weekday()]}</td><td><i class="sw r"></i><b>{E(o["name"])}</b> · {E(o["add"]["name"])}</td></tr>'
+            f'<tr><td>{d.day} {MON3[d.month - 1]}</td><td class="d">{WD[d.weekday()]}</td><td><b>{E(o["name"])}</b> · {E(o["add"]["name"])}</td></tr>'
             for o in zone["options"] if "add" in o for d in [dt.date.fromisoformat(o["add"]["date"])])
-        zone_html = (f'<section class="blk noprint" id="zona"><h2>{"Fiesta insular" if is_can else "Arán"}</h2>'
-                     f'<table class="ht"><thead><tr><th>Fecha</th><th>Día</th><th>{"Isla" if is_can else "Festivo"}</th></tr></thead><tbody>{zrows}</tbody></table>'
+        zone_html = (f'<section class="blk" id="zona"><div class="bh"><h2>{"Fiesta de cada isla" if is_can else "Arán"}</h2></div>'
+                     f'<div class="card tw"><table class="ht"><thead><tr><th>Fecha</th><th>Día</th><th>{"Isla" if is_can else "Festivo"}</th></tr></thead><tbody>{zrows}</tbody></table></div>'
                      f'<p class="note">{E(zone["note"])}</p></section>')
     plis = "".join(puente_li(it, hols) for it in pts) or '<li class="empty">—</li>'
     ics = f"ics/{slug}.ics"
     s = data["source"]
-    body = f"""<body>
+    body = f"""<body class="rp">
 {top_html()}
-<header class="wrap hero">
-  <div class="hrow"><h1><span class="k sr">Calendario laboral 2027 </span><span class="rn">{E(name)}</span></h1></div>
-  <div class="stats">
-    <a class="stat" href="#festivos"><b>{count_txt if not is_can else len(hols) + 1}</b><span>festivos</span></a>
-    <a class="stat" href="#puentes"><b>{len(pts)}</b><span>puentes</span></a>
-    <a class="stat" href="{BASE}?ccaa={slug}#exportar"><b>+2</b><span>locales</span></a>
-  </div>
+<main class="wrap layout">
+<aside class="side">
+  <nav class="crumb" aria-label="Ruta"><a href="{BASE}">España</a><span>/</span>{E(name)}</nav>
+  <h1><span class="k">Calendario laboral 2027</span>{E(name)}</h1>
+  <p class="intro">{len(hols) + (1 if is_can else 0)} festivos en {E(r["official"])}: {n_nat} nacionales y {len(hols) - n_nat + (1 if is_can else 0)} de la comunidad{" (uno, el de tu isla)" if is_can else ""}, más los 2 locales de tu municipio.</p>
+  <dl class="sum">
+    <div><dt>Festivos</dt><dd>{len(hols) + (1 if is_can else 0)}</dd></div>
+    <div><dt>Laborables</dt><dd>{sum(workdays(m, hmap) for m in range(1, 13)) - (1 if is_can else 0)}</dd></div>
+    <div><dt>Puentes</dt><dd>{len(pts)}</dd></div>
+  </dl>
   {legend(local=False)}
-  <div class="btns cta"><a class="btn p" href="{BASE}?ccaa={slug}">{ICON_OPEN}Calendario interactivo</a>
-  <a class="btn" href="{BASE}{ics}" download>{ICON_DL}.ics</a>
-  <a class="btn" href="{gcal(ics)}" rel="noopener">{ICON_G}Google Calendar</a></div>
-</header>
-<nav class="tabs noprint" aria-label="Secciones"><div class="wrap"><a href="#festivos">Festivos</a><a href="#puentes">Puentes</a><a href="#ano">Año</a></div></nav>
-<main class="wrap">
-<section class="blk noprint" id="festivos"><h2>Festivos 2027 <small>{E(r["official"])} · {n_nat} España · {n_reg} comunidad</small></h2>
-<table class="ht"><thead><tr><th>Fecha</th><th>Día</th><th>Festivo</th></tr></thead><tbody>{rows}</tbody></table>
-<p class="note">+2 festivos locales de cada municipio. Fuente: <a href="{s["url"]}" rel="noopener">{s["id"]}</a>, {E(s["boe"])}.</p></section>
+  <div class="acts">
+    <a class="btn p" href="{BASE}?ccaa={slug}">{ICON_OPEN}Abrir el calendario interactivo</a>
+    <a class="btn" href="{gcal(ics)}" rel="noopener">{ICON_G}Añadir a Google Calendar</a>
+    <a class="btn" href="{BASE}{ics}" download>{ICON_DL}Descargar .ics</a>
+  </div>
+</aside>
+<div class="content">
+<section class="blk" id="festivos"><div class="bh"><h2>Festivos de 2027 en {E(name)}</h2></div>
+<div class="card tw"><table class="ht"><thead><tr><th>Fecha</th><th>Día</th><th>Festivo</th><th class="t">Tipo</th></tr></thead><tbody>{hol_rows(hols)}</tbody></table></div>
+<p class="note">Fuente: <a href="{s["url"]}" rel="noopener">{s["id"]}</a>, {E(s["boe"])}. Faltan los 2 festivos locales de cada municipio.</p></section>
 {zone_html}
-<section class="blk noprint" id="puentes"><h2>Puentes 2027 <small>{E(name)}</small></h2><ul class="list">{plis}</ul></section>
-<section class="blk" id="ano"><h2>Año 2027</h2>{year_html(hmap)}</section>
+<section class="blk" id="puentes"><div class="bh"><h2>Puentes de 2027</h2><p>Días libres seguidos y lo que cuestan en vacaciones.</p></div><ul class="plist card">{plis}</ul></section>
+<section class="blk" id="ano"><div class="bh"><h2>Calendario 2027</h2>{legend(local=False)}</div>{year_html(hmap)}</section>
+</div>
 </main>
 {footer_html(data, slug)}
 {THEME_JS}
@@ -331,7 +365,8 @@ def app_page(data):
     nat = [h for h in region_holidays(data, "madrid") if h["kind"] == "n"]
     hmap = {h["date"]: h for h in nat}
     compact = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    chips = "".join(f'<li><a class="chip" href="?ccaa={r["slug"]}" data-s="{r["slug"]}">{E(r["short"])}</a></li>' for r in data["regions"])
+    options = "".join(f'<option value="{r["slug"]}">{E(r["name"])}</option>' for r in data["regions"])
+    s = data["source"]
     title = "Calendario laboral 2027: festivos y puentes por comunidad"
     desc = ("Calendario laboral 2027 de tu comunidad: los 12 festivos del BOE, tus 2 locales, puentes y "
             "el planificador de vacaciones que te dice cuántos días libres sacas. Exporta a Google Calendar.")
@@ -339,44 +374,58 @@ def app_page(data):
           "applicationCategory": "UtilitiesApplication", "operatingSystem": "Web, Android", "inLanguage": "es",
           "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}, "description": desc}
     ld_html = f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>'
-    body = f"""<body>
-{top_html()}
-<header class="wrap hero">
-  <div class="hrow"><h1><span class="k sr">Calendario laboral 2027 </span><span class="rn" id="rn">España</span></h1>
-  <button class="chg" id="chg" type="button" aria-expanded="true" aria-controls="pick">Comunidad<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-  <ul class="pick" id="pick">{chips}</ul>
-  <div class="zones" id="zones" hidden></div>
-  <div class="stats">
-    <a class="stat" href="#ano"><b id="s-f">9</b><span>festivos</span></a>
-    <a class="stat" href="#puentes"><b id="s-p">–</b><span>puentes</span></a>
-    <a class="stat" href="#exportar"><b id="s-l">0/2</b><span>locales</span></a>
+    body = f"""<body class="app">
+{top_html("app")}
+<main class="wrap layout">
+<aside class="side" id="side">
+  <h1><span class="k">Calendario laboral 2027</span><span id="rn">España</span></h1>
+  <div class="field"><label for="region">Comunidad autónoma</label>
+    <select id="region"><option value="">Elige tu comunidad…</option>{options}</select></div>
+  <div class="field" id="zone-f" hidden><label for="zone" id="zone-l">Zona</label><select id="zone"></select></div>
+  <div class="next card" id="next" aria-live="polite"><span class="k">Próximo festivo</span><b id="nx-name">–</b><span id="nx-date"></span><em id="nx-in"></em></div>
+  <dl class="sum">
+    <div><dt>Festivos</dt><dd id="s-f">9</dd></div>
+    <div><dt>Laborables</dt><dd id="s-lab">–</dd></div>
+    <div><dt>Puentes</dt><dd id="s-p">–</dd></div>
+  </dl>
+  <div class="acts">
+    <a class="btn p" id="gc" href="#" rel="noopener" target="_blank">{ICON_G}Añadir a Google Calendar</a>
+    <div class="row"><a class="btn" id="dl" href="#" download="festivos-2027.ics">{ICON_DL}.ics</a>
+    <button class="btn" type="button" id="pr">{ICON_PRINT}Imprimir</button>
+    <button class="btn" type="button" id="sh">{ICON_SHARE}Compartir</button></div>
   </div>
-  {legend(local=True, vac=True)}
-</header>
-<nav class="tabs noprint" aria-label="Secciones"><div class="wrap"><a href="#ano">Año</a><a href="#puentes">Puentes</a><a href="#vacaciones">Vacaciones</a><a href="#exportar">Exportar</a></div></nav>
-<main class="wrap">
-<section class="blk" id="ano"><h2>Año 2027</h2>{year_html(hmap)}</section>
-<section class="blk noprint" id="puentes"><h2>Puentes 2027 <small id="p-sub"></small></h2><ul class="list" id="plist"><li class="empty">↑ Comunidad</li></ul></section>
-<section class="blk noprint" id="vacaciones"><h2>Vacaciones inteligentes</h2>
-  <div class="plan">
+  <div class="box card">
+    <div class="bx-h"><span>Mis festivos locales</span><b id="s-l">0/2</b></div>
+    <div class="locs"><div class="loc"><input type="date" id="l0" min="2027-01-01" max="2027-12-31" aria-label="Festivo local 1"><button type="button" data-clear="0" aria-label="Quitar">×</button></div>
+    <div class="loc"><input type="date" id="l1" min="2027-01-01" max="2027-12-31" aria-label="Festivo local 2"><button type="button" data-clear="1" aria-label="Quitar">×</button></div></div>
+  </div>
+  <div class="box card">
+    <div class="bx-h"><span>Mis vacaciones</span><b><span id="v-used">0</span> / <input id="v-total" type="number" min="1" max="40" value="22" aria-label="Días de vacaciones al año"></b></div>
+    <div class="meter"><i id="v-bar"></i></div>
+    <button class="btn wide" type="button" id="vmode" aria-pressed="false">{ICON_CHECK}<span>Marcar días en el calendario</span></button>
+    <button class="lnk" type="button" id="vclear" hidden>Borrar mis vacaciones</button>
+  </div>
+</aside>
+<div class="content">
+<section class="blk" id="ano"><div class="bh"><h2>Calendario 2027</h2>{legend(local=True, vac=True)}</div>
+<p class="hint" id="vhint" hidden>Toca los días laborables que vas a coger de vacaciones. Vuelve a tocar para quitarlos.</p>
+{year_html(hmap)}</section>
+<section class="blk" id="festivos"><div class="bh"><h2>Festivos de 2027 <small id="f-sub">en toda España</small></h2></div>
+<div class="card tw"><table class="ht"><thead><tr><th>Fecha</th><th>Día</th><th>Festivo</th><th class="t">Tipo</th></tr></thead><tbody id="ftab">{hol_rows(nat)}</tbody></table></div>
+<p class="note">Fuente: <a href="{s["url"]}" rel="noopener">{s["id"]}</a>, {E(s["boe"])}.</p></section>
+<section class="blk" id="puentes"><div class="bh"><h2>Puentes <small id="p-sub"></small></h2><p>Toca uno para verlo en el calendario o añadirlo a tus vacaciones.</p></div>
+<ul class="plist card" id="plist"><li class="empty">Elige tu comunidad para ver sus puentes.</li></ul></section>
+<section class="blk" id="vacaciones"><div class="bh"><h2>Planificador de vacaciones</h2><p>Dinos cuántos días quieres coger y te decimos dónde rinden más.</p></div>
+  <div class="card plan">
     <div class="step"><button type="button" id="vm" aria-label="Menos días">−</button><input id="vn" type="number" inputmode="numeric" min="1" max="30" value="4" aria-label="Días de vacaciones"><button type="button" id="vp" aria-label="Más días">+</button><label for="vn">días de vacaciones</label></div>
     <p class="head" id="vhead" aria-live="polite"></p>
-    <ul class="list" id="vlist"></ul>
   </div>
+  <ul class="plist card" id="vlist"></ul>
 </section>
-<section class="blk noprint" id="exportar"><h2>Exportar</h2>
-  <div class="ex">
-    <div class="box"><h3><i class="sw l"></i>Tus 2 festivos locales</h3>
-      <div class="locs"><div class="loc"><input type="date" id="l0" min="2027-01-01" max="2027-12-31" aria-label="Festivo local 1"><button type="button" data-clear="0" aria-label="Quitar">×</button></div>
-      <div class="loc"><input type="date" id="l1" min="2027-01-01" max="2027-12-31" aria-label="Festivo local 2"><button type="button" data-clear="1" aria-label="Quitar">×</button></div></div></div>
-    <div class="box"><h3>Calendario</h3><div class="btns">
-      <a class="btn p" id="dl" href="#" download="festivos-2027.ics">{ICON_DL}.ics</a>
-      <a class="btn" id="gc" href="#" rel="noopener" target="_blank">{ICON_G}Google Calendar</a>
-      <button class="btn" type="button" id="pr">{ICON_PRINT}Imprimir</button></div></div>
-  </div>
-</section>
+</div>
 </main>
 {footer_html(data)}
+<div class="toast" id="toast" role="status" hidden></div>
 <script id="cal-data" type="application/json">{compact}</script>
 <script src="{BASE}app.js?v={{JSV}}"></script>
 {THEME_JS}
@@ -399,8 +448,8 @@ def font(size, weight="b"):
     return ImageFont.load_default(size)
 
 
-INK, BG, MUT, LINE = (21, 22, 26), (247, 246, 242), (93, 95, 102), (227, 225, 218)
-NAT, REG = (200, 40, 30), (43, 80, 217)
+INK, BG, MUT, LINE = (16, 24, 40), (246, 247, 249), (102, 112, 133), (228, 231, 236)
+NAT, REG, BRAND = (192, 54, 44), (46, 91, 186), (14, 110, 92)
 
 
 def og_image(path, label, sub, hols):
@@ -452,10 +501,10 @@ def icons(out):
         im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
         d = ImageDraw.Draw(im)
         if maskable or bg_full:
-            d.rectangle((0, 0, S, S), fill=INK)
+            d.rectangle((0, 0, S, S), fill=BRAND)
             pad = int(S * (0.22 if maskable else 0.14))
         else:
-            d.rounded_rectangle((0, 0, S - 1, S - 1), int(S * 0.22), fill=INK)
+            d.rounded_rectangle((0, 0, S - 1, S - 1), int(S * 0.22), fill=BRAND)
             pad = int(S * 0.16)
         x0, y0, x1, y1 = pad, int(pad * 1.25), S - pad, S - pad
         w = x1 - x0
@@ -534,7 +583,7 @@ def main():
         "name": "Calendario laboral 2027", "short_name": "Laboral 2027", "lang": "es",
         "description": "Festivos, puentes y vacaciones 2027 por comunidad.",
         "id": BASE, "start_url": BASE + "?source=pwa", "scope": BASE, "display": "standalone",
-        "background_color": "#f7f6f2", "theme_color": "#15161a", "categories": ["productivity", "utilities"],
+        "background_color": "#f6f7f9", "theme_color": "#0e6e5c", "categories": ["productivity", "utilities"],
         "icons": [{"src": BASE + "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
                   {"src": BASE + "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
                   {"src": BASE + "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}],

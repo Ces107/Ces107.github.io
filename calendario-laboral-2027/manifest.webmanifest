@@ -7,8 +7,8 @@
   "start_url": "/calendario-laboral-2027/?source=pwa",
   "scope": "/calendario-laboral-2027/",
   "display": "standalone",
-  "background_color": "#f7f6f2",
-  "theme_color": "#15161a",
+  "background_color": "#f6f7f9",
+  "theme_color": "#0e6e5c",
   "categories": [
     "productivity",
     "utilities"

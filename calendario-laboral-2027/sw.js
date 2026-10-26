@@ -1,7 +1,7 @@
 /* Calendario laboral 2027 - service worker (generado por build.py desde sw.src.js) */
 'use strict';
-var VERSION = 'cl27-86b5ee2039';
-var SHELL = ["/calendario-laboral-2027/", "/calendario-laboral-2027/app.css?v=8eff51a93a", "/calendario-laboral-2027/app.js?v=627b425669", "/calendario-laboral-2027/manifest.webmanifest", "/calendario-laboral-2027/icons/icon-192.png", "/calendario-laboral-2027/icons/icon-512.png"];
+var VERSION = 'cl27-14c548765f';
+var SHELL = ["/calendario-laboral-2027/", "/calendario-laboral-2027/app.css?v=fffbafb85c", "/calendario-laboral-2027/app.js?v=efe97bf4fa", "/calendario-laboral-2027/manifest.webmanifest", "/calendario-laboral-2027/icons/icon-192.png", "/calendario-laboral-2027/icons/icon-512.png"];
 var SCOPE = self.registration.scope;
 
 self.addEventListener('install', function (e) {
