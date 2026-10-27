@@ -78,7 +78,7 @@
       perNewStar: 1,         // each star above the previous best on that level (x tierMult)
       firstThreeStars: 3,    // bonus the first time a level gets 3 stars (x tierMult)
       doubleWithAd: true,    // R2: rewarded ad doubles the coins of one result screen ...
-      doublePerDay: 4        // ... at most 4 times a day
+      doublePerDay: 6        // ... at most 6 times a day (was 4)
     },
 
     // ---- boosters: ids, start counts and prices come from the game ----
@@ -120,7 +120,7 @@
     //      weights are the exact odds shown in the (i) sheet (weight / sum). Coins-only EV ~13 / spin (v2).
     //      Segment ids keep their v1 names (c10 ... c80) so saved spin history and analytics stay comparable.
     wheel: {
-      freePerDay: 1, adPerDay: 1, maxBank: 5,
+      freePerDay: 1, adPerDay: 2, maxBank: 5,   // adPerDay was 1
       questSpins: 1,         // claiming all daily quests banks a spin
       segments: [
         { id: 'c10', weight: 33, reward: { coins: 5 } },
@@ -159,7 +159,7 @@
     rewarded: {
       dailyGiftBoosters: 1,  // R4: once a day, one booster of the player's choice
       shopCoins: 20,         // R6: free coins in the shop
-      shopCoinsPerDay: 3
+      shopCoinsPerDay: 5     // was 3
     },
 
     // ---- quests: the pool (metrics the game reports) comes from the game ----
@@ -179,6 +179,30 @@
     // ---- offers ----
     starterPack: { afterLevel: 10, windowHours: 72 },
     piggy: { share: 0.30, breakAt: 1200, cap: 3000 },   // v2: income is lower, so a bigger share fills it in ~2 weeks
+    // limited-time offers + the between-games rhythm (meta/offers.js, MONETIZATION.md addendum D). Every number is a
+    // Remote Config key (offers.breakMin, offers.oneshot.1.cooldownDays, ...). Timers are real: an offer that ends is gone.
+    offers: {
+      breakMin: 3, breakMax: 5,      // one interruption (interstitial OR offer) every 3-5 finished games, random; never 2 within 3 games
+      offerShare: 0.34,              // a due slot shows an offer instead of the interstitial ~1 in 3 (when an offer is eligible)
+      offerFallback: true,           // an eligible offer may take a slot whose interstitial cannot show (not loaded, gap, grace)
+      noAdsOfferShare: 0.1,          // remove_ads buyers: never an interstitial; an offer in 1 of 10 slots, otherwise nothing
+      minGapMin: 20,                 // minutes between two offer popups (between games or app start)
+      maxPerDay: 3,                  // offer popups per day
+      perOffer: 2,                   // popups per timed offer (league / weekend / starter); afterwards only its shop card
+      minValuePct: 20,               // a value badge needs at least +20%
+      leagueHours: 24,               // a league-up pack lives 24 h from the promotion
+      // first promotion to tier t -> this product ('' = none). Tiers: bronze silver gold sapphire ruby emerald amethyst diamond
+      leagueProducts: ['', 'offer_silver', 'offer_gold', 'offer_gold', 'offer_gold', 'offer_diamond', 'offer_diamond', 'offer_diamond'],
+      weekendProduct: 'offer_weekend', weekendStartDay: 5, weekendDays: 3, weekendEveryWeeks: 2,   // Fri 00:00 - Mon 00:00, every 2nd week
+      oneshotMinutes: 15,            // a one-shot offer is valid while its popup is open (15 min at most), then gone
+      // one-shot "OFERTA ÚNICA" pool: weight, and days before the same product can be offered again
+      oneshot: [
+        { product: 'offer_oneshot_s', weight: 3, cooldownDays: 3 },
+        { product: 'offer_oneshot_m', weight: 1, cooldownDays: 14 },
+        { product: 'double_2h', weight: 2, cooldownDays: 2 }
+      ],
+      appStart: { minSessions: 2, minGames: 3 }   // app-start popup: never on the first launch, only after 3 finished games
+    },
 
     // ---- feature unlock order (avoid day-1 overload): reached level OR finished games ----
     unlocks: {
@@ -188,14 +212,20 @@
       pass: { level: 15, games: 12 },
       freeze: { days: 2 },
       starter: { level: 10 },
-      piggy: { level: 20 }
+      piggy: { level: 20 },
+      offers: { level: 6, games: 5 }   // offer popups (also gated by the day-0 grace of the ads)
     },
 
     // ---- ads policy (the adapter enforces it) ----
     ads: {
-      interstitialMinGapMs: 180000,  // >= 3 minutes apart, none in the first 3 minutes, none 3 min after a rewarded
-      levelsBetweenInterstitials: 2, // only after every 2nd finished level / game
-      graceLevel: 8,                 // day 0: none before level 8 ...
+      // Policy-safe: only at a result-screen tap (natural break after a user action), never on launch, never mid-level,
+      // always closable, preloaded only. HOW OFTEN is decided by the between-games rhythm in `offers` (one interruption,
+      // ad or offer, every 3-5 games; code 5). These numbers are the ads layer's own floors.
+      interstitialMinGapMs: 75000,   // >= 75 s between two interstitials
+      sessionStartGapMs: 90000,      // none in the first 90 s after launch (no app-open ads)
+      afterRewardedGapMs: 60000,     // none in the 60 s after a rewarded
+      levelsBetweenInterstitials: 3, // the ads layer's own floor; the rhythm (3-5 games, ad or offer) is offers.breakMin/Max
+      graceLevel: 4,                 // day 0: none before level 4 (first 3 levels ad-free) ...
       graceGames: 3,                 // ... or the 3rd finished non-level game
       continueExtraMoves: 5,
       maxAdContentRating: 'T'
@@ -211,7 +241,11 @@
       { id: 'coins_l', type: 'consumable', price: '9,99 €', grant: { coins: 12000 } },
       { id: 'piggy_bank', type: 'consumable', price: '2,99 €', offer: 'piggy', grant: { piggy: true } },
       // one product per season: pass_s01, pass_s02, ... (meta.passProductId())
-      { id: 'pass_s{NN}', type: 'non_consumable', price: '4,99 €', season: true, grant: { passPremium: true } }
+      { id: 'pass_s{NN}', type: 'non_consumable', price: '4,99 €', season: true, grant: { passPremium: true } },
+      // offers (meta/offers.js). Same bundle as coins_l (9,99 €) for 2,99 €: a true -70%, only in its one-shot popup
+      { id: 'offer_oneshot_m', type: 'consumable', price: '2,99 €', offer: 'oneshot', sameAs: 'coins_l', grant: { coins: 12000 } },
+      // x2 coins from games for 2 h (regular shop item, sometimes offered between games)
+      { id: 'double_2h', type: 'consumable', price: '0,99 €', grant: { doubleHours: 2 } }
     ]
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = CONFIG;
@@ -229,7 +263,8 @@
  *   eco.noAds            remove_ads bought, or inside a timed no-ads window (starter pack)
  *   eco.piggy, eco.piggyBreakable()
  *   eco.grant(reward, source) -> what was granted
- *        reward: {coins, boosters:{id:n}, skin, noAds, noAdsDays, passPremium:'s3', piggy, chest, xp, freeze}
+ *        reward: {coins, boosters:{id:n}, skin, noAds, noAdsDays, doubleHours, passPremium:'s3', piggy, chest, xp, freeze}
+ *   eco.doubleActive(), eco.doubleLeft()   "Monedas x2" hours (doubleHours grant): coins from games x2 until then
  *   eco.gameCoins(mode, score) / eco.levelCoins(stars, prevStars)
  * chest / xp / freeze in a reward are handed to the meta layer through hooks.onGrant.
  */
@@ -243,7 +278,7 @@
     var free = cfg.skins.filter(function (s) { return s.price === 0; }), eq = {};
     free.forEach(function (s) { if (!eq[s.kind]) eq[s.kind] = s.id; });
     return { coins: 0, boosters: b, skins: free.map(function (s) { return s.id; }), equipped: eq,
-      noAds: false, noAdsUntil: 0, passPremium: {}, piggy: 0, owned: [], earned: 0, spent: 0 };
+      noAds: false, noAdsUntil: 0, doubleUntil: 0, passPremium: {}, piggy: 0, owned: [], earned: 0, spent: 0 };
   }
 
   function create(state, cfg, hooks) {
@@ -256,11 +291,15 @@
     state.piggy = state.piggy || 0;
     state.owned = state.owned || [];
     state.noAdsUntil = state.noAdsUntil || 0;
+    state.doubleUntil = state.doubleUntil || 0;
 
     var eco = {
       state: state,
       get coins() { return state.coins; },
       get noAds() { return !!state.noAds || now() < state.noAdsUntil; },
+      // "Monedas x2": coins from games are doubled until doubleUntil (bought hours, persisted, real clock)
+      doubleActive: function () { return now() < state.doubleUntil; },
+      doubleLeft: function () { return Math.max(0, state.doubleUntil - now()); },
       get piggy() { return Math.floor(state.piggy); },
       piggyBreakable: function () { return state.piggy >= cfg.piggy.breakAt; },
       earn: function (n, source) {
@@ -335,6 +374,7 @@
         if (reward.skin && skinById[reward.skin] && !eco.owns(reward.skin)) { state.skins.push(reward.skin); got.skin = reward.skin; }
         if (reward.noAds) { state.noAds = true; got.noAds = true; }
         if (reward.noAdsDays) { state.noAdsUntil = Math.max(now(), state.noAdsUntil) + reward.noAdsDays * 86400000; got.noAdsDays = reward.noAdsDays; }
+        if (reward.doubleHours) { state.doubleUntil = Math.max(now(), state.doubleUntil) + reward.doubleHours * 3600000; got.doubleHours = reward.doubleHours; }
         if (reward.passPremium) { state.passPremium[reward.passPremium === true ? 'current' : reward.passPremium] = true; got.passPremium = true; }
         if (reward.piggy) {
           var p = Math.floor(state.piggy);
@@ -1589,6 +1629,283 @@
   else root.GamekitOnline = Online;
 })(this);
 
+/* ---- gamekit/meta/offers.js ---- */
+/* gamekit offers engine: limited-time packs and the between-games rhythm. Pure logic over save.data.offers; no UI,
+ * no game code. The popups, shop cards and the HUD x2 badge live in shell/offers-ui.js.
+ *
+ *   var off = GamekitOffers.create(state, cfg, deps)
+ *     deps: { products() -> catalogue (P.products()), league, now(), rnd(), track(name, p),
+ *             iapAvailable(), micros(id) -> store price in micros or null, noAds(), allowed() (unlock + day-0 grace),
+ *             owns(productId), doubleActive(), starterEnd() -> ms or 0, games() -> finished games }
+ *
+ * Offer kinds. Each one is a product in config.products with `offer: <kind>`:
+ *   league   a pack the FIRST time the player is promoted to a league tier (offers.leagueProducts[tier]),
+ *            live for offers.leagueHours from the moment the promotion is seen
+ *   weekend  Friday 00:00 to Monday 00:00 local time, every offers.weekendEveryWeeks weeks
+ *   starter  the starter pack window that already exists (meta.starterOpen: 72 h after level 10)
+ *   oneshot  "OFERTA ÚNICA": created when its popup opens, gone for good when it closes (offers.oneshot list)
+ *   promo    a regular product from the same pool (double_2h, always in the shop): same popup, no urgency wording
+ *
+ * Genuine urgency (EU UCPD Annex I no. 7, Google Play policy): every live offer gets a fixed expiresAt when it is
+ * created. It is never extended and its key is never created again (state.seen keeps every key), so a countdown always
+ * ends for real and a gone offer never comes back with a fresh timer. A different offer may appear later.
+ *
+ * Between games (P.afterResult): off.decide(adOk) -> { kind: 'none' | 'ad' | 'offer' | 'skip', offer }
+ *   One interruption every offers.breakMin..breakMax finished games (a random number in that range, drawn again after
+ *   each interruption), so two interruptions are never closer than breakMin games and never after every game.
+ *   On a due slot: an offer with chance offerShare (when one is eligible), else the interstitial (adOk), else an
+ *   eligible offer (offerFallback), else nothing and the slot stays due. remove_ads buyers never get an interstitial:
+ *   their slot shows an offer with chance noAdsOfferShare, otherwise it is skipped.
+ *
+ * Value claims: GamekitOffers.claims(id, catalogue, cfg, priceOf) -> { valuePct, coinMult, discountPct, was, ref }
+ *   from the contents and the price of the regular coin packs (MONETIZATION.md addendum D). Rounded DOWN, so a claim
+ *   is never overstated. A strike-through "was" price exists only when the offer is the same bundle as a regular
+ *   product (`sameAs`) that is sold at a higher price.
+ */
+(function (root) {
+  'use strict';
+  var U = root.GamekitUtil || (typeof require === 'function' ? require('./util.js') : null);
+  var HOUR = 3600000, DAY = 86400000;
+  var ORDER = { league: 0, weekend: 1, starter: 2 };
+
+  function defaults() {
+    return {
+      live: [],          // live offers: { key, kind, product, createdAt, expiresAt, shows, tier?, bought? }
+      seen: {},          // every timed key ever created -> createdAt (never created twice)
+      seq: 0,            // one-shot counter (their keys are unique)
+      lastShown: {},     // product id -> last popup time (one-shot cooldowns)
+      lastOneshot: '',   // never the same one-shot twice in a row
+      gamesSince: 0,     // finished games since the last interruption (ad or offer)
+      nextBreak: 0,      // the next interruption is due after this many games (breakMin..breakMax)
+      lastPopupAt: 0, day: '', dayN: 0,
+      sessions: 0, startSession: 0,
+      leagueSeen: -1,    // highest league tier already seen (-1: not initialised yet)
+      log: []            // last interruptions, for analytics / tests: { g: games since previous, k: 'ad' | 'offer' | 'skip' }
+    };
+  }
+
+  function euros(price) { var v = parseFloat(String(price || '').replace(/[^\d,.]/g, '').replace(',', '.')); return isFinite(v) ? v : 0; }
+  function sortKeys(o) {
+    if (!o || typeof o !== 'object') return o;
+    var out = {};
+    Object.keys(o).sort().forEach(function (k) { out[k] = sortKeys(o[k]); });
+    return out;
+  }
+  function sameGrant(a, b) { return JSON.stringify(sortKeys(a || {})) === JSON.stringify(sortKeys(b || {})); }
+  // what a grant is worth in coins: coins + boosters at their shop price. Skins, ad-free days and x2 hours count as 0,
+  // so the value claims only ever understate.
+  function coinValue(grant, cfg) {
+    var v = (grant && grant.coins) || 0, b = (grant && grant.boosters) || {};
+    Object.keys(b).forEach(function (k) { v += b[k] * ((cfg.boosters.price || {})[k] || 0); });
+    return v;
+  }
+  function isCoinPack(p) { return !p.offer && !p.sameAs && p.grant && p.grant.coins > 0 && Object.keys(p.grant).length === 1; }
+
+  // priceOf(product) -> euros (or the store's local currency: only ratios matter, so all prices must come from the
+  // same source). Reference rate = the BEST coins per euro among the regular coin packs, the most demanding comparison.
+  function claims(id, catalogue, cfg, priceOf) {
+    priceOf = priceOf || function (p) { return euros(p.price); };
+    var byId = {};
+    catalogue.forEach(function (p) { byId[p.id] = p; });
+    var p = byId[id];
+    if (!p) return null;
+    var price = priceOf(p), rate = 0, ref = null;
+    catalogue.forEach(function (q) {
+      if (!isCoinPack(q)) return;
+      var r = q.grant.coins / priceOf(q);
+      if (r > rate) { rate = r; ref = q.id; }
+    });
+    var out = { id: id, price: price, coinValue: coinValue(p.grant, cfg), rate: rate, ref: ref, mult: 0, valuePct: 0, coinMult: 0, discountPct: 0, was: null };
+    if (rate > 0 && price > 0 && !isCoinPack(p)) {
+      out.mult = out.coinValue / (price * rate);
+      out.valuePct = Math.max(0, Math.floor((out.mult - 1) * 10 + 1e-9) * 10);        // x2.54 -> "+150%"
+      var cm = ((p.grant && p.grant.coins) || 0) / (price * rate);
+      out.coinMult = cm >= 2 ? Math.floor(cm + 1e-9) : 0;                             // x3.34 coins per euro -> "x3"
+    }
+    var base = p.sameAs && byId[p.sameAs];
+    if (base && sameGrant(base.grant, p.grant) && priceOf(base) > price) {
+      out.discountPct = Math.floor((1 - price / priceOf(base)) * 100 + 1e-9);         // 2,99 vs 9,99 -> "-70%"
+      out.was = base.id;
+    }
+    return out;
+  }
+
+  function create(state, cfg, deps) {
+    var O = cfg.offers, noop = function () {};
+    var now = deps.now || function () { return Date.now(); };
+    var rnd = deps.rnd || function () { return Math.random(); }, track = deps.track || noop;   // looked up per call (tests stub it)
+    var D = defaults();
+    Object.keys(D).forEach(function (k) { if (state[k] === undefined || state[k] === null) state[k] = D[k]; });
+
+    function catalogue() { return deps.products(); }
+    function product(id) { return catalogue().filter(function (p) { return p.id === id; })[0] || null; }
+    function rollBreak() {
+      var lo = Math.max(2, O.breakMin | 0), hi = Math.max(lo, O.breakMax | 0);   // never after every game, whatever Remote Config says
+      state.nextBreak = lo + Math.floor(rnd() * (hi - lo + 1));
+    }
+    if (!state.nextBreak) rollBreak();
+    function dayCount() {
+      var k = U.dateKey(new Date(now()));
+      if (state.day !== k) { state.day = k; state.dayN = 0; }
+      return state.dayN;
+    }
+    function get(key) { return state.live.filter(function (o) { return o.key === key; })[0] || null; }
+
+    function expire() {
+      var t = now();
+      state.live = state.live.filter(function (o) {
+        if (!o.bought && o.expiresAt > t) return true;
+        track('offer_end', { product: o.product, kind: o.kind, bought: !!o.bought });
+        return false;
+      });
+    }
+    // timed offers are remembered in state.seen forever; one-shot keys are unique by construction (state.seq)
+    function add(key, kind, pid, expiresAt, extra) {
+      if (state.seen[key] || !product(pid) || expiresAt <= now()) return null;
+      var o = { key: key, kind: kind, product: pid, createdAt: now(), expiresAt: expiresAt, shows: 0 };
+      if (extra) Object.keys(extra).forEach(function (k) { o[k] = extra[k]; });
+      if (ORDER[kind] != null) state.seen[key] = o.createdAt;
+      state.live.push(o);
+      track('offer_created', { product: pid, kind: kind, hours: Math.round((expiresAt - o.createdAt) / HOUR) });
+      return o;
+    }
+    // create the timed offers that are due now (league promotion, weekend, starter window)
+    function refresh() {
+      expire();
+      if (!deps.iapAvailable()) return;           // web: nothing to sell, and no key is used up
+      var lg = deps.league && deps.league.state;
+      if (lg) {
+        if (state.leagueSeen < 0) state.leagueSeen = lg.tier;   // first run: no offer for the tier the player already holds
+        else if (lg.tier > state.leagueSeen) {
+          var t = lg.tier, pid = (O.leagueProducts || [])[t];
+          state.leagueSeen = t;
+          if (pid) add('league:' + t, 'league', pid, now() + O.leagueHours * HOUR, { tier: t });
+        }
+      }
+      if (deps.allowed()) {
+        var dt = new Date(now()), since = (dt.getDay() - O.weekendStartDay + 7) % 7;
+        if (since < O.weekendDays) {
+          var start = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() - since), sk = U.dateKey(start);
+          var week = Math.floor((U.dayNumber(sk, cfg.platform.epoch) - 1) / 7);
+          if (week % Math.max(1, O.weekendEveryWeeks | 0) === 0) {
+            add('weekend:' + sk, 'weekend', O.weekendProduct, new Date(start.getFullYear(), start.getMonth(), start.getDate() + O.weekendDays).getTime());
+          }
+        }
+      }
+      var end = deps.starterEnd ? deps.starterEnd() : 0;
+      if (end && !deps.owns('starter_pack')) add('starter', 'starter', 'starter_pack', end);
+    }
+
+    function popupOk() {
+      return deps.iapAvailable() && deps.allowed() && dayCount() < O.maxPerDay && now() - state.lastPopupAt >= O.minGapMin * 60000;
+    }
+    function timedCandidate() {
+      var t = now();
+      return state.live.filter(function (o) { return ORDER[o.kind] != null && !o.bought && o.shows < O.perOffer && o.expiresAt - t > 60000; })
+        .sort(function (a, b) { return ORDER[a.kind] - ORDER[b.kind] || a.expiresAt - b.expiresAt; })[0] || null;
+    }
+    function oneshotPick() {
+      var t = now();
+      var list = (O.oneshot || []).filter(function (s) {
+        var p = product(s.product);
+        if (!p || !(s.weight > 0) || s.product === state.lastOneshot) return false;
+        if (t - (state.lastShown[s.product] || 0) < s.cooldownDays * DAY) return false;
+        if (p.type !== 'consumable' && deps.owns(p.id)) return false;
+        if (p.grant && p.grant.doubleHours && deps.doubleActive()) return false;
+        return true;
+      });
+      if (!list.length) return null;
+      var sum = list.reduce(function (a, s) { return a + s.weight; }, 0), r = rnd() * sum;
+      for (var i = 0; i < list.length; i++) { r -= list[i].weight; if (r < 0) return list[i].product; }
+      return list[list.length - 1].product;
+    }
+    function candidate() {
+      var c = timedCandidate();
+      if (c) return c;
+      var pid = oneshotPick();
+      return pid ? { kind: 'oneshot', product: pid } : null;
+    }
+    function taken(kind) {
+      state.log.push({ g: state.gamesSince, k: kind });
+      if (state.log.length > 40) state.log.splice(0, state.log.length - 40);
+      track('break', { kind: kind, games: state.gamesSince });
+      state.gamesSince = 0;
+      rollBreak();
+    }
+
+    var off = {
+      state: state,
+      get: get,
+      refresh: refresh,
+      session: function () { state.sessions++; },
+      onGameEnd: function () { state.gamesSince++; },
+      due: function () { return state.gamesSince >= state.nextBreak; },
+      // timed offers for the shop and the app-start popup (refreshes first)
+      live: function () { refresh(); return state.live.filter(function (o) { return ORDER[o.kind] != null && !o.bought; }); },
+      canBuy: function (key) { var o = get(key); return !!o && !o.bought && o.expiresAt > now() && deps.iapAvailable(); },
+      // after a grant of this product (any path): its live offer is used up
+      bought: function (pid) { state.live.forEach(function (o) { if (o.product === pid && o.expiresAt > now()) o.bought = true; }); expire(); },
+      msLeft: function (key) { var o = get(key); return o ? Math.max(0, o.expiresAt - now()) : 0; },
+      claims: function (id) {
+        var cat = catalogue(), micros = deps.micros || function () { return null; };
+        // store prices only when every product involved has one (same currency); else the catalogue's euro prices
+        var p = product(id), need = cat.filter(function (q) { return isCoinPack(q) || q.id === id || (p && q.id === p.sameAs); });
+        var store = need.length && need.every(function (q) { return micros(q.id) > 0; });
+        return claims(id, cat, cfg, store ? function (q) { return micros(q.id) / 1e6; } : null);
+      },
+      // between games: what fills this slot (see the header). adOk = an interstitial is allowed and loaded right now
+      decide: function (adOk) {
+        refresh();
+        if (state.gamesSince < state.nextBreak) return { kind: 'none' };
+        var cand = popupOk() ? candidate() : null, r = rnd();
+        if (deps.noAds()) return cand && r < O.noAdsOfferShare ? { kind: 'offer', offer: cand } : { kind: 'skip' };
+        if (cand && r < O.offerShare) return { kind: 'offer', offer: cand };
+        if (adOk) return { kind: 'ad' };
+        if (cand && O.offerFallback) return { kind: 'offer', offer: cand };
+        return { kind: 'none' };
+      },
+      // the slot was filled: kind 'ad' (an interstitial really showed) or 'skip' (remove_ads, no offer this time)
+      taken: taken,
+      // a popup opens: a one-shot offer is created now (gone when closed); a timed one counts a show
+      // A regular product in the one-shot pool (double_2h, always in the shop) opens as kind 'promo': no urgency wording.
+      open: function (cand, where) {
+        var p = !cand.key && product(cand.product), kind = p && p.offer === 'oneshot' ? 'oneshot' : 'promo';
+        if (!cand.key) state.seq = (state.seq || 0) + 1;
+        var o = cand.key ? get(cand.key) : add(kind + ':' + state.seq, kind, cand.product, now() + O.oneshotMinutes * 60000);
+        if (!o) return null;
+        o.shows++;
+        dayCount();
+        state.dayN++;
+        state.lastPopupAt = now();
+        state.lastShown[o.product] = now();
+        if (!cand.key) state.lastOneshot = o.product;
+        if (where === 'break') taken('offer');
+        if (where === 'start') state.startSession = state.sessions;
+        track('offer_shown', { product: o.product, kind: o.kind, where: where || '' });
+        return o;
+      },
+      // the popup closed: a one-shot offer is gone for good; a timed one stays in the shop until it expires
+      close: function (key) {
+        var o = get(key);
+        if (o && (o.kind === 'oneshot' || o.kind === 'promo')) { state.live.splice(state.live.indexOf(o), 1); track('offer_end', { product: o.product, kind: o.kind, bought: !!o.bought }); }
+      },
+      // app start: at most one popup per session, never on the first launches, only for a live timed offer
+      startOffer: function () {
+        refresh();
+        var A = O.appStart;
+        if (state.startSession === state.sessions || state.sessions < A.minSessions || deps.games() < A.minGames || !popupOk()) return null;
+        var c = timedCandidate();
+        return c ? off.open(c, 'start') : null;
+      }
+    };
+    return off;
+  }
+
+  var Offers = { defaults: defaults, create: create, claims: claims, coinValue: coinValue, euros: euros };
+  if (typeof module !== 'undefined' && module.exports) module.exports = Offers;
+  else root.GamekitOffers = Offers;
+})(this);
+
 /* ---- gamekit/ads/ads.js ---- */
 /* gamekit ads adapter.
  *
@@ -1597,10 +1914,11 @@
  *   Ads.loadingDone()          -> the game finished loading
  *   Ads.gameplayStart()        -> a round is being played
  *   Ads.gameplayStop()         -> menu, game over, pause, tab hidden
- *   Ads.showInterstitial(ctx)  -> Promise; between games only, at most once every 3 minutes, never in the
- *                                 first 3 minutes or 3 minutes after a rewarded, never when "remove ads" was bought,
- *                                 only every 2nd finished level/game (Ads.levelEnded()), only if already preloaded,
- *                                 and only if the game's gate (Ads.setGate: day-0 grace) agrees
+ *   Ads.showInterstitial(ctx)  -> Promise; between games only (a result-screen tap), never on launch or mid-level.
+ *                                 Pacing from config.ads: interstitialMinGapMs between two, sessionStartGapMs after
+ *                                 launch, afterRewardedGapMs after a rewarded, levelsBetweenInterstitials finished
+ *                                 levels/games (Ads.levelEnded()); never when "remove ads" was bought, only if already
+ *                                 preloaded, and only if the game's gate (Ads.setGate: day-0 grace) agrees
  *   Ads.showRewarded(cb, where)-> cb(true) if the player earned the reward (continue, double coins, chest, booster)
  *   Ads.setPolicy(cfg.ads), Ads.setNoAds(bool), Ads.rewardedReady(), Ads.privacyOptionsRequired(), Ads.showPrivacyOptions()
  *   Ads.happy()                -> a big moment (CrazyGames "happytime"), optional
@@ -1618,8 +1936,11 @@
 (function (root) {
   'use strict';
 
-  var MIN_GAP = 180000; // 3 minutes between interstitials (CrazyGames and Poki also throttle on their side)
-  var lastAd = Date.now(); // no interstitial in the first 3 minutes either (never on launch)
+  // defaults = the conservative portal policy; config.ads (setPolicy) sets the real numbers
+  var MIN_GAP = 180000;   // between two interstitials (CrazyGames and Poki also throttle on their side)
+  var START_GAP = 180000; // none this long after launch (never on app open)
+  var REW_GAP = 180000;   // none this long after a rewarded
+  var startedAt = Date.now(), lastInter = 0, lastRew = 0;
   var LEVEL_GAP = 2, levelsSince = 0, noAds = false;
 
   function noop() {}
@@ -1698,7 +2019,7 @@
   }
 
   // ---- AdMob through Capacitor (@capacitor-community/admob) ----------------
-  // window.GAMEKIT_ADMOB = { interstitial: 'ca-app-pub-.../...', rewarded: 'ca-app-pub-.../...', testing: true }
+  // window.GAMEKIT_ADMOB = { interstitial: 'ca-app-pub-.../...', rewarded: 'ca-app-pub-.../...', testing: false, testDeviceIds: [] }
   // Boot order (MONETIZATION.md 4): UMP consent info -> consent form if required -> initialize only if
   // canRequestAds -> preload one interstitial + one rewarded. Ads are prepared ahead and after every show;
   // the show path never loads: if nothing is ready the placement is skipped silently.
@@ -1731,7 +2052,8 @@
           .then(function (info) {
             privacyRequired = !!info && info.privacyOptionsRequirementStatus === 'REQUIRED';
             if (info && info.canRequestAds === false) throw new Error('no ad consent');
-            return A.initialize({ initializeForTesting: !!ids.testing, maxAdContentRating: policy.maxAdContentRating || 'T',
+            var devs = ids.testDeviceIds || []; // hashed ids of dev phones: they get test ads even with live ids
+            return A.initialize({ initializeForTesting: !!ids.testing || devs.length > 0, testingDevices: devs, maxAdContentRating: policy.maxAdContentRating || 'T',
               tagForChildDirectedTreatment: false, tagForUnderAgeOfConsent: false });
           })
           .then(function () { prep('interstitial'); prep('rewarded'); });
@@ -1769,15 +2091,20 @@
     gameplayStart: function () { if (!playing) { playing = true; safe(impl.gameplayStart); } },
     gameplayStop: function () { if (playing) { playing = false; safe(impl.gameplayStop); } },
     happy: function () { safe(impl.happy); },
-    // policy: config.ads ({interstitialMinGapMs, levelsBetweenInterstitials}); "remove ads" purchase
+    // policy: config.ads ({interstitialMinGapMs, sessionStartGapMs, afterRewardedGapMs, levelsBetweenInterstitials})
     setPolicy: function (p) {
       policy = p || {};
       if (p && p.interstitialMinGapMs) MIN_GAP = p.interstitialMinGapMs;
+      START_GAP = p && p.sessionStartGapMs != null ? p.sessionStartGapMs : MIN_GAP;
+      REW_GAP = p && p.afterRewardedGapMs != null ? p.afterRewardedGapMs : MIN_GAP;
       if (p && p.levelsBetweenInterstitials) LEVEL_GAP = p.levelsBetweenInterstitials;
     },
     setNoAds: function (on) { noAds = !!on; },
     // plug a custom provider object (same shape as `none` above): tests, or a portal not listed here
-    useProvider: function (p, resetClock) { impl = p || none; if (resetClock) { lastAd = 0; levelsSince = 0; } },
+    useProvider: function (p, resetClock) {
+      impl = p || none;
+      if (resetClock) { startedAt = -Infinity; lastInter = -Infinity; lastRew = -Infinity; levelsSince = 0; }
+    },
     levelEnded: function () { levelsSince++; },
     // extra rule from the game (day-0 grace: no interstitial before level 8 / the 3rd game)
     setGate: function (fn) { gate = fn; },
@@ -1788,7 +2115,9 @@
     // the game calls this only between games / levels, never on launch and never mid-level.
     // Needs LEVEL_GAP finished levels/games since the last one (Ads.levelEnded() counts both).
     canInterstitial: function (ctx) {
-      if (busy || noAds || impl === none || Date.now() - lastAd < MIN_GAP || levelsSince < LEVEL_GAP) return false;
+      var now = Date.now();
+      if (busy || noAds || impl === none || levelsSince < LEVEL_GAP) return false;
+      if (now - startedAt < START_GAP || now - lastInter < MIN_GAP || now - lastRew < REW_GAP) return false;
       if (gate && !gate(ctx)) return false;
       return !impl.ready || impl.ready('interstitial'); // preloaded only: never wait for a load
     },
@@ -1800,7 +2129,7 @@
         .catch(function () { return false; })
         .then(function (shown) {
           busy = false;
-          if (shown) { lastAd = Date.now(); levelsSince = 0; api.track('ad_shown', { type: 'interstitial', provider: impl.name }); }
+          if (shown) { lastInter = Date.now(); levelsSince = 0; api.track('ad_shown', { type: 'interstitial', provider: impl.name }); }
           return shown;
         });
     },
@@ -1813,7 +2142,7 @@
         .catch(function () { return false; })
         .then(function (ok) {
           busy = false;
-          if (impl !== none) { lastAd = Date.now(); api.track('ad_shown', { type: 'rewarded', provider: impl.name, placement: placement || '' }); }
+          if (impl !== none) { lastRew = Date.now(); api.track('ad_shown', { type: 'rewarded', provider: impl.name, placement: placement || '' }); }
           if (ok) api.track('ad_rewarded', { provider: impl.name, placement: placement || '' });
           cb(!!ok);
         });
@@ -1836,6 +2165,7 @@
  *   IAP.init(products)      -> Promise; products from config.products ({id, type, price, grant})
  *   IAP.available           -> false on the web build: the shop hides real-money items
  *   IAP.price(id)           -> localised price string from the store (falls back to config)
+ *   IAP.micros(id)          -> store price in micros (null without a store): offer value claims in the local currency
  *   IAP.purchase(id)        -> Promise<{ok, id, grant}>
  *   IAP.restore()           -> Promise<[ids]>  (non-consumables: remove_ads, season pass)
  *   IAP.onEntitlement(fn)   -> fn(product) for purchases that arrive late (pending, restored)
@@ -1903,11 +2233,12 @@
           return catalog.filter(function (p) { return p.type !== 'consumable' && store.owned(p.id); }).map(function (p) { return p.id; });
         });
       },
-      price: function (id) { var p = store.get(id, P); return p && p.pricing ? p.pricing.price : null; }
+      price: function (id) { var p = store.get(id, P); return p && p.pricing ? p.pricing.price : null; },
+      micros: function (id) { var p = store.get(id, P); return p && p.pricing && p.pricing.priceMicros ? p.pricing.priceMicros : null; }
     };
   }
 
-  var impl = none, wanted = root.GAMEKIT_IAP || 'none';
+  var impl = none, plugged = null, wanted = root.GAMEKIT_IAP || 'none';
   try { if (/[?&]iap=test/.test(root.location.search)) wanted = 'test'; } catch (e) { /* ignore */ }
 
   var api = {
@@ -1917,10 +2248,14 @@
       catalog = products || [];
       byId = {};
       catalog.forEach(function (p) { byId[p.id] = p; });
-      impl = wanted === 'play' ? (play() || none) : wanted === 'test' ? test : none;
+      impl = plugged || (wanted === 'play' ? (play() || none) : wanted === 'test' ? test : none);
       return Promise.resolve().then(function () { return impl.init(); }).catch(function () { impl = none; });
     },
     price: function (id) { return impl.price(id) || (byId[id] && byId[id].price) || ''; },
+    // store price in micros of the local currency (value claims use it when every product involved has one)
+    micros: function (id) { return impl.micros ? impl.micros(id) : null; },
+    // tests: plug a provider object ({ name, available, init, purchase, restore, price }) like Ads.useProvider
+    useProvider: function (p) { plugged = p || null; impl = p || none; },
     purchase: function (id) {
       if (!byId[id] || !impl.available) return Promise.resolve({ ok: false, id: id });
       return Promise.resolve().then(function () { return impl.purchase(id); }).catch(function () { return false; })
@@ -1943,7 +2278,8 @@
  *
  * The game reports: P.started({mode, level}), P.finished(result) and asks: P.continueOffer(),
  * P.requestContinue(cb), P.doubleCoins(n, cb), P.afterResult(ctx, fn), P.acquireBooster(id, cb), P.useBooster(id).
- * Everything else (wallet, quests, streak, pass, chests, ads policy, store, save) stays inside the platform.
+ * Everything else (wallet, quests, streak, pass, chests, ads policy, limited-time offers, store, save) stays inside the
+ * platform. P.afterResult runs the between-games rhythm (meta/offers.js): nothing, the interstitial or an offer popup.
  */
 (function (root) {
   'use strict';
@@ -1952,6 +2288,7 @@
   var Meta = root.GamekitMeta || req('./meta.js'), Save = root.GamekitSave || req('./save.js'), Remote = root.GamekitRemote || req('./remote.js');
   var Ads = root.Ads || req('../ads/ads.js'), IAP = root.IAP || req('../iap/iap.js'), An = root.Analytics || req('./analytics.js');
   var Fun = root.GamekitFun || req('./fun.js'), League = root.GamekitLeague || req('./league.js'), Online = root.GamekitOnline || req('./online.js');
+  var Offers = root.GamekitOffers || req('./offers.js');
 
   function mergeConfig(platform, game) { return U.merge(platform, game, ['products', 'skins']); }
 
@@ -1963,9 +2300,9 @@
     var listeners = {};
     function emit(ev, a, b) { (listeners[ev] || []).forEach(function (fn) { try { fn(a, b); } catch (e) { if (root.console) root.console.error(e); } }); }
 
-    var save = Save.create({ key: gameId + '.save', defaults: function () {
+    var save = Save.create({ key: gameId + '.save', storage: opts.storage, defaults: function () {
       return { settings: { muted: false, theme: null }, progress: { stars: {}, unlocked: 1, run: null },
-        economy: Economy.defaults(cfg), meta: Meta.defaults(cfg), fun: Fun.defaults(), league: League.defaults(),
+        economy: Economy.defaults(cfg), meta: Meta.defaults(cfg), fun: Fun.defaults(), league: League.defaults(), offers: Offers.defaults(),
         stats: { games: 0, levels: 0, byMode: {} }, game: opts.saveDefaults ? opts.saveDefaults() : {} };
     } });
     var D = function () { return save.data; };
@@ -1991,15 +2328,31 @@
 
     Ads.setPolicy(cfg.ads);
     Ads.setNoAds(eco.noAds);
-    // day-0 grace: no interstitial before level N or the Nth finished non-level game on the first day
-    Ads.setGate(function () {
+    // day-0 grace: no interstitial (and no offer popup) before level N or the Nth finished non-level game on the first day
+    function graceOk() {
       var d = D();
       return d.meta.firstDay !== today() || d.progress.unlocked >= cfg.ads.graceLevel || nonLevelGames() >= cfg.ads.graceGames;
-    });
+    }
+    Ads.setGate(graceOk);
     function nonLevelGames() { var b = D().stats.byMode || {}, n = 0; Object.keys(b).forEach(function (k) { if (k !== 'level') n += b[k]; }); return n; }
+    // limited-time offers and the between-games rhythm (meta/offers.js); P is defined below, the deps read it lazily
+    if (!D().offers) D().offers = Offers.defaults();
+    var offers = Offers.create(D().offers, cfg, {
+      products: function () { return P.products(); }, league: league, now: opts.now, rnd: opts.rnd, track: hooks.track,
+      iapAvailable: function () { return IAP.available; }, micros: function (id) { return IAP.micros(id); },
+      noAds: function () { return eco.noAds; }, allowed: function () { return P.unlocked('offers') && graceOk(); },
+      owns: function (id) { return eco.ownsProduct(id); }, doubleActive: function () { return eco.doubleActive(); },
+      games: function () { return D().stats.games; },
+      starterEnd: function () {
+        if (!P.unlocked('starter') || !meta.starterOpen(D().progress.unlocked)) return 0;
+        return D().meta.starterFrom + cfg.starterPack.windowHours * 3600000;
+      }
+    });
 
     var P = {
-      cfg: cfg, save: save, eco: eco, meta: meta, fun: fun, league: league, online: online, ads: Ads, iap: IAP, track: hooks.track, today: today,
+      cfg: cfg, save: save, eco: eco, meta: meta, fun: fun, league: league, online: online, offers: offers, ads: Ads, iap: IAP, track: hooks.track, today: today,
+      // set by the UI (shell/offers-ui.js): fn(offer, where 'break' | 'start', done). Without it no offer popup opens
+      offerPresenter: null,
       get data() { return save.data; },
       get settings() { return save.data.settings; },
       get gameData() { return save.data.game; },
@@ -2069,6 +2422,7 @@
         var bm = d.stats.byMode = d.stats.byMode || {};
         bm[r.level ? 'level' : r.mode] = (bm[r.level ? 'level' : r.mode] || 0) + 1;
         Ads.levelEnded();
+        offers.onGameEnd();
         out.streakGift = meta.lastStreak && meta.lastStreak.gift;
         out.surprise = meta.lastStreak && meta.lastStreak.surprise;   // streak gift day 3/7/14/30
         meta.lastStreak = null;
@@ -2078,6 +2432,8 @@
         if (out.mult > 1 && base > 0) out.coins += eco.earn(Math.round(base * (out.mult - 1)), 'streak_mult');
         out.lucky = fun.applyLucky(base);
         out.coins += out.lucky;
+        // "Monedas x2" hours bought in the store: this result's game coins once more
+        if (eco.doubleActive() && base > 0) { out.double = eco.earn(base, 'x2_hours'); out.coins += out.double; }
         out.levelUps = fun.takeLevelUps();
         out.level = fun.levelInfo();
         save.commit();
@@ -2144,8 +2500,40 @@
           cb(ok);
         }, 'double_coins');
       },
-      // interstitial at a natural break: call from a result-screen tap (Next / Again / Home), then fn()
-      afterResult: function (ctx, fn) { Ads.showInterstitial(ctx).then(fn, fn); },
+      // natural break: call from a result-screen tap (Next / Again / Home), then fn(). The rhythm (offers.decide) picks
+      // nothing, the interstitial or an offer popup; one interruption every 3-5 games (config.offers), never mid-level
+      afterResult: function (ctx, fn) {
+        // fn always runs after the tap's event has finished (as it did when this was a Promise chain): a game may start
+        // the next level from fn, and the same click must not reach the new screen
+        var once = false, go = function () { if (!once) { once = true; Promise.resolve().then(fn); } };
+        var d = offers.decide(Ads.canInterstitial(ctx));
+        if (d.kind === 'offer' && P.offerPresenter) {
+          var o = offers.open(d.offer, 'break');
+          save.commit();
+          // when the popup is done, a one-shot offer is gone for good (whatever the UI does)
+          if (o) { P.offerPresenter(o, 'break', function () { offers.close(o.key); save.commit(); go(); }); return; }
+        }
+        if (d.kind === 'skip') { offers.taken('skip'); save.commit(); go(); return; }
+        if (d.kind === 'ad' || d.kind === 'offer') {
+          Ads.showInterstitial(ctx).then(function (shown) { if (shown) { offers.taken('ad'); save.commit(); } go(); }, go);
+          return;
+        }
+        go();
+      },
+      // app start (P.init, once the store is ready): one popup per session at most, for a live timed offer
+      // (league-up pack, weekend deal, starter pack); never on the first launch (config.offers.appStart)
+      startOffers: function () {
+        if (!P.offerPresenter) return null;
+        var o = offers.startOffer();
+        if (o) { save.commit(); P.offerPresenter(o, 'start', function () { offers.close(o.key); save.commit(); }); }
+        return o;
+      },
+      // buy a live offer (only while it is live: popup open or countdown running); the grant marks it bought
+      buyOffer: function (key) {
+        var o = offers.get(key);
+        if (!o || !offers.canBuy(key)) return Promise.resolve(null);
+        return P.buy(o.product);
+      },
 
       // ---- boosters: the platform owns counts; the game owns the effect ----
       // cb(true) when one is available (owned, bought with coins, or earned with a rewarded ad)
@@ -2170,6 +2558,7 @@
         if (p.type !== 'consumable' && eco.ownsProduct(p.id)) return null; // restore never grants twice
         var got = eco.grant(p.season ? { passPremium: meta.seasonKey() } : p.grant, 'iap_' + p.id);
         if (p.type !== 'consumable') eco.markProduct(p.id);
+        offers.bought(p.id);
         Ads.setNoAds(eco.noAds);
         save.commit();
         emit('granted', got, quiet);
@@ -2195,7 +2584,8 @@
         hooks.track('app_open', { ads: Ads.provider });
         IAP.onEntitlement(function (p) { P.grantProduct(p && P.product(p.id)); });
         var adsReady = Ads.init().then(function () { Ads.loadingDone(); Ads.setNoAds(eco.noAds); emit('ads'); });
-        var iapReady = IAP.init(P.products()).then(function () { if (IAP.available) return P.restore(false); });
+        offers.session();
+        var iapReady = IAP.init(P.products()).then(function () { if (IAP.available) return P.restore(false); }).then(function () { P.startOffers(); });
         // wake the ranking server (free plan cold start) and settle the league week; never awaited by the game
         var res = league.roll();
         if (res) { save.commit(); emit('leagueend', res); }
@@ -2235,7 +2625,7 @@
       piggyFill: 'Fills up as you play', piggyBreak: 'Ready to break!', left: 'Ends in', empty: 'Empty', locked: 'Locked', owned: 'Owned',
       tap: 'Tap to unlock', unlocking: 'Opening', noAdsWhat: 'No breaks between games', freezeWhat: 'Saves your streak one day',
       hard: 'HARD LEVEL', superHard: 'SUPER HARD!', questsL: 'Quests', shopL: 'Shop', easy: 'Easy', play: 'Play', upTo: 'Up to', level: 'Level',
-      q: {}, skins: {} },
+      x2: 'Coins ×2', x2On: 'Active', q: {}, skins: {} },
     es: { claim: 'Recoger', open: 'Abrir', dailyQ: 'HOY', weeklyQ: 'ESTA SEMANA', boosters: 'AYUDAS', blocks: 'ASPECTOS', boards: 'TABLEROS',
       streak: 'RACHA', store: 'TIENDA', equip: 'Usar', removeAds: 'Sin anuncios', pass: 'Pase', wait: 'Un cofre cada vez', min: 'min', h: 'h', d: 'd',
       free: 'GRATIS', starter: 'Pack inicial', piggy: 'Hucha', passWhat: 'Fila premium: monedas, cofres de oro, 2 aspectos', restore: 'Restaurar compras',
@@ -2245,7 +2635,7 @@
       piggyFill: 'Se llena al jugar', piggyBreak: '¡Lista para romper!', left: 'Termina en', empty: 'Vacío', locked: 'Bloqueado', owned: 'Tuyo',
       tap: 'Toca para abrir', unlocking: 'Abriendo', noAdsWhat: 'Sin pausas entre partidas', freezeWhat: 'Salva tu racha un día',
       hard: 'NIVEL DIFÍCIL', superHard: '¡SÚPER DIFÍCIL!', questsL: 'Misiones', shopL: 'Tienda', easy: 'Fácil', play: 'Jugar', upTo: 'Hasta', level: 'Nivel',
-      q: {}, skins: {} }
+      x2: 'Monedas ×2', x2On: 'Activo', q: {}, skins: {} }
   };
   var BOOST_COL = ['#ff8a3d', '#3f9bff', '#a066ff', '#2fbf71', '#ff4f7b', '#ffb320'];
   var DIFF = { dificil: 'hard', superdificil: 'super', facil: 'easy' };
@@ -2345,6 +2735,7 @@
       if (got.chest || got.chest2) parts.push('+1 ' + ico('chest'));
       if (got.skin) parts.push(TX.skins[got.skin] || got.skin);
       if (got.noAds) parts.push(TX.removeAds);
+      if (got.doubleHours) parts.push('×2 ' + ico('coin') + ' ' + got.doubleHours + ' ' + TX.h);
       return parts.join(' &nbsp;');
     }
     function contentsHtml(c) {
@@ -2354,18 +2745,20 @@
       if (c.skin) out.push(TX.skins[c.skin] || c.skin);
       if (c.noAds) out.push(TX.removeAds);
       if (c.noAdsDays) out.push(TX.removeAds + ' ' + c.noAdsDays + TX.d);
+      if (c.doubleHours) out.push(TX.x2 + ' ' + c.doubleHours + ' ' + TX.h);
       return out.join(' · ');
     }
     // reward tiles: icon on top, amount below (shop contents, pass track, chest contents)
     function rewardTiles(c, cls) {
       var out = [], t = function (icon, txt, x) { out.push('<span class="gk-rt' + (x ? ' ' + x : '') + '">' + icon + '<b>' + txt + '</b></span>'); };
       if (!c) return '';
-      if (c.coins) t(ico('coin'), '+' + c.coins, 'coin');
+      if (c.coins) t(ico('coin'), '+' + Number(c.coins).toLocaleString(lang), 'coin');
       if (c.boosters) Object.keys(c.boosters).forEach(function (k) { t('<i class="gk-bt" style="--bc:' + boostCol(k) + '">' + ico(k) + '</i>', '×' + c.boosters[k]); });
       if (c.chest) t(chestArt(c.chest, 'gk-chestmini'), '×1', 'ch');
       if (c.skin) t((opts.skinPreview && eco.skin && eco.skin(c.skin) ? '<i class="gk-skinmini">' + opts.skinPreview(eco.skin(c.skin), currentTheme()) + '</i>' : gic('sparkles')), TX.skins[c.skin] || c.skin, 'skin');
       if (c.noAds) t(Art ? Art.noAds() : '', TX.removeAds, 'noads');
       if (c.noAdsDays) t(Art ? Art.noAds() : '', c.noAdsDays + ' ' + TX.d, 'noads');
+      if (c.doubleHours) t('<i class="gk-x2i">' + ico('coin') + '<em>×2</em></i>', c.doubleHours + ' ' + TX.h, 'dbl');
       return '<span class="gk-rts' + (cls ? ' ' + cls : '') + '">' + out.join('') + '</span>';
     }
 
@@ -2588,6 +2981,7 @@
         if (p.offer === 'starter' && !(P.unlocked('starter') && meta.starterOpen(P.progress.unlocked()))) return false;
         if (p.offer === 'piggy' && !(P.unlocked('piggy') && eco.piggyBreakable())) return false;
         if (p.season && (!P.unlocked('pass') || meta.hasPremiumPass())) return false;
+        if (p.offer && p.offer !== 'starter' && p.offer !== 'piggy') return false;   // limited-time offers: only as live offer cards (offers-ui)
         return true;
       }) : [];
       var take = function (fn) { var out = products.filter(fn); products = products.filter(function (p) { return out.indexOf(p) < 0; }); return out; };
@@ -2598,6 +2992,8 @@
           (left ? '<small>' + gic('stopwatch') + TX.left + ' ' + Math.floor(left / 3600000) + TX.h + ' ' + Math.floor(left % 3600000 / 60000) + TX.min + '</small>' : '') + '</div>' +
           rewardTiles(p.grant, 'big') + priceBtn('data-iap="' + p.id + '"', IAP.price(p.id), 'cta big') + '</div>';
       });
+      // 1b. live limited-time offers (league-up pack, weekend deal) with their real countdown: shell/offers-ui.js
+      if (IAP.available && api.shopOffers) h += api.shopOffers();
       // 2. free (rewarded) row
       if (Ads.rewardedReady() && (meta.canDailyGift() || meta.canShopCoins())) {
         h += '<h4><span>' + TX.free + '</span></h4><div class="srow">';
@@ -2622,6 +3018,11 @@
       };
       take(function (p) { return p.id === 'remove_ads'; }).forEach(function (p) { h += wide(Art ? Art.noAds() : '', TX.removeAds, TX.noAdsWhat, priceBtn('data-iap="' + p.id + '"', IAP.price(p.id), 'cta'), 'noads'); });
       take(function (p) { return p.season; }).forEach(function (p) { h += wide(Art ? Art.star() : '', TX.season, TX.passWhat, priceBtn('data-iap="' + p.id + '"', IAP.price(p.id), 'cta'), 'pass'); });
+      take(function (p) { return p.grant && p.grant.doubleHours && Object.keys(p.grant).length === 1; }).forEach(function (p) {
+        var left = eco.doubleLeft ? eco.doubleLeft() : 0;
+        h += wide('<i class="gk-x2i big">' + ico('coin') + '<em>×2</em></i>', TX.x2, left ? TX.x2On + ' · <span data-ends="' + (Date.now() + left) + '">' + fmtLeft(left) + '</span>' : p.grant.doubleHours + ' ' + TX.h,
+          priceBtn('data-iap="' + p.id + '"', IAP.price(p.id), 'cta'), 'x2');
+      });
       if (IAP.available && P.unlocked('piggy')) {
         var pig = take(function (p) { return p.offer === 'piggy'; })[0], full = eco.piggy / cfg.piggy.cap;
         h += '<div class="gk-piggy' + (pig ? ' ready' : '') + '"><span class="gk-art">' + (Art ? Art.piggy(full) : '') + '</span><div><b>' + TX.piggy + '</b>' +
@@ -2678,6 +3079,7 @@
       if (d.eq && eco.equip(d.eq)) { if (opts.onSkin) opts.onSkin(); sfx.pick(); }
       if (d.freeze && meta.buyFreeze()) { sfx.coin(); if (api.spendFx) api.spendFx(t, before - eco.coins); }
       if (d.iap) P.buy(d.iap).then(function () { if (screen === 'shop') renderShop(); });
+      if (d.offer && api.onOfferTap) { api.onOfferTap(d.offer, t); return; }
       if (d.restore) P.restore(true).then(function () { toast('✓'); });
       if (d.legal) legalOpen = !legalOpen;
       if (d.privacy) Ads.showPrivacyOptions();
@@ -2779,6 +3181,10 @@
       introOpener: null,   // idem: the hard-level intro popup
       coinFly: null, spendFx: null, count: null,
       onResult: null,
+      shopOffers: null,    // set by shell/offers-ui.js: html of the live offer cards at the top of the shop
+      onOfferTap: null,    // idem: a [data-offer] button in the shop was tapped
+      renderShop: renderShop, fmtLeft: fmtLeft,
+      isMenu: function () { var d = screens[screen]; return !!(d && d.hud && d.hud.menu); },
       id: function (defaultId) { return IDS[defaultId] || defaultId; },   // element id in this page
       el: $,
       back: function () { show(base && screens[base] ? base : 'menu'); },
@@ -4232,12 +4638,209 @@
     on.onNickChanged = function () { if (shell.screen === 'profile') renderProfile(); };
 
     refreshMenu();
-    return { fx: fx, refresh: refreshMenu, info: info, renderLeague: renderLeague, renderRank: renderRank, spendFx: spendFx, coinFly: coinFly };
+    var ui = { fx: fx, refresh: refreshMenu, info: info, renderLeague: renderLeague, renderRank: renderRank, spendFx: spendFx, coinFly: coinFly };
+    // limited-time offers (shell/offers-ui.js): popups share this overlay queue, so one big moment shows at a time
+    if (root.GamekitOffersUI) {
+      ui.offers = root.GamekitOffersUI.attach(P, shell, { fx: fx, enqueue: enqueue, showOv: showOv, ov: ov, tap: tap, sico: sico, center: center,
+        coinFly: coinFly, tierName: function (t) { return T.tiers[lg.tiers()[t]] || ''; }, tierCol: function (t) { return TIER_COL[lg.tiers()[t]]; },
+        isBusy: function () { return busy; } });
+    }
+    return ui;
   }
 
   var FunUI = { attach: attach, TEXTS: TX };
   if (typeof module !== 'undefined' && module.exports) module.exports = FunUI;
   else root.GamekitFunUI = FunUI;
+})(this);
+
+/* ---- gamekit/shell/offers-ui.js ---- */
+/* gamekit offers UI: the offer popup (between games / app start), the live offer cards at the top of the shop, the
+ * "Monedas ×2" badge on the coin counter and the ×2 tag on the result screen. Platform layer: no game code; the look
+ * comes from the art tokens (ART.md) of each game. Attached by GamekitFunUI.attach (shares its overlay queue).
+ *
+ *   GamekitOffersUI.attach(P, shell, ctx)   ctx from fun-ui: { fx, enqueue, showOv, ov, tap, sico, center, coinFly, tierName, tierCol }
+ *
+ * Honesty rules (MONETIZATION.md addendum D):
+ *   - countdowns show the offer's real expiresAt (meta/offers.js never extends it); at 0 the popup closes and the card goes
+ *   - a one-shot offer says "Solo ahora" and is gone when its popup closes; a regular product promoted between games
+ *     (double_2h) has no urgency wording at all
+ *   - value badges come from GamekitOffers.claims (contents vs the best regular coin pack, rounded down) and the
+ *     reference is printed under the button; a struck "was" price only for the same bundle sold at a higher regular price
+ *   - no purchase button without a store (web builds never get here: the engine needs IAP.available)
+ */
+(function (root) {
+  'use strict';
+  var TX = {
+    es: { one: '¡OFERTA ÚNICA!', onlyNow: 'Solo ahora', ends: 'Termina en', value: 'de valor', coins: 'monedas', up: '¡Ascenso a {t}!',
+      weekend: '¡FIN DE SEMANA!', limited: '¡OFERTA LIMITADA!', promo: '¡MONEDAS ×2!', tag: 'Oferta', vs: 'vs.',
+      names: { offer_silver: 'Pack Plata', offer_gold: 'Pack Oro', offer_diamond: 'Pack Diamante', offer_weekend: 'Pack de fin de semana',
+        offer_oneshot_s: 'Pack de ayudas', offer_oneshot_m: 'Montaña de monedas', double_2h: 'Monedas ×2', starter_pack: 'Pack inicial' } },
+    en: { one: 'ONE-TIME OFFER!', onlyNow: 'Only now', ends: 'Ends in', value: 'value', coins: 'coins', up: 'Promoted to {t}!',
+      weekend: 'WEEKEND DEAL!', limited: 'LIMITED OFFER!', promo: 'COINS ×2!', tag: 'Offer', vs: 'vs.',
+      names: { offer_silver: 'Silver pack', offer_gold: 'Gold pack', offer_diamond: 'Diamond pack', offer_weekend: 'Weekend pack',
+        offer_oneshot_s: 'Booster pack', offer_oneshot_m: 'Coin mountain', double_2h: 'Coins ×2', starter_pack: 'Starter pack' } }
+  };
+
+  function p2(v) { return (v < 10 ? '0' : '') + v; }
+  // "02:14:07" (hours always shown: the timer reads like a clock); "1 d 02:14:07" past 24 h
+  function clock(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600);
+    return (d ? d + ' d ' : '') + p2(h) + ':' + p2(Math.floor(s % 3600 / 60)) + ':' + p2(s % 60);
+  }
+  function short(ms) { var s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? h + ':' + p2(m) + ' h' : m + ':' + p2(s % 60); }
+
+  function attach(P, shell, k) {
+    var doc = root.document, T = TX[shell.lang] || TX.en, off = P.offers, eco = P.eco, cfg = P.cfg, IAP = P.iap, Art = root.GamekitArt;
+    var $ = function (id) { return shell.el ? shell.el(id) : doc.getElementById(id); };
+    var ico = shell.ico, gic = shell.gic, fx = k.fx;
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+    if (!off) return null;
+
+    function name(id) { return T.names[id] || id; }
+    function title(o) {
+      if (o.kind === 'league') return T.up.replace('{t}', k.tierName(o.tier));
+      if (o.kind === 'weekend') return T.weekend;
+      if (o.kind === 'oneshot') return T.one;
+      if (o.kind === 'promo') return T.promo;
+      return T.limited;
+    }
+    function boosterFan(b) {
+      var ids = Object.keys(b || {}).slice(0, 3);
+      return '<span class="gk-of-fan">' + ids.map(function (id, i) { return '<i class="gk-bt big f' + i + '" style="--bc:' + shell.boostCol(id) + '">' + ico(id) + '</i>'; }).join('') + '</span>';
+    }
+    function art(o, g) {
+      if (!Art) return '';
+      if (o.kind === 'league') return Art.chest(o.tier >= 5 ? 'crystal' : o.tier >= 2 ? 'gold' : 'silver', { cls: 'gk-of-chest' });
+      if (o.kind === 'weekend' || o.kind === 'starter') return '<span class="gk-of-gift">' + Art.gift('#ff5a7a') + '</span>';
+      if (g.doubleHours && !g.coins) return '<i class="gk-x2i huge">' + ico('coin') + '<em>×2</em></i>';
+      if (g.coins && !g.boosters) return '<span class="gk-of-coins">' + Art.coinPile(3) + '</span>';
+      return boosterFan(g.boosters);
+    }
+    function badge(c) {
+      if (!c) return '';
+      if (c.discountPct >= 10) return '<span class="gk-ofbadge hot"><b>-' + c.discountPct + '%</b></span>';
+      if (c.valuePct >= cfg.offers.minValuePct) return '<span class="gk-ofbadge"><b>+' + c.valuePct + '%</b><small>' + T.value + '</small></span>';
+      return '';
+    }
+    // the reference behind the claim, printed under the button (auditable): "+180% vs. 12.000 monedas · 9,99 €"
+    function refLine(c) {
+      if (!c || c.was || !c.ref || !(c.valuePct >= cfg.offers.minValuePct || c.coinMult >= 2)) return '';
+      var r = P.product(c.ref);
+      return '<small class="gk-of-ref">' + T.vs + ' ' + r.grant.coins.toLocaleString(shell.lang) + ' ' + T.coins + ' · ' + esc(IAP.price(r.id)) + '</small>';
+    }
+    function priceBlock(o, c, attrs, cls) {
+      return '<div class="gk-of-buy">' + (c && c.was ? '<s class="gk-of-was">' + esc(IAP.price(c.was)) + '</s>' : '') +
+        '<button class="' + cls + '" ' + attrs + '>' + esc(IAP.price(o.product)) + '</button></div>';
+    }
+    function timer(o) {
+      if (o.kind === 'oneshot') return '<div class="gk-of-timer now"><b>' + T.onlyNow + '</b></div>';
+      if (o.kind === 'promo') return '';
+      return '<div class="gk-of-timer">' + gic('stopwatch') + '<span>' + T.ends + '</span><b data-ends="' + o.expiresAt + '">' + clock(o.expiresAt - Date.now()) + '</b></div>';
+    }
+
+    // ---------- the popup ----------
+    var openKey = null;
+    function popup(o, where, done) {
+      k.enqueue(function (close) {
+        var p = P.product(o.product);
+        if (!p || (o.kind !== 'oneshot' && o.kind !== 'promo' && !off.canBuy(o.key))) { finishNow(); return; }
+        var c = off.claims(o.product), g = p.grant || {};
+        var style = o.kind === 'league' && k.tierCol ? ' style="--tc:' + k.tierCol(o.tier) + '"' : '';
+        k.showOv('gk-offerov k-' + o.kind, '<div class="gk-rays"></div><div class="gk-offer k-' + o.kind + '"' + style + '>' +
+          '<button class="ic gk-x" id="gk-of-x" aria-label="×">' + k.sico('close') + '</button>' +
+          '<div class="gk-of-ban">' + esc(title(o)) + '</div>' +
+          '<div class="gk-of-name">' + esc(name(o.product)) + '</div>' +
+          '<div class="gk-of-art"><span class="gk-of-glow"></span>' + art(o, g) + badge(c) + '</div>' +
+          shell.rewardTiles(g, 'big') +
+          (c && c.coinMult >= 2 ? '<div class="gk-of-mult">×' + c.coinMult + ' ' + T.coins + '</div>' : '') +
+          timer(o) + priceBlock(o, c, 'id="gk-of-buy"', 'btn cta gk-of-btn') + refLine(c) + '</div>');
+        openKey = o.key;
+        fx.sfx.whoosh(); fx.haptic('medium');
+        setTimeout(function () { var a = k.ov.querySelector('.gk-of-art'); if (a) { var ce = k.center(a); fx.sparks(ce.x, ce.y, '#ffd76a', 34); fx.shockwave(ce.x, ce.y, '#ffd76a', 140); } }, 280);
+        var finished = false;
+        function finish() {
+          if (finished) return;
+          finished = true;
+          openKey = null;
+          off.close(o.key);         // a one-shot offer is gone for good; a timed one keeps its shop card until it ends
+          P.commit();
+          close();
+          if (done) setTimeout(done, 230);
+        }
+        function finishNow() { off.close(o.key); P.commit(); close(); if (done) setTimeout(done, 230); }
+        k.tap('gk-of-x', finish);
+        k.tap('gk-of-buy', function () {
+          var b = doc.getElementById('gk-of-buy');
+          if (!b || b.disabled) return;
+          b.disabled = true;
+          P.buyOffer(o.key).then(function (got) {
+            if (!got) { b.disabled = false; return; }
+            var ce = k.center(b);
+            fx.confetti(ce.x, ce.y, { n: 140, power: 680 }); fx.sfx.big(); fx.haptic('success');
+            if (got.coins) k.coinFly(b, got.coins);
+            setTimeout(finish, 650);
+          }, function () { b.disabled = false; });
+        });
+        popup.expire = function () { if (openKey === o.key && o.kind !== 'oneshot' && o.kind !== 'promo' && off.msLeft(o.key) <= 0) finish(); };
+      });
+    }
+    // app start: wait until a menu is on screen (never over a level in progress)
+    P.offerPresenter = function (o, where, done) {
+      if (where !== 'start' || !shell.isMenu || shell.isMenu()) { popup(o, where, done); return; }
+      var tries = 0, t = setInterval(function () {
+        if (shell.isMenu() || ++tries > 120) { clearInterval(t); if (shell.isMenu()) popup(o, where, done); else { off.close(o.key); if (done) done(); } }
+      }, 1000);
+    };
+
+    // ---------- shop cards (live timed offers; the starter pack keeps the shell's own hero card) ----------
+    shell.shopOffers = function () {
+      return off.live().filter(function (o) { return o.kind !== 'starter'; }).map(function (o) {
+        var p = P.product(o.product), c = off.claims(o.product);
+        if (!p) return '';
+        return '<div class="gk-hero gk-ofcard k-' + o.kind + '"><span class="gk-ribbon hot">' + T.tag + '</span>' +
+          '<div class="gk-hero-head"><b>' + esc(name(o.product)) + '</b><small>' + gic('stopwatch') + T.ends + ' <b data-ends="' + o.expiresAt + '">' + clock(o.expiresAt - Date.now()) + '</b></small></div>' +
+          '<div class="gk-of-art sm">' + art(o, p.grant || {}) + badge(c) + '</div>' + shell.rewardTiles(p.grant, 'big') +
+          priceBlock(o, c, 'data-offer="' + esc(o.key) + '"', 'mini cta big') + refLine(c) + '</div>';
+      }).join('');
+    };
+    shell.onOfferTap = function (key, btn) {
+      btn.disabled = true;
+      P.buyOffer(key).then(function () { if (shell.screen === 'shop') shell.renderShop(); }, function () { btn.disabled = false; });
+    };
+
+    // ---------- coin counter badge + result tag ----------
+    var chip = $('b-coins'), x2 = null;
+    if (chip) { x2 = doc.createElement('small'); x2.className = 'gk-x2'; chip.appendChild(x2); }
+    var prevResult = shell.onResult;
+    shell.onResult = function (s) {
+      if (prevResult) prevResult(s);
+      var el = $('o-coins');
+      if (s && s.double && el) el.insertAdjacentHTML('beforeend', '<span class="gk-tag x2">' + ico('coin') + '×2</span>');
+    };
+
+    // ---------- one clock for every countdown on screen ----------
+    var shopSig = '';
+    setInterval(function () {
+      var now = Date.now(), gone = false;
+      doc.querySelectorAll('[data-ends]').forEach(function (e) {
+        var left = +e.getAttribute('data-ends') - now;
+        e.textContent = e.closest('.gk-wide') ? shell.fmtLeft(Math.max(0, left)) : clock(left);
+        if (left <= 0) gone = true;
+      });
+      if (popup.expire) popup.expire();
+      if (shell.screen === 'shop') {
+        var sig = off.live().map(function (o) { return o.key; }).join(',') + (eco.doubleActive() ? 'x' : '');
+        if (gone || sig !== shopSig) { shopSig = sig; shell.renderShop(); }
+      }
+      if (x2) { var l = eco.doubleLeft(); x2.textContent = l > 0 ? '×2 ' + short(l) : ''; }
+    }, 1000);
+
+    return { popup: popup, clock: clock, texts: T };
+  }
+
+  var OffersUI = { attach: attach, TEXTS: TX, clock: clock };
+  if (typeof module !== 'undefined' && module.exports) module.exports = OffersUI;
+  else root.GamekitOffersUI = OffersUI;
 })(this);
 
 /* ---- gamekit/embed/embed.js ---- */
@@ -6329,7 +6932,17 @@
       { id: 'starter_pack', type: 'non_consumable', price: '1,99 €', offer: 'starter',
         grant: { coins: 1500, boosters: { hint: 4, reveal: 3 }, skin: 'tinta', noAdsDays: 7 } },
       // 10 boosters, worth 2,400 coins at shop prices: a bit more than coins_s (2,000) for the same 1,99 €
-      { id: 'boosters_bundle', type: 'consumable', price: '1,99 €', grant: { boosters: { hint: 6, reveal: 4 } } }
+      { id: 'boosters_bundle', type: 'consumable', price: '1,99 €', grant: { boosters: { hint: 6, reveal: 4 } } },
+      // limited-time offers (gamekit meta/offers.js, MONETIZATION.md addendum D). Value claims are computed from these
+      // contents vs the best regular coin pack (coins_l, 1,201 coins per euro); boosters count at their shop price.
+      // league-up packs (first promotion to Plata / Oro+ / Esmeralda+), live 24 h
+      { id: 'offer_silver', type: 'consumable', price: '1,99 €', offer: 'league', grant: { coins: 4000, boosters: { hint: 4, reveal: 4 } } },
+      { id: 'offer_gold', type: 'consumable', price: '4,99 €', offer: 'league', grant: { coins: 12000, boosters: { hint: 10, reveal: 10 }, doubleHours: 2 } },
+      { id: 'offer_diamond', type: 'consumable', price: '9,99 €', offer: 'league', grant: { coins: 28000, boosters: { hint: 20, reveal: 20 }, doubleHours: 6 } },
+      // weekend deal (Fri-Sun, every 2nd week)
+      { id: 'offer_weekend', type: 'consumable', price: '2,99 €', offer: 'weekend', grant: { coins: 7000, boosters: { hint: 4, reveal: 4 }, doubleHours: 2 } },
+      // one-shot: the boosters_bundle contents for 0,99 € instead of 1,99 € (a true -50%), only in its popup
+      { id: 'offer_oneshot_s', type: 'consumable', price: '0,99 €', offer: 'oneshot', sameAs: 'boosters_bundle', grant: { boosters: { hint: 6, reveal: 4 } } }
     ]
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = GAME;

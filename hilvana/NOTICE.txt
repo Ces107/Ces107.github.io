@@ -8,7 +8,7 @@ data/words.js, data/levels.js, data/daily.js
   Word frequencies: Google Books Ngram Viewer data (CC BY 3.0, http://books.google.com/ngrams) and
   Tatoeba sentence counts (CC BY 2.0 FR, https://tatoeba.org). The Source Code Form of these files is the
   files themselves plus tools/build_dict.py, tools/blocklist.txt and tools/gen_levels.js, available at
-  the public repository named in the store listing.
+  https://github.com/Ces107/hilvana-datos .
 
 data/regional.js
   Regional vocabulary compiled by the Hilvana team from public linguistic sources (listed inside the
