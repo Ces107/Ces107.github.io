@@ -93,7 +93,7 @@
       slots: 4,
       // rarity tiers: common / rare / epic / legendary (colours in shell/fun.css)
       types: {
-        wood: { unlockMin: 15, coins: 25, boosters: 0, rarity: 'common' },
+        wood: { unlockMin: 15, coins: 15, boosters: 0, rarity: 'common' },   // v3 (win chests): 25 -> 15
         silver: { unlockMin: 60, coins: 50, boosters: 1, rarity: 'rare' },
         gold: { unlockMin: 180, coins: 100, boosters: 2, rarity: 'epic' },
         crystal: { unlockMin: 360, coins: 250, boosters: 3, rarity: 'legendary' }
@@ -103,9 +103,30 @@
       // Chests from paid sources (premium pass) are fixed and never roll.
       lucky: { wood: 0.10, silver: 0.06, gold: 0.03 },
       boosterOrder: [],      // game: which boosters a chest gives, in order
-      levelMilestone: 20,    // a silver chest every 20 levels won for the first time
-      adSkipsPerDay: 3       // R3: a rewarded ad opens the chest that is unlocking
+      levelMilestone: 0,     // (was a silver chest every 20 first wins; the win chests below replace it. 0 = off)
+      adSkipsPerDay: 3,      // R3: a rewarded ad opens the chest that is unlocking
+      // Clash-style win chests: every `every` wins (level won, or a finished game of a mode in `modes`) the next type of
+      // the fixed cycle drops into a free slot (none when the 4 slots are full). Deterministic, never random.
+      win: { every: 5, modes: ['daily'], cycle: ['wood', 'wood', 'wood', 'wood', 'silver', 'wood', 'wood', 'wood', 'wood', 'wood'] },
+      // "Abrir ya" with coins: price = minutes left x perMin (at least min). Locked chests: their whole timer
+      skipCoins: { perMin: 2, min: 20 }
     },
+
+    // ---- chest shop: chests bought with COINS (soft currency; never with real money directly). Coins can be bought,
+    //      so each tier is a randomized item: its drop table is shown before buying (Play "loot box" odds disclosure),
+    //      contents are in-game items only (coins, boosters), the reveal shows the real outcome (no near-miss).
+    //      Expected value (boosters at their coin price) rises slightly with the tier; MONETIZATION.md addendum E.
+    //      A free player (~350 coins/day) affords the small one every 1-2 days; the big ones take weeks or bought coins.
+    chestShop: [
+      { id: 'small', art: 'wood', price: 450, drops: [
+        { w: 60, coins: 120, boosters: 1 }, { w: 25, coins: 100, boosters: 2 }, { w: 15, coins: 450, boosters: 0 }] },
+      { id: 'big', art: 'silver', price: 1500, drops: [
+        { w: 60, coins: 250, boosters: 4 }, { w: 25, coins: 150, boosters: 6 }, { w: 15, coins: 900, boosters: 2 }] },
+      { id: 'epic', art: 'gold', price: 4000, drops: [
+        { w: 60, coins: 500, boosters: 12 }, { w: 28, coins: 400, boosters: 16 }, { w: 12, coins: 2000, boosters: 8 }] },
+      { id: 'legendary', art: 'crystal', price: 9000, drops: [
+        { w: 60, coins: 1200, boosters: 28 }, { w: 30, coins: 1000, boosters: 36 }, { w: 10, coins: 6000, boosters: 14 }] }
+    ],
 
     // ---- streak (Duolingo-style flame) ----
     streak: {
@@ -135,7 +156,7 @@
     },
 
     // ---- player level (lifetime XP, same XP as the pass): need(n) = base + step * (n - 1) ----
-    levels: { base: 120, step: 30, coins: 12, coinsStep: 2, spinEvery: 3, chestEvery: 10, chest: 'silver' },
+    levels: { base: 120, step: 30, coins: 12, coinsStep: 2, spinEvery: 3, chestEvery: 10, chest: 'wood' },   // v3: silver -> wood (win chests add supply)
 
     // ---- lucky moment: the game reports a big moment (combo); chance of x2 game coins, bounded ----
     lucky: { chance: 0.12, minStrength: 3, maxPerDay: 2, mult: 2, cap: 60 },
@@ -145,8 +166,17 @@
       tiers: ['bronze', 'silver', 'gold', 'sapphire', 'ruby', 'emerald', 'amethyst', 'diamond'],
       size: 30, promote: 5, demote: 5,
       base: 420, growth: 1.18,           // rivals' typical week at tier t: base * growth^t (nudged by the player's own pace)
-      rewards: [{ to: 1, chest: 'gold' }, { to: 3, chest: 'silver' }, { to: 10, chest: 'wood' }],
-      legendaryFrom: 4                   // 1st place from tier 4 (ruby) up gets the legendary chest
+      // weekly prizes by final rank (brackets up to `to`), shown on the menu card and the league sheet. Higher tiers pay more:
+      // coins x (1 + tierCoins x tier) (Bronce x1 ... Diamante x2.75), the chest moves up one rarity every chestStep tiers
+      // (Zafiro, Amatista), and the top 3 get +1 booster every boosterStep tiers.
+      rewards: [
+        { to: 1, chest: 'gold', coins: 120, boosters: 1 },
+        { to: 2, chest: 'silver', coins: 80 },
+        { to: 3, chest: 'silver', coins: 60 },
+        { to: 5, chest: 'wood', coins: 30 },     // the rest of the promotion zone
+        { to: 10, coins: 10 }
+      ],
+      tierCoins: 0.25, chestStep: 3, boosterStep: 2
     },
 
     // ---- ranking (daily challenge): rewards granted by the server next login; CPU rivals top up thin tables ----
@@ -177,7 +207,7 @@
     },
 
     // ---- offers ----
-    starterPack: { afterLevel: 10, windowHours: 72 },
+    starterPack: { afterLevel: 10, afterGames: 1, windowHours: 72 },   // the window opens after the first finished game (or level 10)
     piggy: { share: 0.30, breakAt: 1200, cap: 3000 },   // v2: income is lower, so a bigger share fills it in ~2 weeks
     // limited-time offers + the between-games rhythm (meta/offers.js, MONETIZATION.md addendum D). Every number is a
     // Remote Config key (offers.breakMin, offers.oneshot.1.cooldownDays, ...). Timers are real: an offer that ends is gone.
@@ -201,7 +231,10 @@
         { product: 'offer_oneshot_m', weight: 1, cooldownDays: 14 },
         { product: 'double_2h', weight: 2, cooldownDays: 2 }
       ],
-      appStart: { minSessions: 2, minGames: 3 }   // app-start popup: never on the first launch, only after 3 finished games
+      // app-start popup: never on the first launch. League / weekend packs after 3 finished games and the offers unlock;
+      // the starter (welcome) pack from the 2nd session, once per session while its window is live (still within the
+      // daily cap and the 20-min gap; a menu screen, closable, never over a level)
+      appStart: { minSessions: 2, minGames: 3, starterMinGames: 1, starterEverySession: true }
     },
 
     // ---- feature unlock order (avoid day-1 overload): reached level OR finished games ----
@@ -211,7 +244,7 @@
       chests: { level: 8, games: 6 },
       pass: { level: 15, games: 12 },
       freeze: { days: 2 },
-      starter: { level: 10 },
+      starter: { level: 10, games: 1 },
       piggy: { level: 20 },
       offers: { level: 6, games: 5 }   // offer popups (also gated by the day-0 grace of the ads)
     },
@@ -642,8 +675,10 @@
  *   meta.addXp(n), meta.passTier(), meta.claimPass(tier, 'free'|'premium')
  *   meta.earnChest(type), meta.startUnlock(i), meta.chestState(i), meta.openChest(i), meta.adSkip(i), meta.chestContents(type)
  *   meta.canDailyGift/claimDailyGift(booster), meta.canShopCoins/claimShopCoins(), meta.canRepairStreak/repairStreak()
- *   meta.unlocked(feature, {level, games}), meta.starterOpen(level), meta.passProductId()
- * Chests are only earned by playing, never sold, and their contents are fixed and shown up front (chestContents).
+ *   meta.unlocked(feature, {level, games}), meta.starterOpen(level, games), meta.passProductId()
+ *   meta.onWin() (win chests), meta.skipCost(i) / coinSkip(i) ("abrir ya" with coins), meta.shopOdds(id) / buyChest(id) (chest shop)
+ * Slot chests are earned by playing (never sold) and their contents are fixed and shown up front (chestContents).
+ * Shop chests are bought with coins and opened at once; their drop table is shown before buying (shopOdds).
  */
 (function (root) {
   'use strict';
@@ -663,7 +698,8 @@
       gift: '',           // day the daily gift was claimed
       shopCoins: null,    // { day, n } rewarded free coins in the shop
       repairDay: '',      // last streak repair
-      starterFrom: 0      // when the starter pack window opened
+      starterFrom: 0,     // when the starter pack window opened
+      wins: 0, winChests: 0   // wins counted for the win chests, win chests dropped (position in the cycle)
     };
   }
 
@@ -840,6 +876,61 @@
         c.opensAt = now();
         return true;
       },
+      // "Abrir ya" with coins: minutes left (a locked chest: its whole timer) x skipCoins.perMin, at least skipCoins.min
+      skipCost: function (i) {
+        var c = state.chests[i], k = cfg.chests.skipCoins || { perMin: 2, min: 20 };
+        if (!c) return 0;
+        var st = meta.chestState(i);
+        if (st.status === 'ready') return 0;
+        var mins = st.status === 'unlocking' ? Math.ceil(st.msLeft / 60000) : cfg.chests.types[c.type].unlockMin;
+        return Math.max(k.min, mins * k.perMin);
+      },
+      coinSkip: function (i) {
+        var c = state.chests[i], cost = meta.skipCost(i);
+        if (!c || !cost || !eco.spend(cost, 'chest_skip')) return false;
+        c.opensAt = now();
+        track('chest_skip', { type: c.type, coins: cost });
+        return true;
+      },
+      // a win (level won, or a finished game of a chests.win.modes mode): every `every` wins the next chest of the cycle
+      // drops into a free slot. Returns the chest type, or null (not due, or the slots are full: Clash rules)
+      onWin: function () {
+        var W = cfg.chests.win;
+        if (!W || !W.every || !W.cycle || !W.cycle.length) return null;
+        state.wins = (state.wins || 0) + 1;
+        if (state.wins % W.every) return null;
+        var type = W.cycle[(state.winChests || 0) % W.cycle.length];
+        if (!meta.earnChest(type)) return null;
+        state.winChests = (state.winChests || 0) + 1;
+        return type;
+      },
+      winsToChest: function () { var W = cfg.chests.win; return W && W.every ? W.every - ((state.wins || 0) % W.every) : 0; },
+      // chest shop (bought with coins): the drop table of a tier, as shown in its odds sheet
+      shopChest: function (id) { return (cfg.chestShop || []).filter(function (t) { return t.id === id; })[0] || null; },
+      shopOdds: function (id) {
+        var t = meta.shopChest(id);
+        if (!t) return [];
+        var sum = t.drops.reduce(function (a, d) { return a + d.w; }, 0);
+        return t.drops.map(function (d) { return { p: d.w / sum, coins: d.coins || 0, boosters: meta.boosterSplit(d.boosters || 0, 0) }; });
+      },
+      // n boosters spread over the game's booster order, starting at `from` (fixed rule, shown in the odds sheet)
+      boosterSplit: function (n, from) {
+        var order = cfg.chests.boosterOrder, b = {};
+        for (var k = 0; k < n && order.length; k++) { var id = order[(k + (from || 0)) % order.length]; b[id] = (b[id] || 0) + 1; }
+        return b;
+      },
+      // buy a shop chest with coins and open it at once. r: random number in [0, 1) (tests pass it). The outcome is
+      // drawn here, before any animation, with exactly the odds of shopOdds(id)
+      buyChest: function (id, r) {
+        var t = meta.shopChest(id);
+        if (!t || !eco.spend(t.price, 'chest_shop_' + id)) return null;
+        var odds = meta.shopOdds(id), x = r == null ? Math.random() : r, k = 0;
+        for (var acc = 0; k < odds.length - 1; k++) { acc += odds[k].p; if (x < acc) break; }
+        var o = odds[k], got = eco.grant({ coins: o.coins, boosters: o.boosters }, 'chest_shop_' + id);
+        track('chest_buy', { tier: id, price: t.price, outcome: k, coins: o.coins });
+        got.chestType = t.art; got.from = t.art; got.lucky = false; got.shop = id; got.outcome = k;
+        return got;
+      },
       // fixed contents: exactly what the chest card shows (no randomness anywhere)
       chestContents: function (type) {
         var t = cfg.chests.types[type], order = cfg.chests.boosterOrder, b = {};
@@ -909,9 +1000,10 @@
         return (u.level && ctx.level >= u.level) || (u.games && ctx.games >= u.games) || false;
       },
       // starter pack: a 72 h window that opens the first time the player reaches level N
-      starterOpen: function (level) {
+      // games: finished games so far (the window also opens after sp.afterGames games)
+      starterOpen: function (level, games) {
         var sp = cfg.starterPack;
-        if (!state.starterFrom && level >= sp.afterLevel) state.starterFrom = now();
+        if (!state.starterFrom && (level >= sp.afterLevel || (sp.afterGames && games >= sp.afterGames))) state.starterFrom = now();
         return !!state.starterFrom && now() < state.starterFrom + sp.windowHours * 3600000;
       },
       passProductId: function () { var n = state.pass.season + 1; return 'pass_s' + (n < 10 ? '0' : '') + n; },
@@ -938,7 +1030,7 @@
         var chest = null;
         if (firstWin) {
           state.firstWins++;
-          if (state.firstWins % cfg.chests.levelMilestone === 0 && meta.earnChest('silver')) chest = 'silver';
+          if (cfg.chests.levelMilestone && state.firstWins % cfg.chests.levelMilestone === 0 && meta.earnChest('silver')) chest = 'silver';
         }
         return { quests: done, chest: chest };
       }
@@ -1266,6 +1358,19 @@
     function dayIdx() { return (U.dayNumber(today(), epoch) - 1) % 7; }
     function hourNow() { var d = new Date(now()); return d.getHours() + d.getMinutes() / 60; }
     function base(tier) { return Math.round(C.base * Math.pow(C.growth, tier)); }
+    // a reward bracket at a tier: coins x (1 + tierCoins x tier), chest up one rarity every chestStep tiers, top 3 +1
+    // booster every boosterStep tiers (boosters follow the game's booster order: fixed, no randomness)
+    function scaled(rw, tier, top3) {
+      var order = (cfg.chests && cfg.chests.order) || ['wood', 'silver', 'gold', 'crystal'];
+      var out = { chest: null, coins: 0, boosters: 0 };
+      if (rw.chest) {
+        var ci = order.indexOf(rw.chest) + (C.chestStep ? Math.floor(tier / C.chestStep) : 0);
+        out.chest = order[Math.min(order.length - 1, Math.max(0, ci))];
+      }
+      if (rw.coins) out.coins = Math.round(rw.coins * (1 + (C.tierCoins || 0) * tier));
+      out.boosters = (rw.boosters || 0) + (top3 && C.boosterStep ? Math.floor(tier / C.boosterStep) : 0);
+      return out;
+    }
 
     // rivals for (week, tier): fixed for the whole week
     function rivals(week, tier, n) {
@@ -1312,12 +1417,23 @@
         return '';
       },
       myRank: function () { var t = lg.table(); for (var i = 0; i < t.length; i++) if (t[i].me) return t[i].rank; return C.size; },
+      // prize for a final rank in a tier: { chest, coins, boosters } (null below the last bracket). Scaled by tier, see config
       rewardFor: function (rank, tier) {
+        tier = tier == null ? state.tier : tier;
         for (var i = 0; i < C.rewards.length; i++) {
           var rw = C.rewards[i];
-          if (rank <= rw.to) return { chest: rank === 1 && tier >= C.legendaryFrom ? 'crystal' : rw.chest };
+          if (rank <= rw.to) return scaled(rw, tier, i < 3);
         }
         return null;
+      },
+      // the prize brackets of a tier, for the UI: [{ from, to, chest, coins, boosters }]
+      rewardTable: function (tier) {
+        tier = tier == null ? state.tier : tier;
+        return C.rewards.map(function (rw, i) {
+          var r = scaled(rw, tier, i < 3);
+          r.from = i ? C.rewards[i - 1].to + 1 : 1; r.to = rw.to;
+          return r;
+        });
       },
       addXp: function (n) {
         lg.roll();
@@ -1343,8 +1459,15 @@
           if (rank <= C.promote && from < C.tiers.length - 1) to = from + 1;
           else if (rank > C.size - C.demote && from > 0) to = from - 1;
           var rw = lg.rewardFor(rank, from), got = null;
-          if (rw && rw.chest) {
-            got = meta.earnChest(rw.chest) ? { chest: rw.chest } : { coins: eco.earn(meta.chestContents(rw.chest).coins, 'league_' + rw.chest) };
+          if (rw && (rw.chest || rw.coins || rw.boosters)) {
+            var g = { coins: rw.coins };
+            if (rw.boosters && meta.boosterSplit) g.boosters = meta.boosterSplit(rw.boosters, rank - 1);
+            got = eco.grant(g, 'league_' + from) || {};
+            // the chest goes to a free slot; with the 4 slots full, its coins instead
+            if (rw.chest) {
+              if (meta.earnChest(rw.chest)) got.chest = rw.chest;
+              else got.coins = (got.coins || 0) + eco.earn(meta.chestContents(rw.chest).coins, 'league_' + rw.chest);
+            }
           }
           res = { week: keepWeek, rank: rank, from: from, to: to, xp: state.xp, reward: rw, got: got };
           state.history.unshift({ week: keepWeek, rank: rank, tier: from, xp: state.xp });
@@ -1796,9 +1919,9 @@
       if (end && !deps.owns('starter_pack')) add('starter', 'starter', 'starter_pack', end);
     }
 
-    function popupOk() {
-      return deps.iapAvailable() && deps.allowed() && dayCount() < O.maxPerDay && now() - state.lastPopupAt >= O.minGapMin * 60000;
-    }
+    // the popup caps (per day, minutes apart), shared by every offer popup
+    function capsOk() { return dayCount() < O.maxPerDay && now() - state.lastPopupAt >= O.minGapMin * 60000; }
+    function popupOk() { return deps.iapAvailable() && deps.allowed() && capsOk(); }
     function timedCandidate() {
       var t = now();
       return state.live.filter(function (o) { return ORDER[o.kind] != null && !o.bought && o.shows < O.perOffer && o.expiresAt - t > 60000; })
@@ -1889,13 +2012,39 @@
         var o = get(key);
         if (o && (o.kind === 'oneshot' || o.kind === 'promo')) { state.live.splice(state.live.indexOf(o), 1); track('offer_end', { product: o.product, kind: o.kind, bought: !!o.bought }); }
       },
-      // app start: at most one popup per session, never on the first launches, only for a live timed offer
+      // app start: at most one popup per session, never on the first launch, only for a live timed offer.
+      // League / weekend packs: after appStart.minGames and the offers unlock (+ day-0 grace), perOffer popups each.
+      // The starter (welcome) pack: from the 2nd session after appStart.starterMinGames finished games, once per session
+      // while its window is live (appStart.starterEverySession; not limited by perOffer). Caps always apply.
       startOffer: function () {
         refresh();
         var A = O.appStart;
-        if (state.startSession === state.sessions || state.sessions < A.minSessions || deps.games() < A.minGames || !popupOk()) return null;
-        var c = timedCandidate();
+        if (state.startSession === state.sessions || state.sessions < A.minSessions || !deps.iapAvailable() || !capsOk()) return null;
+        var c = deps.games() >= A.minGames && deps.allowed() ? timedCandidate() : null;
+        if (!c && deps.games() >= (A.starterMinGames || A.minGames)) {
+          var t = now();
+          c = state.live.filter(function (o) {
+            return o.kind === 'starter' && !o.bought && o.expiresAt - t > 60000 && (A.starterEverySession || (o.shows < O.perOffer && deps.allowed()));
+          })[0] || null;
+        }
         return c ? off.open(c, 'start') : null;
+      },
+      // the player tapped something that costs more coins than they have (continue, booster): a live timed offer whose
+      // coins cover `need`, else a one-shot coin offer from the pool when the popup caps and its cooldown allow it
+      // (opened now as where 'coins': it counts for the caps and the cooldown, never for the between-games rhythm)
+      coinOffer: function (need) {
+        refresh();
+        if (!deps.iapAvailable()) return null;
+        var t = now(), coinsOf = function (pid) { var p = product(pid); return (p && p.grant && p.grant.coins) || 0; };
+        var live = state.live.filter(function (o) { return ORDER[o.kind] != null && !o.bought && o.expiresAt - t > 60000 && coinsOf(o.product) >= need; })
+          .sort(function (a, b) { return a.expiresAt - b.expiresAt; })[0];
+        if (live) return live;
+        if (!popupOk()) return null;
+        var pick = (O.oneshot || []).filter(function (x) {
+          var p = product(x.product);
+          return p && p.offer === 'oneshot' && coinsOf(x.product) >= need && x.product !== state.lastOneshot && t - (state.lastShown[x.product] || 0) >= x.cooldownDays * DAY;
+        })[0];
+        return pick ? off.open({ kind: 'oneshot', product: pick.product }, 'coins') : null;
       }
     };
     return off;
@@ -2303,7 +2452,7 @@
     var save = Save.create({ key: gameId + '.save', storage: opts.storage, defaults: function () {
       return { settings: { muted: false, theme: null }, progress: { stars: {}, unlocked: 1, run: null },
         economy: Economy.defaults(cfg), meta: Meta.defaults(cfg), fun: Fun.defaults(), league: League.defaults(), offers: Offers.defaults(),
-        stats: { games: 0, levels: 0, byMode: {} }, game: opts.saveDefaults ? opts.saveDefaults() : {} };
+        stats: { games: 0, levels: 0, byMode: {} }, ui: { nickAsked: false }, game: opts.saveDefaults ? opts.saveDefaults() : {} };
     } });
     var D = function () { return save.data; };
     var hooks = { track: function (n, p) { An.track(n, p); }, onChange: function () { emit('wallet'); } };
@@ -2344,7 +2493,7 @@
       owns: function (id) { return eco.ownsProduct(id); }, doubleActive: function () { return eco.doubleActive(); },
       games: function () { return D().stats.games; },
       starterEnd: function () {
-        if (!P.unlocked('starter') || !meta.starterOpen(D().progress.unlocked)) return 0;
+        if (!P.unlocked('starter') || !meta.starterOpen(D().progress.unlocked, D().stats.games)) return 0;
         return D().meta.starterFrom + cfg.starterPack.windowHours * 3600000;
       }
     });
@@ -2419,6 +2568,12 @@
           hooks.track('game_end', { mode: r.mode, score: r.score || 0 });
         }
         d.stats.games++;
+        // Clash-style win chest: a won level or a finished game of a chests.win.modes mode counts as a win
+        var W = cfg.chests.win;
+        if (P.unlocked('chests') && (r.level ? r.won : W && (W.modes || []).indexOf(r.mode) >= 0)) {
+          out.winChest = meta.onWin();
+          if (out.winChest && !out.chest) out.chest = out.winChest;
+        }
         var bm = d.stats.byMode = d.stats.byMode || {};
         bm[r.level ? 'level' : r.mode] = (bm[r.level ? 'level' : r.mode] || 0) + 1;
         Ads.levelEnded();
@@ -2535,6 +2690,27 @@
         return P.buy(o.product);
       },
 
+      // ---- chests: "abrir ya" (coins or a rewarded ad) and the chest shop (coins) ----
+      // how: 'coins' | 'ad'. cb(true) when the chest is ready to open
+      openChestNow: function (i, how, cb) {
+        cb = cb || function () {};
+        if (how === 'ad') {
+          var st = meta.chestState(i);
+          if (!st || !meta.canAdSkip() || !Ads.rewardedReady()) { cb(false); return; }
+          Ads.showRewarded(function (ok) { var done = ok && meta.adSkip(i); if (done) save.commit(); cb(!!done); }, 'chest');
+          return;
+        }
+        var ok = meta.coinSkip(i);
+        if (ok) { save.commit(); emit('wallet'); }
+        cb(ok);
+      },
+      // r optional (tests). -> what was granted (+ chestType, shop, outcome) or null (not enough coins)
+      buyChest: function (id, r) {
+        var got = meta.buyChest(id, r);
+        if (got) { save.commit(); emit('wallet'); }
+        return got;
+      },
+
       // ---- boosters: the platform owns counts; the game owns the effect ----
       // cb(true) when one is available (owned, bought with coins, or earned with a rewarded ad)
       acquireBooster: function (id, cb) {
@@ -2625,7 +2801,8 @@
       piggyFill: 'Fills up as you play', piggyBreak: 'Ready to break!', left: 'Ends in', empty: 'Empty', locked: 'Locked', owned: 'Owned',
       tap: 'Tap to unlock', unlocking: 'Opening', noAdsWhat: 'No breaks between games', freezeWhat: 'Saves your streak one day',
       hard: 'HARD LEVEL', superHard: 'SUPER HARD!', questsL: 'Quests', shopL: 'Shop', easy: 'Easy', play: 'Play', upTo: 'Up to', level: 'Level',
-      x2: 'Coins ×2', x2On: 'Active', q: {}, skins: {} },
+      x2: 'Coins ×2', x2On: 'Active', chestsH: 'CHESTS', chestNames: { small: 'Small chest', big: 'Big chest', epic: 'Epic chest', legendary: 'Legendary chest' },
+      odds: 'Odds', q: {}, skins: {} },
     es: { claim: 'Recoger', open: 'Abrir', dailyQ: 'HOY', weeklyQ: 'ESTA SEMANA', boosters: 'AYUDAS', blocks: 'ASPECTOS', boards: 'TABLEROS',
       streak: 'RACHA', store: 'TIENDA', equip: 'Usar', removeAds: 'Sin anuncios', pass: 'Pase', wait: 'Un cofre cada vez', min: 'min', h: 'h', d: 'd',
       free: 'GRATIS', starter: 'Pack inicial', piggy: 'Hucha', passWhat: 'Fila premium: monedas, cofres de oro, 2 aspectos', restore: 'Restaurar compras',
@@ -2635,7 +2812,8 @@
       piggyFill: 'Se llena al jugar', piggyBreak: '¡Lista para romper!', left: 'Termina en', empty: 'Vacío', locked: 'Bloqueado', owned: 'Tuyo',
       tap: 'Toca para abrir', unlocking: 'Abriendo', noAdsWhat: 'Sin pausas entre partidas', freezeWhat: 'Salva tu racha un día',
       hard: 'NIVEL DIFÍCIL', superHard: '¡SÚPER DIFÍCIL!', questsL: 'Misiones', shopL: 'Tienda', easy: 'Fácil', play: 'Jugar', upTo: 'Hasta', level: 'Nivel',
-      x2: 'Monedas ×2', x2On: 'Activo', q: {}, skins: {} }
+      x2: 'Monedas ×2', x2On: 'Activo', chestsH: 'COFRES', chestNames: { small: 'Cofre pequeño', big: 'Cofre grande', epic: 'Cofre épico', legendary: 'Cofre legendario' },
+      odds: 'Probabilidades', q: {}, skins: {} }
   };
   var BOOST_COL = ['#ff8a3d', '#3f9bff', '#a066ff', '#2fbf71', '#ff4f7b', '#ffb320'];
   var DIFF = { dificil: 'hard', superdificil: 'super', facil: 'easy' };
@@ -2688,7 +2866,9 @@
       if (def.onShow) def.onShow(prev);
       refresh();
       if (opts.onScreen) opts.onScreen(name, prev);
+      screenFns.forEach(function (fn) { try { fn(name, prev); } catch (e) { if (root.console) root.console.error(e); } });
     }
+    var screenFns = [];   // platform UI listeners (fun-ui: menu card refresh, first-run nickname popup)
     function boostersOn() {
       var hud = (screens[screen] || {}).hud || {}, on = typeof hud.boosters === 'function' ? hud.boosters() : !!hud.boosters;
       return on && P.unlocked('boosters');
@@ -2954,6 +3134,7 @@
       }
       if (ch) {
         var i = +ch.dataset.i, st = meta.chestState(i);
+        if (api.chestTap) { api.chestTap(i); return; }
         if (st.status === 'locked') { if (!meta.startUnlock(i)) toast(TX.wait); else sfx.tick(); }
         else if (st.status === 'unlocking' && Ads.rewardedReady() && meta.canAdSkip()) {
           Ads.showRewarded(function (ok) { if (ok && meta.adSkip(i)) { P.commit(); renderQuests(); } }, 'chest');
@@ -2978,7 +3159,7 @@
         if (cfg.skins.some(function (s) { return s.iap === p.id; })) return false;          // shown with the skins
         if (p.type !== 'consumable' && eco.ownsProduct(p.id)) return false;
         if (p.id === 'remove_ads' && eco.state.noAds) return false;
-        if (p.offer === 'starter' && !(P.unlocked('starter') && meta.starterOpen(P.progress.unlocked()))) return false;
+        if (p.offer === 'starter' && !(P.unlocked('starter') && meta.starterOpen(P.progress.unlocked(), P.data.stats.games))) return false;
         if (p.offer === 'piggy' && !(P.unlocked('piggy') && eco.piggyBreakable())) return false;
         if (p.season && (!P.unlocked('pass') || meta.hasPremiumPass())) return false;
         if (p.offer && p.offer !== 'starter' && p.offer !== 'piggy') return false;   // limited-time offers: only as live offer cards (offers-ui)
@@ -3030,6 +3211,17 @@
           (pig ? priceBtn('data-iap="' + pig.id + '"', IAP.price(pig.id), 'cta') : '<span class="gk-lockpill">' + ico('lock') + cfg.piggy.breakAt + '</span>') + '</div>';
       }
       products.forEach(function (p) { h += wide(rewardTiles(p.grant), p.title || '', '', priceBtn('data-iap="' + p.id + '"', IAP.price(p.id), 'cta'), 'bundle'); });
+      // 4b. chests for coins (fun-ui opens the odds sheet first: what each tier can contain, with its exact odds)
+      if ((cfg.chestShop || []).length && api.chestShopOpen) {
+        h += '<h4><span>' + TX.chestsH + '</span></h4><div class="srow gk-chshop">';
+        cfg.chestShop.forEach(function (t) {
+          var rar = (cfg.chests.types[t.art] || {}).rarity || 'common';
+          h += '<div class="item gk-chitem r-' + rar + '"><button class="gk-chinfo" data-chodds="' + t.id + '" aria-label="' + TX.odds + '">i</button>' +
+            '<span class="gk-art">' + chestArt(t.art, 'gk-chestshop') + '</span><span>' + (TX.chestNames[t.id] || t.id) + '</span>' +
+            priceBtn('data-chest="' + t.id + '"', t.price.toLocaleString(lang) + ' ' + ico('coin'), 'buy') + '</div>';
+        });
+        h += '</div>';
+      }
       // 5. boosters for coins
       if (BOOST.length) {
         h += '<h4><span>' + TX.boosters + '</span></h4><div class="srow">';
@@ -3080,6 +3272,7 @@
       if (d.freeze && meta.buyFreeze()) { sfx.coin(); if (api.spendFx) api.spendFx(t, before - eco.coins); }
       if (d.iap) P.buy(d.iap).then(function () { if (screen === 'shop') renderShop(); });
       if (d.offer && api.onOfferTap) { api.onOfferTap(d.offer, t); return; }
+      if ((d.chest || d.chodds) && api.chestShopOpen) { api.chestShopOpen(d.chest || d.chodds); return; }
       if (d.restore) P.restore(true).then(function () { toast('✓'); });
       if (d.legal) legalOpen = !legalOpen;
       if (d.privacy) Ads.showPrivacyOptions();
@@ -3143,17 +3336,29 @@
         res.byAd = offer.byAd;
         var label = opts.contLabel ? opts.contLabel() : '<span>' + TX.cont + '</span>';
         b.innerHTML = offer.byAd ? ico('ad', 'adi') + label : label + ' ' + offer.coins + ' ' + ico('coin');
-        b.disabled = !offer.affordable;
+        // store builds: a tap without enough coins opens the buy-coins popup (offers-ui), so the button stays live
+        b.disabled = !offer.affordable && !(IAP.available && api.needCoins);
+        b.classList.toggle('gk-short', !offer.affordable);
       }
       if (summary.chest) setTimeout(function () { toast(ico('chest') + ' +1'); }, 900);
       if (summary.streakGift && summary.streakGift.coins) setTimeout(function () { toast(ico('flame') + ' ' + meta.liveStreak() + ' &nbsp;+' + summary.streakGift.coins + ' ' + ico('coin')); }, 1300);
       if (api.onResult) api.onResult(summary);
       refresh();
     }
-    tap('o-cont', function () {
+    function doContinue() {
       var b = $('o-cont');
+      if (!b || !res.onRevive) return;
       b.disabled = true;
-      P.requestContinue(function (ok) { b.disabled = false; if (ok && res.onRevive) { if (!res.byAd) sfx.coin(); res.onRevive(); } });
+      res.byAd = Ads.rewardedReady();
+      P.requestContinue(function (ok) { b.disabled = false; if (ok && res.onRevive) { if (!res.byAd) sfx.coin(); var f = res.onRevive; res.onRevive = null; f(); } });
+    }
+    tap('o-cont', function () {
+      // not enough coins and no rewarded ad: suggest coin packs (store builds), then continue if the player bought some
+      if (!Ads.rewardedReady() && eco.coins < cfg.continueCoins) {
+        if (IAP.available && api.needCoins) api.needCoins(cfg.continueCoins, { reason: 'continue', retry: doContinue });
+        return;
+      }
+      doContinue();
     });
     tap('o-double', function () {
       var b = $('o-double');
@@ -3184,6 +3389,10 @@
       shopOffers: null,    // set by shell/offers-ui.js: html of the live offer cards at the top of the shop
       onOfferTap: null,    // idem: a [data-offer] button in the shop was tapped
       renderShop: renderShop, fmtLeft: fmtLeft,
+      needCoins: null,     // set by shell/offers-ui.js: fn(coins, { reason, retry }) buy-coins popup (store builds)
+      chestTap: null,      // set by fun-ui: a chest slot was tapped (menu or quests sheet)
+      chestShopOpen: null, // set by fun-ui: odds sheet + purchase of a shop chest
+      onScreenChange: function (fn) { screenFns.push(fn); },
       isMenu: function () { var d = screens[screen]; return !!(d && d.hud && d.hud.menu); },
       id: function (defaultId) { return IDS[defaultId] || defaultId; },   // element id in this page
       el: $,
@@ -3417,6 +3626,8 @@
             else H.impact({ style: kind === 'heavy' ? 'HEAVY' : kind === 'medium' ? 'MEDIUM' : 'LIGHT' });
             return;
           }
+          var ua = root.navigator && root.navigator.userActivation;
+          if (ua && !ua.hasBeenActive) return;
           if (root.navigator && root.navigator.vibrate) root.navigator.vibrate(Array.isArray(kind) ? kind : map[kind] || [8]);
         } catch (e) { /* ignore */ }
       },
@@ -3762,7 +3973,10 @@
     es: { wheel: 'Ruleta', spin: 'Girar', free: 'Gratis', odds: 'Probabilidades', oddsNote: 'Las tiradas no se venden: 1 gratis al día, +1 con anuncio y más jugando (misiones, racha, niveles). El tamaño de cada porción es su probabilidad.',
       tomorrow: 'Mañana', booster: 'Ayuda', skin: 'Aspecto', coins: 'monedas', chest: 'Cofre', tap: 'Toca', lucky: '¡Suerte!', collect: 'Recoger', contents: 'Contiene',
       luckyUp: 'Mejora', level: 'Nivel', newSkin: 'Nuevo aspecto', equip: 'Usar', ok: 'OK', streak: 'Racha', days: 'días', gift: 'Regalo', league: 'Liga', ends: 'Termina en',
-      up: 'Ascenso', down: 'Descenso', cpu: 'Incluye rivales CPU', leagueRules: 'Puntos = XP de la semana. Los 5 primeros suben, los 5 últimos bajan. Premios: 1º cofre épico, 2º–3º raro, 4º–10º común.',
+      up: 'Ascenso', down: 'Descenso', cpu: 'Incluye rivales CPU', leagueRules: 'Puntos = XP de la semana. Los 5 primeros suben y los 5 últimos bajan. Cuanto más alta la liga, mejores premios.',
+      prizes: 'Premios', start: 'Empezar', openNow: 'Abrir ya', oneAtATime: 'Un cofre cada vez', ready: '¡Abrir!', wins: 'victorias', full: 'Huecos llenos',
+      possible: 'Contenido posible', oddsExact: 'Probabilidades exactas. Solo objetos del juego, sin valor fuera de él.', buy: 'Comprar', short: 'Te faltan',
+      nickTitle: 'Tu apodo', nickSub: 'Así te verán en la liga y el ranking.', save: 'Guardar', later: 'Ahora no',
       ranking: 'Ranking', today: 'Hoy', week: 'Semana', all: 'Siempre', you: 'Tú', playDaily: 'Jugar el diario', offline: 'Sin conexión',
       rankRules: 'Premios del diario, al día siguiente: top 3 · top 10 % · por participar.', profile: 'Perfil', nick: 'Apodo', flag: 'Bandera', hide: 'No salir en el ranking',
       privacy: 'Para el ranking guardamos tu apodo, tu bandera y tus puntuaciones con un identificador anónimo. Sin cuenta ni email.', privacyLink: 'Privacidad', termsLink: 'Condiciones',
@@ -3774,7 +3988,10 @@
     en: { wheel: 'Wheel', spin: 'Spin', free: 'Free', odds: 'Odds', oddsNote: 'Spins are never sold: 1 free a day, +1 with an ad, more by playing (quests, streak, levels). Each slice is drawn at its real probability.',
       tomorrow: 'Tomorrow', booster: 'Booster', skin: 'Skin', coins: 'coins', chest: 'Chest', tap: 'Tap', lucky: 'Lucky!', collect: 'Collect', contents: 'Contains',
       luckyUp: 'Upgrade', level: 'Level', newSkin: 'New skin', equip: 'Use', ok: 'OK', streak: 'Streak', days: 'days', gift: 'Gift', league: 'League', ends: 'Ends in',
-      up: 'Promotion', down: 'Relegation', cpu: 'Includes CPU rivals', leagueRules: 'Points = XP this week. Top 5 move up, bottom 5 move down. Rewards: 1st epic chest, 2nd–3rd rare, 4th–10th common.',
+      up: 'Promotion', down: 'Relegation', cpu: 'Includes CPU rivals', leagueRules: 'Points = XP this week. Top 5 move up, bottom 5 move down. Higher leagues pay better prizes.',
+      prizes: 'Prizes', start: 'Start', openNow: 'Open now', oneAtATime: 'One chest at a time', ready: 'Open!', wins: 'wins', full: 'Slots full',
+      possible: 'Possible contents', oddsExact: 'Exact odds. In-game items only, with no value outside the game.', buy: 'Buy', short: 'You need',
+      nickTitle: 'Your nickname', nickSub: 'This is how others see you in the league and the ranking.', save: 'Save', later: 'Not now',
       ranking: 'Ranking', today: 'Today', week: 'Week', all: 'All time', you: 'You', playDaily: 'Play the daily', offline: 'Offline',
       rankRules: 'Daily rewards, the next day: top 3 · top 10% · for taking part.', profile: 'Profile', nick: 'Nickname', flag: 'Flag', hide: 'Hide me from the ranking',
       privacy: 'For the ranking we store your nickname, flag and scores under an anonymous id. No account, no email.', privacyLink: 'Privacy', termsLink: 'Terms',
@@ -3833,7 +4050,7 @@
       '<div class="gk-wheelstage"><div class="gk-wheelbox"><canvas id="gk-wheel-cv"></canvas><div class="gk-pointer" id="gk-pointer"></div><button class="gk-hub" id="gk-hub">' + T.spin + '</button></div></div>' +
       '<div class="gk-spins" id="gk-spins"></div><div class="gk-prize" id="gk-prize"></div>');
     section('gk-league', '<span class="k" id="gk-lg-title">' + T.league + '</span><button class="ic" id="gk-lg-info" aria-label="i">' + sico('info') + '</button>',
-      '<div class="gk-lg-head" id="gk-lg-head"></div><div class="gk-ladder" id="gk-ladder"></div><div class="gk-rows" id="gk-lg-rows"></div>');
+      '<div class="gk-lg-head" id="gk-lg-head"></div><div class="gk-lgpz" id="gk-lg-prizes"></div><div class="gk-ladder" id="gk-ladder"></div><div class="gk-rows" id="gk-lg-rows"></div>');
     section('gk-rank', '<span class="k">' + T.ranking + '</span><span class="gk-hbtns"><button class="ic" id="gk-rk-info" aria-label="i">' + sico('info') + '</button><button class="ic" id="gk-rk-prof" aria-label="' + T.profile + '">' + sico('edit') + '</button></span>',
       '<div class="gk-tabs" id="gk-rk-tabs"><button data-p="daily" class="on">' + T.today + '</button><button data-p="weekly">' + T.week + '</button><button data-p="alltime">' + T.all + '</button></div>' +
       '<div class="gk-rk-status" id="gk-rk-status"></div><div class="gk-podium" id="gk-rk-pod"></div><div class="gk-rows" id="gk-rk-rows"></div><button class="btn pri gk-play" id="gk-rk-play" hidden>' + T.playDaily + '</button>');
@@ -3883,6 +4100,59 @@
       setArt('wheel', wheelIcon());
       setArt('ranking', Art ? Art.trophy() : sico('trophy'));
     }
+    // menu: league card (position, time left, prizes for 1st / 2nd / 3rd) and the chest slots (Clash style)
+    var home = opts.home ? $(opts.home) : null;
+    if (!home && dock && dock.parentNode) {
+      home = doc.createElement('div');
+      dock.parentNode.insertBefore(home, dock);
+    }
+    if (home) {
+      home.classList.add('gk-home', 'gk-tok');
+      home.innerHTML = '<button class="gk-hlg" id="gk-hlg"></button><div class="gk-hch" id="gk-hch"></div>';
+      home.addEventListener('click', function (e) {
+        var sl = e.target.closest('.gk-hslot');
+        if (sl) { fx.sfx.pop(); if (sl.dataset.i != null) chestTap(+sl.dataset.i); else shell.show('shop'); return; }
+        if (e.target.closest('#gk-hlg')) { fx.sfx.pop(); shell.show('league'); }
+      });
+    }
+    var homeSig = '';
+    function prizeMini(r, rank) {
+      return '<span class="gk-pz p' + rank + '"><i>' + rank + '</i>' + (r.chest ? chestArt(r.chest, 'gk-chestmini') : '') +
+        (r.coins ? '<b>' + ico('coin') + r.coins + '</b>' : '') + '</span>';
+    }
+    function renderHome() {
+      if (!home) return;
+      var tier = lg.state.tier, id = lg.tiers()[tier], tbl = lg.rewardTable(tier), rank = lg.myRank();
+      var lgHtml = emblem(tier, 44) + '<span class="gk-hlg-t"><b>' + T.league + ' ' + T.tiers[id] + '</b><small><em>' + rank + 'º</em>' + gic('stopwatch') + fmtLeft(lg.msLeft()) + '</small></span>' +
+        '<span class="gk-hlg-pz">' + [0, 1, 2].map(function (k) { return prizeMini(tbl[k], k + 1); }).join('') + '</span>';
+      var lgEl = $('gk-hlg');
+      lgEl.style.setProperty('--tc', TIER_COL[id]);
+      lgEl.classList.toggle('up', rank <= cfg.league.promote && tier < lg.tiers().length - 1);
+      if (lgEl.innerHTML !== lgHtml) lgEl.innerHTML = lgHtml;
+      var on = P.unlocked('chests'), hc = $('gk-hch');
+      hc.hidden = !on;
+      if (!on) return;
+      var sig = '', h = '', firstEmpty = true;
+      for (var i = 0; i < cfg.chests.slots; i++) {
+        var st = meta.chestState(i);
+        if (!st) {
+          var w = meta.winsToChest();
+          h += '<button class="gk-hslot empty">' + (firstEmpty && w ? '<span class="gk-hwin">' + (Art ? Art.trophy() : sico('trophy')) + '<b>' + w + '</b></span>' : '<span class="gk-ghost">' + ico('chest') + '</span>') + '</button>';
+          sig += 'e' + (firstEmpty ? w : '');
+          firstEmpty = false;
+          continue;
+        }
+        var rar = rarityOf(st.type), o = meta.chestOdds(st.type);
+        sig += st.type + st.status;
+        var lab = st.status === 'ready' ? '<span class="gk-cl go">' + T.ready + '</span>'
+          : st.status === 'unlocking' ? '<span class="gk-cl run">' + gic('stopwatch') + '<b data-hleft="' + i + '">' + shell.fmtLeft(st.msLeft) + '</b></span>'
+          : '<span class="gk-cl">' + gic('stopwatch') + (o.unlockMin >= 60 ? o.unlockMin / 60 + ' h' : o.unlockMin + ' min') + '</span>';
+        h += '<button class="gk-hslot r-' + rar + ' ' + st.status + '" data-i="' + i + '"><span class="gk-chestglow"></span>' + chestArt(st.type, 'gk-hsart') + lab + '</button>';
+      }
+      if (sig !== homeSig) { homeSig = sig; hc.innerHTML = h; }
+      else hc.querySelectorAll('[data-hleft]').forEach(function (b) { var st2 = meta.chestState(+b.getAttribute('data-hleft')); if (st2 && st2.msLeft) b.textContent = shell.fmtLeft(st2.msLeft); });
+    }
+    setInterval(function () { if (home && shell.isMenu && shell.isMenu()) renderHome(); }, 1000);
     var xpbar = opts.xpbar && $(opts.xpbar);
     function renderXp(animateFrom) {
       if (!xpbar) return;
@@ -3907,6 +4177,7 @@
       }
       var m = fun.streakMult(meta.liveStreak());
       if (multEl) multEl.textContent = m > 1 ? '×' + m : '';
+      try { renderHome(); } catch (e) { /* the menu card never blocks the wallet refresh */ }
     }
     function badgePop(el) { if (el && el.textContent && el.animate && !fx.reduced) el.animate([{ transform: 'scale(.2)' }, { transform: 'scale(1.4)' }, { transform: 'scale(1)' }], { duration: 450, easing: 'cubic-bezier(.3,1.6,.5,1)' }); }
     P.on('wallet', refreshMenu);
@@ -4007,6 +4278,7 @@
         var before = eco.coins;
         return acquire.call(P, id, function (ok, how) {
           if (ok) { try { boosterFx(id, how, before - eco.coins); } catch (e) { /* visuals never block the booster */ } }
+          else if (how === 'price' && P.iap.available && shell.needCoins) shell.needCoins(cfg.boosters.price[id], { reason: 'booster' });
           if (cb) cb(ok, how);
         });
       };
@@ -4037,7 +4309,8 @@
       var fn = queue.shift();
       if (!fn) { busy = false; ov.className = 'gk-ov'; ov.innerHTML = ''; return; }
       busy = true;
-      fn(function close() { ov.classList.remove('show'); setTimeout(nextOv, 220); });
+      var shut = false;   // each overlay closes once (a second close must never dismiss the next one)
+      fn(function close() { if (shut) return; shut = true; ov.classList.remove('show'); setTimeout(nextOv, 220); });
     }
     function showOv(cls, html) { ov.className = 'gk-ov show ' + cls; ov.innerHTML = html; return ov; }
     function info(title, html) {
@@ -4287,17 +4560,23 @@
     shell.chestOpener = function (i) {
       var st = meta.chestState(i);
       if (!st || st.status !== 'ready') return;
-      var from = st.type, luckOdds = st.lucky, nxt = fun.nextChest(from);
       var got = meta.openChest(i);              // the outcome is fixed now; the animation only reveals it
       P.commit();
+      revealChest(st.type, got, { luck: st.lucky });
+      refreshMenu();
+    };
+    // o: { luck: upgrade odds shown before opening, title: shop chest name (its odds were shown before buying) }
+    function revealChest(from, got, o) {
+      o = o || {};
+      var luckOdds = o.luck || 0, nxt = fun.nextChest(from);
       var before = eco.coins - (got.coins || 0);
       enqueue(function (close) {
         var rar = rarityOf(from);
         showOv('gk-chestov r-' + rar, '<div class="gk-rays"></div><div class="gk-spot"></div><div class="gk-chestbox" style="' + rarityVars(from) + '">' +
-          '<div class="gk-rar r-' + rar + '" id="gk-rar">' + T.rarity[rar] + '</div>' +
+          '<div class="gk-rar r-' + rar + '" id="gk-rar">' + esc(o.title || T.rarity[rar]) + '</div>' +
           '<div class="gk-chestwrap"><div class="gk-leak"></div>' + chestArt(from, 'gk-bigchest') + '</div>' +
           '<div class="gk-taps" id="gk-taps"><i></i><i></i><i></i></div>' +
-          '<div class="gk-maybe" id="gk-maybe"><small>' + T.contents + '</small><div>' + contentsLine(from) + '</div>' +
+          '<div class="gk-maybe" id="gk-maybe"' + (o.title ? ' hidden' : '') + '><small>' + T.contents + '</small><div>' + contentsLine(from) + '</div>' +
           (luckOdds && nxt ? '<small class="gk-luckodds">✦ ' + Math.round(luckOdds * 100) + ' % → ' + T.rarity[rarityOf(nxt)] + '</small>' : '') + '</div>' +
           '<div class="gk-items" id="gk-items"></div><button class="btn pri" id="gk-collect" hidden>' + T.collect + '</button></div>');
         var box = ov.querySelector('.gk-chestbox'), svg = ov.querySelector('.gk-bigchest'), taps = 0, opened = false;
@@ -4333,8 +4612,8 @@
             fx.sparks(cx, cy, '#fff3c4', epic ? 70 : 40);
             $('gk-maybe').hidden = true;
             $('gk-taps').hidden = true;
-            var items = [], c = meta.chestContents(got.chestType);
-            items.push({ html: ico('coin') + '<b class="gk-count">+0</b>', coin: c.coins });
+            var items = [], c = { coins: got.coins || 0, boosters: got.boosters || {} };
+            if (c.coins) items.push({ html: ico('coin') + '<b class="gk-count">+0</b>', coin: c.coins });
             Object.keys(c.boosters || {}).forEach(function (k) { items.push({ html: '<i class="gk-bt big" style="--bc:' + boostCol(k) + '">' + ico(k) + '</i><b>+' + c.boosters[k] + '</b>' }); });
             var gap = epic ? 480 : 320, start0 = epic ? 650 : 350;
             items.forEach(function (it, k) {
@@ -4370,7 +4649,97 @@
           } else go();
         }
       });
-    };
+    }
+
+    // ---------- chest slot tapped (menu or quests sheet): open, or the chest card with its options ----------
+    function chestTap(i) {
+      var st = meta.chestState(i);
+      if (!st) return;
+      if (st.status === 'ready') { shell.chestOpener(i); return; }
+      enqueue(function (close) {
+        var rar = rarityOf(st.type), o = meta.chestOdds(st.type), nxt = fun.nextChest(st.type);
+        var busyOther = P.data.meta.chests.some(function (c, k) { return k !== i && c.opensAt && c.opensAt > Date.now(); });
+        var cost = meta.skipCost(i), adOk = st.status === 'unlocking' && meta.canAdSkip() && P.ads.rewardedReady();
+        showOv('gk-chcardov', '<div class="gk-card gk-chcard r-' + rar + '" style="' + rarityVars(st.type) + '"><h3>' + T.chest + ' ' + T.rarity[rar].toLowerCase() + '</h3>' +
+          '<button class="ic gk-x" id="gk-chc-x" aria-label="×">' + sico('close') + '</button>' +
+          '<div class="gk-chc-art"><span class="gk-chestglow"></span>' + chestArt(st.type, 'gk-chcart') + '</div>' +
+          '<div class="gk-chc-in"><small>' + T.contents + '</small><div>' + contentsLine(st.type) + '</div>' +
+          (st.lucky && nxt ? '<small class="gk-luckodds">✦ ' + Math.round(st.lucky * 100) + ' % → ' + T.rarity[rarityOf(nxt)] + '</small>' : '') + '</div>' +
+          '<div class="gk-chc-t">' + gic('stopwatch') + '<b' + (st.status === 'unlocking' ? ' data-chc="' + i + '">' + shell.fmtLeft(st.msLeft) : '>' + (o.unlockMin >= 60 ? o.unlockMin / 60 + ' h' : o.unlockMin + ' min')) + '</b></div>' +
+          '<div class="gk-chc-btns">' +
+          (st.status === 'locked' ? (busyOther ? '<span class="gk-note">' + T.oneAtATime + '</span>' : '<button class="btn pri" id="gk-chc-start">' + T.start + '</button>') : '') +
+          (adOk ? '<button class="btn cta" id="gk-chc-ad">' + ico('ad') + T.openNow + '</button>' : '') +
+          '<button class="btn buy gk-buybtn" id="gk-chc-coins"><span>' + T.openNow + '</span><b>' + cost + ico('coin') + '</b></button>' +
+          '</div></div>');
+        var t = setInterval(function () {
+          var e = ov.querySelector('[data-chc]'), s2 = meta.chestState(i);
+          if (!e || !s2) { clearInterval(t); return; }
+          if (s2.status === 'ready') { if (done()) setTimeout(function () { shell.chestOpener(i); }, 260); return; }
+          e.textContent = shell.fmtLeft(s2.msLeft);
+          var cb = $('gk-chc-coins'); if (cb) cb.querySelector('b').innerHTML = meta.skipCost(i) + ico('coin');
+        }, 1000);
+        var closed = false;
+        function done() { if (closed) return false; closed = true; clearInterval(t); close(); refreshMenu(); shell.refresh(); return true; }
+        tap('gk-chc-x', done);
+        tap('gk-chc-start', function () { if (meta.startUnlock(i)) { P.commit(); fx.sfx.tick(); } done(); });
+        tap('gk-chc-ad', function () { clearInterval(t); P.openChestNow(i, 'ad', function (ok) { if (done() && ok) setTimeout(function () { shell.chestOpener(i); }, 260); }); });
+        tap('gk-chc-coins', function () {
+          var c = meta.skipCost(i);
+          if (eco.coins < c) {
+            if (P.iap.available && shell.needCoins) { done(); setTimeout(function () { shell.needCoins(c, { reason: 'chest' }); }, 240); }
+            else { fx.shake($('gk-chc-coins'), 5, 300); shell.toast(T.short + ' ' + (c - eco.coins) + ' ' + ico('coin')); }
+            return;
+          }
+          var b = $('gk-chc-coins');
+          P.openChestNow(i, 'coins', function (ok) {
+            if (!ok) return;
+            spendFx(b, c, true);
+            clearInterval(t);
+            setTimeout(function () { if (done()) setTimeout(function () { shell.chestOpener(i); }, 260); }, 450);
+          });
+        });
+      });
+    }
+    shell.chestTap = chestTap;
+
+    // ---------- chest shop: the odds sheet ("contenido posible") comes first, the purchase is a button on it ----------
+    function dropChips(o) {
+      var out = [];
+      if (o.coins) out.push('<span class="gk-chip coin">' + ico('coin') + '<b>' + o.coins + '</b></span>');
+      Object.keys(o.boosters || {}).forEach(function (k) { out.push('<span class="gk-chip"><i class="gk-bt" style="--bc:' + boostCol(k) + '">' + ico(k) + '</i><b>' + o.boosters[k] + '</b></span>'); });
+      return out.join('');
+    }
+    function chestShopOpen(id) {
+      var t = meta.shopChest(id);
+      if (!t) return;
+      var name = (shell.TX.chestNames || {})[id] || id, rar = rarityOf(t.art);
+      enqueue(function (close) {
+        var odds = meta.shopOdds(id);
+        showOv('gk-chcardov', '<div class="gk-card gk-chcard gk-shopcard r-' + rar + '" style="' + rarityVars(t.art) + '"><h3>' + esc(name) + '</h3>' +
+          '<button class="ic gk-x" id="gk-cs-x" aria-label="×">' + sico('close') + '</button>' +
+          '<div class="gk-chc-art"><span class="gk-chestglow"></span>' + chestArt(t.art, 'gk-chcart') + '</div>' +
+          '<h4 class="gk-poss"><span>' + T.possible + '</span></h4>' +
+          '<ul class="gk-odds gk-drops" id="gk-drops">' + odds.map(function (o) {
+            return '<li><span class="gk-dr">' + dropChips(o) + '</span><b>' + (Math.round(o.p * 1000) / 10).toLocaleString(shell.lang) + ' %</b></li>';
+          }).join('') + '</ul><p class="gk-note">' + T.oddsExact + '</p>' +
+          '<button class="btn buy gk-buybtn" id="gk-cs-buy"><span>' + T.buy + '</span><b>' + t.price.toLocaleString(shell.lang) + ico('coin') + '</b></button></div>');
+        tap('gk-cs-x', close);
+        tap('gk-cs-buy', function () {
+          var b = $('gk-cs-buy');
+          if (eco.coins < t.price) {
+            if (P.iap.available && shell.needCoins) { close(); setTimeout(function () { shell.needCoins(t.price, { reason: 'chest_shop' }); }, 240); }
+            else { fx.shake(b, 5, 300); shell.toast(T.short + ' ' + (t.price - eco.coins) + ' ' + ico('coin')); }
+            return;
+          }
+          var got = P.buyChest(id);
+          if (!got) return;
+          spendFx(b, t.price, true);
+          if (shell.screen === 'shop') shell.renderShop();
+          setTimeout(function () { close(); revealChest(t.art, got, { title: name }); }, 500);
+        });
+      });
+    }
+    shell.chestShopOpen = chestShopOpen;
 
     // ================= HARD-LEVEL INTRO =================
     shell.introOpener = function (o, go) {
@@ -4503,7 +4872,13 @@
       var me = t.filter(function (r) { return r.me; })[0];
       $('gk-lg-head').innerHTML = emblem(tier, 76) + '<div><b>' + T.tiers[id] + '</b><span class="gk-timer">' + gic('stopwatch') + T.ends + ' ' + fmtLeft(lg.msLeft()) + '</span></div><div class="gk-myxp"><b>' + me.xp + '</b><small>XP</small></div>';
       $('gk-ladder').innerHTML = lg.tiers().map(function (tid, k) { return '<span class="' + (k === tier ? 'on' : k < tier ? 'past' : '') + '" title="' + T.tiers[tid] + '">' + (Art ? Art.shield(k, TIER_COL[tid]) : '') + '</span>'; }).join('');
-      var rewardAt = {}; C.rewards.forEach(function (rw, k) { var from = k ? C.rewards[k - 1].to + 1 : 1; rewardAt[from] = rw.to === 1 && tier >= C.legendaryFrom ? 'crystal' : rw.chest; });
+      var tbl = lg.rewardTable(tier), rewardAt = {};
+      tbl.forEach(function (rw) { for (var k = rw.from; k <= rw.to; k++) rewardAt[k] = rw; });
+      $('gk-lg-prizes').innerHTML = tbl.slice(0, 4).map(function (rw, k) {
+        return '<div class="gk-lgp p' + (k + 1) + (k === 3 ? ' zone' : '') + '"><i>' + (rw.from === rw.to ? rw.from + 'º' : rw.from + 'º–' + rw.to + 'º') + '</i>' +
+          (rw.chest ? '<span class="gk-lgp-ch r-' + rarityOf(rw.chest) + '">' + chestArt(rw.chest, 'gk-chestmini') + '</span>' : '') +
+          '<b>' + ico('coin') + rw.coins + '</b>' + (rw.boosters ? '<small>+' + rw.boosters + ' ' + T.booster.toLowerCase() + '</small>' : '') + '</div>';
+      }).join('');
       var h = '';
       t.forEach(function (r) {
         if (r.rank === C.promote + 1 && tier < lg.tiers().length - 1) h += '<div class="gk-div up">' + sico('up') + T.up + sico('up') + '</div>';
@@ -4511,13 +4886,23 @@
         var rw = rewardAt[r.rank];
         h += '<div class="gk-row' + (r.me ? ' me' : '') + (r.zone ? ' z-' + r.zone : '') + (r.rank <= 3 ? ' m' + r.rank : '') + '"' + (r.cpu ? ' data-cpu="1"' : '') + '><span class="gk-rk">' + r.rank + '</span>' + avatar(r) +
           '<span class="gk-nm">' + esc(r.me ? r.name + ' · ' + T.you : r.name) + (r.cpu ? cpuMark() : '') + '</span>' +
-          (rw ? '<span class="gk-rwc r-' + rarityOf(rw) + '">' + chestArt(rw, 'gk-chestmini') + '</span>' : '<span></span>') + '<b class="gk-xp">' + r.xp + '</b></div>';
+          (rw ? (rw.chest ? '<span class="gk-rwc r-' + rarityOf(rw.chest) + '">' + chestArt(rw.chest, 'gk-chestmini') + '</span>' : '<span class="gk-rwc coin">' + ico('coin') + '<small>' + rw.coins + '</small></span>') : '<span></span>') + '<b class="gk-xp">' + r.xp + '</b></div>';
       });
       $('gk-lg-rows').innerHTML = h;
       if (scroll) setTimeout(function () { var m = $('gk-lg-rows').querySelector('.me'); if (m) m.scrollIntoView({ block: 'center' }); }, 40);
     }
     P.on('league', function () { if (shell.screen === 'league') renderLeague(false); });
-    tap('gk-lg-info', function () { info(T.league, '<p>' + T.leagueRules + '</p><p class="gk-cpuline">' + sico('cpu', 'gk-cpu') + ' ' + T.cpu + '</p>'); });
+    tap('gk-lg-info', function () {
+      var rows = lg.rewardTable().map(function (rw) {
+        return '<li><i style="background:' + (rw.chest ? RAR_COL[rarityOf(rw.chest)] : '#ffc53a') + '"></i><span>' + (rw.from === rw.to ? rw.from + 'º' : rw.from + 'º–' + rw.to + 'º') + '</span><b>' +
+          (rw.chest ? T.chest + ' ' + T.rarity[rarityOf(rw.chest)].toLowerCase() + ' · ' : '') + ico('coin') + rw.coins + (rw.boosters ? ' · +' + rw.boosters + ' ' + T.booster.toLowerCase() : '') + '</b></li>';
+      }).join('');
+      info(T.league, '<p>' + T.leagueRules + '</p><ul class="gk-odds">' + rows + '</ul><p class="gk-cpuline">' + sico('cpu', 'gk-cpu') + ' ' + T.cpu + '</p>');
+    });
+    // my own row: edit the nickname
+    ['gk-lg-rows', 'gk-rk-rows', 'gk-rk-pod'].forEach(function (id) {
+      $(id).addEventListener('click', function (e) { if (e.target.closest('.gk-row.me, .gk-pod.me')) { fx.sfx.pop(); shell.show('profile'); } });
+    });
     function leagueResult(res) {
       enqueue(function (close) {
         var up = res.to > res.from, down = res.to < res.from, id = lg.tiers()[res.to];
@@ -4582,7 +4967,7 @@
       var me = R.rows.filter(function (r) { return r.me; })[0];
       if (me && me.rank > 50) h += '<div class="gk-div">…</div><div class="gk-row me"><span class="gk-rk">' + me.rank + '</span>' + avatar(me) + '<span class="gk-nm">' + esc(me.name) + '</span><span></span><b class="gk-xp">' + fmtScore(me.score) + '</b></div>';
       $('gk-rk-rows').innerHTML = h || '<p class="gk-note">' + T.none + '</p>';
-      $('gk-rk-status').innerHTML = '<span>' + (on.online === false || !on.enabled ? sico('cloud') + ' ' + T.offline : '') + '</span>' + (R.bots ? '<span class="gk-cpuline">' + sico('cpu', 'gk-cpu') + ' ' + T.cpu + '</span>' : '');
+      $('gk-rk-status').innerHTML = '<span>' + (on.online === false || !on.enabled ? sico('cloud') + ' ' + T.offline : '') + '</span>';
       var played = opts.localScore && opts.localScore('daily') != null;
       $('gk-rk-play').hidden = played || !opts.playDaily;
     }
@@ -4636,9 +5021,38 @@
       }).join('');
     }
     on.onNickChanged = function () { if (shell.screen === 'profile') renderProfile(); };
+    // first run: after the first finished game, the first menu visit asks for a nickname (auto fun name prefilled)
+    function nickPopup() {
+      P.data.ui = P.data.ui || {};
+      if (P.data.ui.nickAsked || root.GAMEKIT_NO_NICK) return;   // GAMEKIT_NO_NICK: test runs of the games' own e2e suites
+      P.data.ui.nickAsked = true;
+      P.commit();
+      enqueue(function (close) {
+        var p = on.profile;
+        showOv('gk-nickov', '<div class="gk-card gk-nickcard"><h3>' + T.nickTitle + '</h3><div class="gk-prof-av" id="gk-nk-av">' +
+          avatar({ color: ME_COL, initial: String(p.nickname || '?').charAt(0).toUpperCase(), country: p.showFlag ? p.country : '' }, 'huge') + '</div>' +
+          '<p>' + T.nickSub + '</p><div class="gk-nickrow"><input id="gk-nk-in" maxlength="16" autocomplete="off" spellcheck="false" value="' + esc(p.nickname) + '">' +
+          '<button class="ic" id="gk-nk-dice" aria-label="random">' + sico('dice') + '</button></div><small class="gk-nk-err" id="gk-nk-err"></small>' +
+          '<button class="btn cta" id="gk-nk-save">' + T.save + '</button><button class="mini ghost" id="gk-nk-later">' + T.later + '</button></div>');
+        var input = $('gk-nk-in');
+        var setAv = function () { var a = $('gk-nk-av'); if (a) a.innerHTML = avatar({ color: ME_COL, initial: String(input.value || '?').trim().charAt(0).toUpperCase(), country: p.showFlag ? p.country : '' }, 'huge'); };
+        input.addEventListener('input', function () { $('gk-nk-err').textContent = ''; setAv(); });
+        tap('gk-nk-dice', function () { input.value = GameKit.funName(Math.random, shell.lang); setAv(); });
+        tap('gk-nk-later', close);
+        tap('gk-nk-save', function () {
+          if (!on.setProfile({ nickname: input.value, showFlag: p.showFlag, hidden: p.hidden })) { fx.shake(input, 6, 300); $('gk-nk-err').textContent = T.badNick; return; }
+          shell.toast(T.saved);
+          close();
+        });
+      });
+    }
+    if (shell.onScreenChange) shell.onScreenChange(function (name) {
+      if (shell.isMenu && shell.isMenu()) { renderHome(); if (P.data.stats.games >= 1) setTimeout(nickPopup, 400); }
+    });
 
     refreshMenu();
-    var ui = { fx: fx, refresh: refreshMenu, info: info, renderLeague: renderLeague, renderRank: renderRank, spendFx: spendFx, coinFly: coinFly };
+    var ui = { fx: fx, refresh: refreshMenu, info: info, renderLeague: renderLeague, renderRank: renderRank, spendFx: spendFx, coinFly: coinFly,
+      renderHome: renderHome, chestTap: chestTap, chestShopOpen: chestShopOpen, nickPopup: nickPopup, revealChest: revealChest };
     // limited-time offers (shell/offers-ui.js): popups share this overlay queue, so one big moment shows at a time
     if (root.GamekitOffersUI) {
       ui.offers = root.GamekitOffersUI.attach(P, shell, { fx: fx, enqueue: enqueue, showOv: showOv, ov: ov, tap: tap, sico: sico, center: center,
@@ -4672,11 +5086,13 @@
   'use strict';
   var TX = {
     es: { one: '¡OFERTA ÚNICA!', onlyNow: 'Solo ahora', ends: 'Termina en', value: 'de valor', coins: 'monedas', up: '¡Ascenso a {t}!',
-      weekend: '¡FIN DE SEMANA!', limited: '¡OFERTA LIMITADA!', promo: '¡MONEDAS ×2!', tag: 'Oferta', vs: 'vs.',
+      weekend: '¡FIN DE SEMANA!', limited: '¡OFERTA LIMITADA!', promo: '¡MONEDAS ×2!', tag: 'Oferta', vs: 'vs.', welcome: '¡PACK DE BIENVENIDA!',
+      short: '¡Te faltan monedas!', have: 'Tienes', need: 'Necesitas', ad: 'Ver anuncio', later: 'Ahora no',
       names: { offer_silver: 'Pack Plata', offer_gold: 'Pack Oro', offer_diamond: 'Pack Diamante', offer_weekend: 'Pack de fin de semana',
         offer_oneshot_s: 'Pack de ayudas', offer_oneshot_m: 'Montaña de monedas', double_2h: 'Monedas ×2', starter_pack: 'Pack inicial' } },
     en: { one: 'ONE-TIME OFFER!', onlyNow: 'Only now', ends: 'Ends in', value: 'value', coins: 'coins', up: 'Promoted to {t}!',
-      weekend: 'WEEKEND DEAL!', limited: 'LIMITED OFFER!', promo: 'COINS ×2!', tag: 'Offer', vs: 'vs.',
+      weekend: 'WEEKEND DEAL!', limited: 'LIMITED OFFER!', promo: 'COINS ×2!', tag: 'Offer', vs: 'vs.', welcome: 'WELCOME PACK!',
+      short: 'Not enough coins!', have: 'You have', need: 'You need', ad: 'Watch an ad', later: 'Not now',
       names: { offer_silver: 'Silver pack', offer_gold: 'Gold pack', offer_diamond: 'Diamond pack', offer_weekend: 'Weekend pack',
         offer_oneshot_s: 'Booster pack', offer_oneshot_m: 'Coin mountain', double_2h: 'Coins ×2', starter_pack: 'Starter pack' } }
   };
@@ -4702,6 +5118,7 @@
       if (o.kind === 'weekend') return T.weekend;
       if (o.kind === 'oneshot') return T.one;
       if (o.kind === 'promo') return T.promo;
+      if (o.kind === 'starter') return T.welcome;
       return T.limited;
     }
     function boosterFan(b) {
@@ -4806,6 +5223,71 @@
     shell.onOfferTap = function (key, btn) {
       btn.disabled = true;
       P.buyOffer(key).then(function () { if (shell.screen === 'shop') shell.renderShop(); }, function () { btn.disabled = false; });
+    };
+
+    // ---------- not enough coins (continue, booster, chest): coin packs, a suitable offer, a rewarded alternative ----------
+    // ctx: { reason: 'continue' | 'booster' | 'chest' | 'chest_shop', retry: fn (run again once the coins are there) }
+    // Store builds only (callers check IAP.available); one popup in the overlay queue, closable, never over a level start.
+    shell.needCoins = function (need, ctx) {
+      ctx = ctx || {};
+      if (!IAP.available) return false;
+      var packs = P.products().filter(function (p) { return !p.offer && !p.sameAs && p.grant && p.grant.coins > 0 && Object.keys(p.grant).length === 1; })
+        .sort(function (a, b) { return a.grant.coins - b.grant.coins; });
+      var oo = off.coinOffer ? off.coinOffer(need) : null;
+      P.commit();
+      P.track('need_coins', { reason: ctx.reason || '', need: need, have: eco.coins, offer: oo ? oo.product : '' });
+      k.enqueue(function (close) {
+        var op = oo && P.product(oo.product), c = oo && off.claims(oo.product);
+        var adOk = ctx.reason === 'continue' && ctx.retry && P.ads.rewardedReady();
+        k.showOv('gk-offerov k-coins', '<div class="gk-rays"></div><div class="gk-offer gk-coinsbox k-coins">' +
+          '<button class="ic gk-x" id="gk-nc-x" aria-label="×">' + k.sico('close') + '</button>' +
+          '<div class="gk-of-ban">' + T.short + '</div>' +
+          '<div class="gk-nc-have"><span>' + T.have + ' <b id="gk-nc-have">' + ico('coin') + eco.coins.toLocaleString(shell.lang) + '</b></span><span>' + T.need + ' <b>' + ico('coin') + need.toLocaleString(shell.lang) + '</b></span></div>' +
+          (op ? '<div class="gk-nc-offer k-' + oo.kind + '"><div class="gk-of-art sm">' + art(oo, op.grant || {}) + badge(c) + '</div><div class="gk-nc-oi"><b>' + esc(name(oo.product)) + '</b>' +
+            shell.rewardTiles(op.grant) + timer(oo) + '</div>' + priceBlock(oo, c, 'id="gk-nc-offer" data-key="' + esc(oo.key) + '"', 'mini cta big') + '</div>' : '') +
+          '<div class="gk-nc-packs">' + packs.map(function (p, i) {
+            return '<div class="gk-nc-pack p' + (i + 1) + '"><span class="gk-art">' + (Art ? Art.coinPile(Math.min(3, i + 1)) : ico('coin')) + '</span><span class="gk-amt">' + ico('coin') +
+              p.grant.coins.toLocaleString(shell.lang) + '</span><button class="mini cta" data-ncp="' + p.id + '">' + esc(IAP.price(p.id)) + '</button></div>';
+          }).join('') + '</div>' +
+          (adOk ? '<button class="btn pri gk-nc-ad" id="gk-nc-ad">' + ico('ad') + T.ad + '</button>' : '') +
+          '<button class="mini ghost" id="gk-nc-later">' + T.later + '</button></div>');
+        fx.sfx.whoosh();
+        var finished = false;
+        function finish(then) {
+          if (finished) return;
+          finished = true;
+          if (oo && (oo.kind === 'oneshot' || oo.kind === 'promo')) off.close(oo.key);   // a one-shot is gone once its popup closes
+          P.commit();
+          close();
+          if (then) setTimeout(then, 240);
+        }
+        function bought(btn, got) {
+          if (!got) return;
+          var ce = k.center(btn);
+          fx.confetti(ce.x, ce.y, { n: 110, power: 640 }); fx.sfx.big(); fx.haptic('success');
+          if (got.coins) k.coinFly(btn, got.coins);
+          var h = doc.getElementById('gk-nc-have'); if (h) h.innerHTML = ico('coin') + eco.coins.toLocaleString(shell.lang);
+          // enough now: carry on with what the player wanted (the continue, for instance)
+          if (eco.coins >= need) setTimeout(function () { finish(ctx.retry); }, 700);
+        }
+        k.tap('gk-nc-x', function () { finish(); });
+        k.tap('gk-nc-later', function () { finish(); });
+        k.tap('gk-nc-ad', function () { finish(ctx.retry); });
+        k.ov.querySelectorAll('[data-ncp]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            if (b.disabled) return;
+            b.disabled = true;
+            P.buy(b.getAttribute('data-ncp')).then(function (got) { b.disabled = false; bought(b, got); }, function () { b.disabled = false; });
+          });
+        });
+        var ob = doc.getElementById('gk-nc-offer');
+        if (ob) ob.addEventListener('click', function () {
+          if (ob.disabled) return;
+          ob.disabled = true;
+          P.buyOffer(oo.key).then(function (got) { if (!got) { ob.disabled = false; return; } ob.closest('.gk-nc-offer').classList.add('done'); bought(ob, got); }, function () { ob.disabled = false; });
+        });
+      });
+      return true;
     };
 
     // ---------- coin counter badge + result tag ----------
@@ -5470,7 +5952,7 @@
  *   target(n)          -> first-try fail rate of the human proxy the level is tuned to (inside its tier band)
  *   pack(n)            -> the level pack (name, theme, destinations) a level belongs to
  *
- * Difficulty curve (Candy Crush sawtooth): see difficulty(). Every level is tuned on the solver's human proxy
+ * Difficulty curve (shared schedule v3: irregular sawtooth, see gamekit/DIFFICULTY-RESEARCH.md): see difficulty(). Every level is tuned on the solver's human proxy
  * (S.humanFail: an attentive first-try player who only uses what the screen shows) to a target fail rate inside
  * its tier band (BAND). tools/tune.js searches variants x seeds per level and freezes the pick in TABLE (2 chars
  * per level), so level(n) builds exactly one candidate at runtime. Without a table entry (endless levels, a
@@ -5492,7 +5974,7 @@
   var R = root.AtascoRules || (typeof require === 'function' ? require('./rules.js') : null);
   var S = root.AtascoSolver || (typeof require === 'function' ? require('./solver.js') : null);
 
-  var GEN_VERSION = 2;
+  var GEN_VERSION = 3;
   var PER_PACK = 20;
   var EPOCH = '2026-10-26';
 
@@ -5506,10 +5988,10 @@
   var ONBOARD = { 1: [2, 2, 6, 0, 0, 2], 2: [3, 2, 6, 0, 0, 2], 3: [4, 2, 6, 0, 0, 2], 4: [4, 3, 6, 0, 0, 2],
     5: [5, 3, 6, 0, 0, 3], 6: [5, 3, 6, 2, 0, 3], 7: [5, 3, 5, 0, 0, 3], 8: [5, 3, 5, 0, 1, 3], 9: [6, 3, 5, 1, 0, 3] };
   // frozen tuning by tools/tune.js: 2 base-36 chars per level (variant, seed index). '..' = search online
-  var TABLE = '0000005l20004b424546008b0b6i344e8l9k7h1e20428l3hab1f5g159k6a1ab85b93962810bn5i855e1a5hae8e2cb05n8k374c89a5be0l' +
-    '2b2mal8i6e1kaf6jb7bb514nag0c5g171iag439l450c5782b91i6b7ca1af2j0b6ma00e248h45a25d119m91575a292226bcb91j76bb8aa95g9k7f54ae' +
-    '1j3f556fa64d6jai0b98207g9l7c92555m819315299777ah7a14a5225h1g0h491b01an2c933l83bb4d427ib3ba330k4f6e3n343l1b7l2824069ka24f' +
-    '494g464ab3565ca997ag4e025b18am3l3j729nb7418gbh648f0l8c889f3l0c4c9kbhad5f302k8eb62k242a0a49310hb82d8c1a3178919a4l84a4bi9d0g0hb11f8g';
+  var TABLE = '0000005600000c550a8d1d17558a12229e6f582abd5e1528a7bda16a2db95e5b114a111e4d647d77486407a02b4527228980281d2e2c22454e352713' +
+    '057a5048221d9f7e06476cbc674c6c45405aae7f97a31e73bc9192408c352c72b2965e9e7d25b447765d29461127ba305a449274b1bb484f11a82208' +
+    'a6614cb1885c4439904140150582b793481a027ba240485a3c4b79549f5d8b659c032b4c6a101e5a828c367b91843c49a4180a1d163f62a4200b6151' +
+    '4b5506229762bf477d8368282d0f562599250750b02407670d4c97a1241138a36ebd54563b14275f985d5f4b1312344e0e6729914a712fad1c0f8437';
 
   // Packs: Spanish traffic folklore. Destinations are what the motorway panels over the trucks show.
   var PACKS = [
@@ -5562,29 +6044,122 @@
     return { index: i, pack: PACKS[i], first: Math.floor((n - 1) / PER_PACK) * PER_PACK + 1 };
   }
 
-  /* The tier schedule (Candy Crush sawtooth):
-   *   1-9 facil (onboarding, ONBOARD: one new thing per level; cones on 6, locks on 8, never on a hard level),
-   *   10 first dificil, then dificil every 5th until the first boss; 11, 16, 21 facil relief.
-   *   From 25 on, cycles of 15: boss superdificil at 25, 40, 55... (10 + 15k); dificil at boss+5 and boss+10;
-   *   facil relief at boss+1, boss+2 and right after every dificil; the rest normal, ramping inside the cycle. */
-  function cyclePos(n) { return n < 25 ? n - 10 : (n - 25) % 15; }
-  function difficulty(n) {
-    if (n <= 9) return 'facil';
-    var k = cyclePos(n);
-    if (n < 25) return k % 5 === 0 ? 'dificil' : k % 5 === 1 ? 'facil' : 'normal';
-    if (k === 0) return 'superdificil';
-    if (k === 5 || k === 10) return 'dificil';
-    if (k === 1 || k === 2 || k === 6 || k === 11) return 'facil';
-    return 'normal';
+  // >>> difficulty-schedule v3 (canonical copy: gamekit/tools/difficulty-schedule.js; keep identical)
+  // Sawtooth with an upward trend, deterministic per level number (the same for every player) but irregular:
+  //  - 1-9 facil (onboarding). 10 up to the first spike: easy normals.
+  //  - first dificil at 11-17; first boss (superdificil) at 26-39; then a boss every 12-18 levels (11-16 past 100).
+  //  - dificil 4-7 levels after the previous dificil (4-6 past 100; never the same gap twice in a row), 5-8 after a
+  //    boss, never within 3 levels before a boss.
+  //  - a hard level never sits on a multiple of 5 nor on a pack's first level (it moves by one, either way).
+  //  - facil relief right after every dificil, and twice after a boss.
+  //  - normals between spikes ramp up (sawtooth) to a 'build' level right before the spike; runs of 5+ normals get
+  //    an unlabelled mini-peak followed by a breather.
+  // targetOf(n): first-try fail target (bands: facil <10%, normal 15-30%, dificil 45-60%, superdificil 65-80%);
+  // hard targets creep up over the first 300 levels. helpAfter(tier): consecutive fails before the silent help
+  // (2 on facil/normal; 5 on labelled hard levels, a late safety net against "black hole" levels).
+  function difficultySchedule(SALT, PACK) {
+    var tiers = [], roles = [], built = 0;
+    function u(k, n) {
+      var s = SALT + ':' + k + ':' + n, h = 2166136261;
+      for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+      h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
+      return (h >>> 0) / 4294967296;
+    }
+    function pick(k, n, a, b) { return a + Math.floor(u(k, n) * (b - a + 1)); }
+    function bad(x) { return x % 5 === 0 || (x - 1) % PACK === 0; }
+    // nearest good position to x that is >= lo (one step down or up first, chosen by the hash)
+    function fix(x, lo, k) {
+      if (!bad(x)) return x;
+      var d = u('fix' + k, x) < 0.5 ? -1 : 1, c = [x + d, x - d, x + 2, x + 3, x + 4];
+      for (var i = 0; i < c.length; i++) if (c[i] >= lo && !bad(c[i])) return c[i];
+      return x + 5 + (bad(x + 5) ? 1 : 0);
+    }
+    function build(N) {
+      var n, b, d, i;
+      tiers = []; roles = [];
+      for (n = 1; n <= N + 40; n++) { tiers[n] = 'normal'; roles[n] = 'ramp'; }
+      for (n = 1; n <= 9; n++) { tiers[n] = 'facil'; roles[n] = 'onboard'; }
+      var bosses = [];
+      for (b = fix(pick('boss', 0, 26, 39), 26, 'b'); b <= N + 40; ) {
+        bosses.push(b);
+        b = fix(b + (b > 100 ? pick('gap', b, 11, 16) : pick('gap', b, 12, 18)), b + 11, 'b');
+      }
+      var mark = function (x, t) {
+        tiers[x] = t; roles[x] = t === 'superdificil' ? 'boss' : 'spike';
+        for (var r = 1; r <= (t === 'superdificil' ? 2 : 1); r++) { tiers[x + r] = 'facil'; roles[x + r] = 'relief'; }
+      };
+      var prev = 0, last = 0, nd;
+      for (i = 0; i < bosses.length; i++) {
+        b = bosses[i];
+        d = prev ? fix(prev + pick('d0', prev, 5, 8), prev + 5, 'd') : fix(pick('first', 0, 11, 17), 11, 'd');
+        while (d <= b - 3) {
+          mark(d, 'dificil');
+          nd = fix(d + pick('dgap', d, 4, d > 100 ? 6 : 7), d + 4, 'd');
+          // never the same gap twice in a row (12, 17, 22 would read as a pattern again)
+          if (nd - d === last) nd = fix(nd + 1, d + 4, 'd2');
+          last = nd - d; d = nd;
+        }
+        mark(b, 'superdificil');
+        prev = b;
+      }
+      // normal runs: sawtooth ramp, 'build' right before the spike, mini-peak + breather in long runs
+      for (n = 10; n <= N + 40; ) {
+        if (tiers[n] !== 'normal') { n++; continue; }
+        var s = n; while (tiers[n] === 'normal') n++;
+        var e = n - 1, L = e - s + 1;
+        if (L >= 2) roles[e] = 'build';
+        if (L >= 5) { var m = s + Math.floor((L - 1) / 2); roles[m] = 'peak'; roles[m + 1] = 'breather'; }
+      }
+      built = N;
+    }
+    function ensure(n) { if (n > built) build(Math.max(n, built * 2, 300)); }
+    function tierOf(n) { n = Math.max(1, Math.floor(n)); ensure(n); return tiers[n]; }
+    function roleOf(n) { n = Math.max(1, Math.floor(n)); ensure(n); return roles[n]; }
+    // position of n inside its run of normals: 0 at the first normal after the relief, 1 at the build level
+    function rampOf(n) {
+      var s = n, e = n;
+      while (s > 10 && tierOf(s - 1) === 'normal') s--;
+      while (tierOf(e + 1) === 'normal') e++;
+      return e > s ? (n - s) / (e - s) : 1;
+    }
+    function targetOf(n) {
+      var t = tierOf(n), r = roleOf(n), g = Math.min(1, Math.max(0, (n - 10) / 290));
+      if (t === 'facil') return r === 'onboard' ? 0.02 : 0.04;
+      if (t === 'dificil') return 0.46 + 0.10 * g;
+      if (t === 'superdificil') return 0.66 + 0.10 * g;
+      var lo = 0.16 + 0.02 * g, hi = 0.25 + 0.03 * g;
+      if (n < 20 && n < firstHard()) hi = 0.2;          // the early ramp stays gentle
+      if (r === 'peak') return Math.min(0.29, hi + 0.02);
+      if (r === 'breather') return lo;
+      if (r === 'build') return hi;
+      return lo + (hi - lo) * rampOf(n);
+    }
+    function firstHard() { for (var n = 10; ; n++) if (tierOf(n) === 'dificil' || tierOf(n) === 'superdificil') return n; }
+    function helpAfter(t) { return t === 'dificil' || t === 'superdificil' ? 5 : 2; }
+    function hardList(from, to) {
+      var out = [];
+      for (var n = from; n <= to; n++) { var t = tierOf(n); if (t === 'dificil' || t === 'superdificil') out.push(n); }
+      return out;
+    }
+    return { tierOf: tierOf, roleOf: roleOf, targetOf: targetOf, helpAfter: helpAfter, hardList: hardList, version: 3 };
   }
+  // <<< difficulty-schedule v3
+  /* The tier schedule: shared v3 (irregular sawtooth, gamekit/DIFFICULTY-RESEARCH.md). Onboarding 1-9 is ONBOARD
+   * (one new thing per level; cones on 6, locks on 8); no hard level opens a pack. */
+  var SCHED = difficultySchedule('atascazo', PER_PACK);
+  var difficulty = SCHED.tierOf;
   function isHard(tier) { return tier === 'dificil' || tier === 'superdificil'; }
-  /* Target first-try fail rate of the human proxy: inside the tier band; normals ramp inside each cycle,
-   * hard levels creep up over the map. */
-  function target(n, tier) {
-    tier = tier || difficulty(n);
-    var t = clamp((n - 1) / (COUNT - 1), 0, 1);
-    if (tier === 'facil') return n <= 3 ? 0 : 0.04;
-    if (tier === 'normal') return 0.17 + 0.11 * clamp((cyclePos(n) - 3) / 11, 0, 1);
+  /* Target first-try fail rate of the human proxy: inside the tier band; normals ramp up to the next spike (sawtooth),
+   * hard levels creep up over the map. Only the onboarding targets are game-specific. */
+  function target(n) {
+    if (n <= 3) return 0;
+    return SCHED.targetOf(n);
+  }
+  // the daily forces its tier by weekday; its targets stay the v2 ones so every date keeps the same daily level
+  function dailyTarget(n, tier) {
+    var t = clamp((n - 1) / (COUNT - 1), 0, 1), pos = n < 25 ? n - 10 : (n - 25) % 15;
+    if (tier === 'facil') return 0.04;
+    if (tier === 'normal') return 0.17 + 0.11 * clamp((pos - 3) / 11, 0, 1);
     if (tier === 'dificil') return 0.48 + 0.08 * t;
     return 0.68 + 0.08 * t;
   }
@@ -5624,7 +6199,7 @@
       maxLen: ob ? ob[5] : 3,
       cones: ob ? ob[3] : -1,                      // -1: random amount (decided per candidate)
       locks: ob ? ob[4] : o.locks !== undefined ? o.locks : -1,
-      target: target(n, tier),
+      target: o.tier ? dailyTarget(n, tier) : target(n),
       seed: o.seed !== undefined ? o.seed : hashString('atascazo:v' + GEN_VERSION + ':' + n)
     };
   }
@@ -5801,15 +6376,16 @@
       var v = parseInt(code[0], 36), s = parseInt(code[1], 36), P = params(n, v), L = make(P, s);
       if (L && solved(L)) pick = { L: L, v: v, s: s, P: P };
     }
-    if (!pick) pick = search(function (vv) { return params(n, vv); }, tier, target(n, tier), { seeds: 12, playouts: 60, stop: 0.04 });
+    if (!pick) pick = search(function (vv) { return params(n, vv); }, tier, target(n), { seeds: 12, playouts: 60, stop: 0.04 });
     if (!pick) throw new Error('level ' + n + ': no buildable candidate');
     return (cache[n] = finish(pick, 'L' + n, pack(n).index));
   }
 
-  /* Soft dynamic help (shell): after 3+ consecutive fails the next attempt gets one extra arcen place,
-   * silently. Never more than +1, so the paid "plaza extra" (+1 each, up to 3) still matters. */
+  /* Soft dynamic help (shell): after helpAfter(tier) consecutive fails (2 on facil/normal, 5 on the labelled hard
+   * levels: a late safety net) the next attempt gets one extra arcen place, silently. Never more than +1, so the
+   * paid "plaza extra" (+1 each, up to 3) still matters. */
   function assisted(L, fails) {
-    if (!(fails >= 3) || L.daily) return L;
+    if (!(fails >= SCHED.helpAfter(L.difficulty || 'normal')) || L.daily) return L;
     var out = JSON.parse(JSON.stringify(L));
     out.slots = L.slots + 1; out.assist = 1;
     return out;
@@ -5834,7 +6410,7 @@
     if (cache[key]) return cache[key];
     var dow = ((dayIndex(date) % 7) + 7) % 7, tier = DAILY_TIER[dow], n = 50 + dow * 20;
     var o = { tier: tier, seed: hashString('atascazo:daily:' + date), locks: dow >= 3 ? -1 : 0 };
-    var pick = search(function (v) { return params(n, v, o); }, tier, target(n, tier), { seeds: 8, playouts: 60, stop: 0.05 });
+    var pick = search(function (v) { return params(n, v, o); }, tier, dailyTarget(n, tier), { seeds: 8, playouts: 60, stop: 0.05 });
     if (!pick) throw new Error('daily ' + date + ': no buildable candidate');
     var L = finish(pick, 'D' + dailyNumber(date), PACKS.length - 1);
     L.daily = { date: date, number: dailyNumber(date) };
@@ -5845,7 +6421,8 @@
     GEN_VERSION: GEN_VERSION, COUNT: COUNT, PER_PACK: PER_PACK, PACKS: PACKS, EPOCH: EPOCH,
     BAND: BAND, VARIANTS: VARIANTS, TIERS: ['facil', 'normal', 'dificil', 'superdificil'],
     level: level, daily: daily, dailyNumber: dailyNumber, todayStr: todayStr, params: params, pack: pack,
-    difficulty: difficulty, target: target, variantsFor: variantsFor, seedOf: seedOf, make: make, assisted: assisted,
+    difficulty: difficulty, target: target, dailyTarget: dailyTarget, helpAfter: SCHED.helpAfter, roleOf: SCHED.roleOf,
+    hardList: SCHED.hardList, variantsFor: variantsFor, seedOf: seedOf, make: make, assisted: assisted,
     tableCode: function (n) { return TABLE.substr((n - 1) * 2, 2); },
     hashString: hashString, candidate: candidate, colourLine: colourLine
   };
@@ -5943,11 +6520,21 @@
   }
 
   // ---------------------------------------------------------------- vehicles (facing +x, centred on 0,0)
+  /* tinted glass with one diagonal glint band (the sky's reflection); built per sprite, so free at draw time */
+  function glass(ctx, L, W, ox, oy) {
+    ox = ox || 0; oy = oy || 0;
+    var g = ctx.createLinearGradient(ox - L * 0.5, oy - W * 0.5, ox + L * 0.5, oy + W * 0.5);
+    g.addColorStop(0, '#26384c'); g.addColorStop(0.5, '#3d5672'); g.addColorStop(0.56, '#a9c3dd');
+    g.addColorStop(0.61, '#4a6582'); g.addColorStop(1, '#2a3d52');
+    return g;
+  }
   function wheels(ctx, L, W, xs) {
-    ctx.fillStyle = '#2b2f36';
     xs.forEach(function (x) {
+      ctx.fillStyle = '#23272e';
       rr(ctx, x - L * 0.07, -W * 0.56, L * 0.14, W * 0.16, W * 0.05); ctx.fill();
       rr(ctx, x - L * 0.07, W * 0.40, L * 0.14, W * 0.16, W * 0.05); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.18)';   // tyre wall catching the light
+      ctx.fillRect(x - L * 0.05, -W * 0.55, L * 0.1, W * 0.025); ctx.fillRect(x - L * 0.05, W * 0.41, L * 0.1, W * 0.025);
     });
   }
   function lights(ctx, xf, xr, W) {
@@ -5967,7 +6554,7 @@
       rr(ctx, -L / 2, -W / 2, L, W, W * 0.46); ctx.fillStyle = col; ctx.fill();
       ctx.fillStyle = shade(col.hex, -0.18); rr(ctx, -L / 2, -W / 2, L, W, W * 0.46); ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1;
       rr(ctx, -L * 0.45, -W * 0.44, L * 0.9, W * 0.88, W * 0.4); ctx.fillStyle = col; ctx.fill();
-      ctx.fillStyle = '#34495f';
+      ctx.fillStyle = glass(ctx, L, W);
       rr(ctx, L * 0.1, -W * 0.36, L * 0.17, W * 0.72, W * 0.14); ctx.fill();
       rr(ctx, -L * 0.36, -W * 0.3, L * 0.1, W * 0.6, W * 0.12); ctx.fill();
       rr(ctx, -L * 0.25, -W * 0.36, L * 0.34, W * 0.72, W * 0.3); ctx.fillStyle = col.light; ctx.fill();
@@ -5979,7 +6566,7 @@
       rr(ctx, -L / 2, -W / 2, L, W, W * 0.3); ctx.fillStyle = col; ctx.fill();
       ctx.strokeStyle = 'rgba(0,0,0,.12)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(L * 0.3, -W * 0.32); ctx.lineTo(L * 0.44, -W * 0.25);
       ctx.moveTo(L * 0.3, W * 0.32); ctx.lineTo(L * 0.44, W * 0.25); ctx.stroke();
-      ctx.fillStyle = '#34495f';
+      ctx.fillStyle = glass(ctx, L, W);
       ctx.beginPath(); ctx.moveTo(L * 0.1, -W * 0.4); ctx.lineTo(L * 0.25, -W * 0.33); ctx.lineTo(L * 0.25, W * 0.33); ctx.lineTo(L * 0.1, W * 0.4); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(-L * 0.22, -W * 0.38); ctx.lineTo(-L * 0.32, -W * 0.32); ctx.lineTo(-L * 0.32, W * 0.32); ctx.lineTo(-L * 0.22, W * 0.38); ctx.closePath(); ctx.fill();
       rr(ctx, -L * 0.22, -W * 0.4, L * 0.32, W * 0.8, W * 0.16); ctx.fillStyle = col.light; ctx.fill();
@@ -5999,7 +6586,7 @@
       wheels(ctx, L, W, [-L * 0.3, L * 0.32]);
       rr(ctx, -L / 2, -W / 2, L, W, W * 0.14); ctx.fillStyle = col; ctx.fill();
       rr(ctx, L * 0.36, -W * 0.44, L * 0.14, W * 0.88, W * 0.2); ctx.fillStyle = col.dark; ctx.fill();
-      ctx.fillStyle = '#34495f';
+      ctx.fillStyle = glass(ctx, L, W);
       ctx.beginPath(); ctx.moveTo(L * 0.25, -W * 0.42); ctx.lineTo(L * 0.36, -W * 0.36); ctx.lineTo(L * 0.36, W * 0.36); ctx.lineTo(L * 0.25, W * 0.42); ctx.closePath(); ctx.fill();
       rr(ctx, -L * 0.47, -W * 0.44, L * 0.71, W * 0.88, W * 0.08); ctx.fillStyle = col.light; ctx.fill();
       ctx.strokeStyle = 'rgba(0,0,0,.10)'; ctx.lineWidth = Math.max(1, W * 0.03);
@@ -6011,7 +6598,7 @@
       W *= 1.06;
       wheels(ctx, L, W, [-L * 0.32, -L * 0.2, L * 0.3]);
       rr(ctx, -L / 2, -W / 2, L, W, W * 0.2); ctx.fillStyle = col; ctx.fill();
-      ctx.fillStyle = '#34495f';
+      ctx.fillStyle = glass(ctx, L, W);
       rr(ctx, L * 0.42, -W * 0.4, L * 0.06, W * 0.8, W * 0.08); ctx.fill();
       // side windows
       for (var i = 0; i < 7; i++) {
@@ -6059,16 +6646,25 @@
     var c = mk(w * dpr, h * dpr), x = c.getContext('2d');
     x.scale(dpr, dpr); x.translate(w / 2, h / 2);
     var col = colObj(PALETTE[color].body), fn = BODY[kind] || BODY.sedan;
-    // shadow: silhouette, offset down-right, blurred
+    // shadow, baked in: a wide soft one (sun from the top-left) plus a tight contact shadow under the body
     x.save();
-    x.shadowColor = 'rgba(25,35,55,.28)'; x.shadowBlur = cell * 0.12 * dpr; x.shadowOffsetX = cell * 0.03 * dpr; x.shadowOffsetY = cell * 0.07 * dpr;
-    rr(x, -L / 2, -W / 2, L, W, W * 0.3); x.fillStyle = 'rgba(0,0,0,.25)'; x.fill();
+    x.shadowColor = 'rgba(20,28,45,.26)'; x.shadowBlur = cell * 0.16 * dpr; x.shadowOffsetX = cell * 0.04 * dpr; x.shadowOffsetY = cell * 0.09 * dpr;
+    rr(x, -L / 2, -W / 2, L, W, W * 0.3); x.fillStyle = 'rgba(0,0,0,.22)'; x.fill();
+    x.shadowColor = 'rgba(10,15,25,.34)'; x.shadowBlur = cell * 0.04 * dpr; x.shadowOffsetX = cell * 0.01 * dpr; x.shadowOffsetY = cell * 0.03 * dpr;
+    rr(x, -L * 0.48, -W * 0.46, L * 0.96, W * 0.92, W * 0.3); x.fill();
     x.restore();
     var icons = fn(x, L, W, col);
-    // soft top highlight
+    // paint shading on everything drawn so far: light along the sunny flank, darker on the far one,
+    // a soft bonnet-to-boot falloff, and a narrow specular streak along the top edge
     x.globalCompositeOperation = 'source-atop';
-    var g = x.createLinearGradient(0, -W / 2, 0, W / 2); g.addColorStop(0, 'rgba(255,255,255,.18)'); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.08)');
+    var g = x.createLinearGradient(0, -W / 2, 0, W / 2);
+    g.addColorStop(0, 'rgba(255,255,255,.30)'); g.addColorStop(0.16, 'rgba(255,255,255,.10)'); g.addColorStop(0.5, 'rgba(255,255,255,0)');
+    g.addColorStop(0.84, 'rgba(0,0,0,.07)'); g.addColorStop(1, 'rgba(0,0,0,.20)');
     x.fillStyle = g; x.fillRect(-w / 2, -h / 2, w, h);
+    var g2 = x.createLinearGradient(-L / 2, 0, L / 2, 0);
+    g2.addColorStop(0, 'rgba(0,0,0,.08)'); g2.addColorStop(0.3, 'rgba(0,0,0,0)'); g2.addColorStop(0.8, 'rgba(255,255,255,0)'); g2.addColorStop(1, 'rgba(255,255,255,.08)');
+    x.fillStyle = g2; x.fillRect(-w / 2, -h / 2, w, h);
+    x.fillStyle = 'rgba(255,255,255,.22)'; x.fillRect(-L * 0.36, -W * 0.47, L * 0.62, Math.max(1, W * 0.035));
     x.globalCompositeOperation = 'source-over';
     return (spriteCache[key] = { canvas: c, w: w, h: h, icons: icons, L: L, W: W });
   }
@@ -6116,13 +6712,20 @@
     ctx.restore();
   }
 
+  /* traffic cone seen from above: rubber base, orange cone with a reflective white band, lit from the top-left.
+   * Only drawn into the pre-rendered background, so the gradients cost nothing per frame. */
   function drawCone(ctx, cx, cy, s) {
     ctx.save(); ctx.translate(cx, cy);
-    ctx.fillStyle = 'rgba(25,35,55,.22)'; ctx.beginPath(); ctx.ellipse(s * 0.05, s * 0.1, s * 0.34, s * 0.3, 0, 0, Math.PI * 2); ctx.fill();
-    rr(ctx, -s * 0.32, -s * 0.32, s * 0.64, s * 0.64, s * 0.1); ctx.fillStyle = '#3a3d44'; ctx.fill();
-    ctx.fillStyle = '#ff7a1a'; ctx.beginPath(); ctx.arc(0, 0, s * 0.24, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, s * 0.15, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ff7a1a'; ctx.beginPath(); ctx.arc(0, 0, s * 0.08, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(20,28,45,.26)'; ctx.beginPath(); ctx.ellipse(s * 0.09, s * 0.12, s * 0.36, s * 0.31, 0, 0, Math.PI * 2); ctx.fill();
+    rr(ctx, -s * 0.33, -s * 0.33, s * 0.66, s * 0.66, s * 0.12); ctx.fillStyle = '#2c2f35'; ctx.fill();
+    rr(ctx, -s * 0.3, -s * 0.31, s * 0.6, s * 0.58, s * 0.1); ctx.fillStyle = '#41454d'; ctx.fill();
+    var g = ctx.createRadialGradient(-s * 0.08, -s * 0.09, s * 0.02, 0, 0, s * 0.26);
+    g.addColorStop(0, '#ffb066'); g.addColorStop(0.55, '#ff7a1a'); g.addColorStop(1, '#d9560c');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, s * 0.25, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#f4f6f8'; ctx.lineWidth = s * 0.07; ctx.beginPath(); ctx.arc(0, 0, s * 0.155, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = s * 0.025; ctx.beginPath(); ctx.arc(0, 0, s * 0.155, Math.PI * 1.05, Math.PI * 1.55); ctx.stroke();
+    ctx.fillStyle = '#ff9a45'; ctx.beginPath(); ctx.arc(0, 0, s * 0.075, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(-s * 0.025, -s * 0.03, s * 0.025, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
@@ -6136,25 +6739,37 @@
   function drawTruck(ctx, x, y, len, h, color, cap, wheelPhase) {
     var p = PALETTE[color], cab = len * 0.2;
     ctx.save();
-    ctx.fillStyle = 'rgba(25,35,55,.22)'; rr(ctx, x + 3, y + h * 0.12 + 4, len, h * 0.8, h * 0.18); ctx.fill();
+    ctx.fillStyle = 'rgba(15,22,38,.26)'; rr(ctx, x + 4, y + h * 0.12 + 5, len, h * 0.8, h * 0.18); ctx.fill();
     // wheels
-    ctx.fillStyle = '#2b2f36';
+    ctx.fillStyle = '#23272e';
     var wx = [x + cab * 0.45, x + cab + len * 0.12, x + len * 0.62, x + len * 0.86];
     wx.forEach(function (w, i) {
       rr(ctx, w - h * 0.12, y + h * 0.04, h * 0.24, h * 0.12, 2); ctx.fill();
       rr(ctx, w - h * 0.12, y + h * 0.84, h * 0.24, h * 0.12, 2); ctx.fill();
     });
-    // trailer deck (ramps) in the truck colour
-    rr(ctx, x + cab + len * 0.01, y + h * 0.1, len - cab - len * 0.01, h * 0.8, h * 0.12); ctx.fillStyle = shade(p.body, -0.15); ctx.fill();
-    rr(ctx, x + cab + len * 0.025, y + h * 0.17, len - cab - len * 0.04, h * 0.66, h * 0.08); ctx.fillStyle = '#e9ecef'; ctx.fill();
+    // trailer deck (ramps) in the truck colour, a lit top rail and steel slats on the bed
+    var dx = x + cab + len * 0.01, dw = len - cab - len * 0.01;
+    rr(ctx, dx, y + h * 0.1, dw, h * 0.8, h * 0.12); ctx.fillStyle = shade(p.body, -0.15); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(dx + h * 0.1, y + h * 0.11, dw - h * 0.2, Math.max(1, h * 0.04));
+    ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.fillRect(dx + h * 0.1, y + h * 0.85, dw - h * 0.2, Math.max(1, h * 0.04));
+    var bx = x + cab + len * 0.025, bw = len - cab - len * 0.04, by = y + h * 0.17, bh = h * 0.66;
+    var bed = ctx.createLinearGradient(0, by, 0, by + bh); bed.addColorStop(0, '#f3f5f7'); bed.addColorStop(1, '#d9dee4');
+    rr(ctx, bx, by, bw, bh, h * 0.08); ctx.fillStyle = bed; ctx.fill();
+    ctx.fillStyle = 'rgba(70,80,95,.10)';
+    for (var sl = by + bh * 0.18; sl < by + bh * 0.95; sl += bh * 0.2) ctx.fillRect(bx + 3, sl, bw - 6, 1);
     // bay separators
     var seats = truckSeats(x, y, len, h, cap);
-    ctx.strokeStyle = 'rgba(60,70,85,.25)'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(60,70,85,.28)'; ctx.lineWidth = 1.5;
     seats.forEach(function (s, i) { if (i) { ctx.beginPath(); ctx.moveTo(s[0] - s[2] / 2, y + h * 0.2); ctx.lineTo(s[0] - s[2] / 2, y + h * 0.8); ctx.stroke(); } });
-    // cab
-    rr(ctx, x, y + h * 0.08, cab, h * 0.84, h * 0.22); ctx.fillStyle = '#f8f8f6'; ctx.fill();
-    ctx.fillStyle = p.body; rr(ctx, x + cab * 0.55, y + h * 0.08, cab * 0.45, h * 0.84, h * 0.1); ctx.fill();
-    ctx.fillStyle = '#34495f'; rr(ctx, x + cab * 0.12, y + h * 0.18, cab * 0.18, h * 0.64, h * 0.08); ctx.fill();
+    // cab: white with a colour band, glass with a glint, chrome bumper, headlights
+    var cg = ctx.createLinearGradient(0, y + h * 0.08, 0, y + h * 0.92);
+    cg.addColorStop(0, '#ffffff'); cg.addColorStop(0.55, '#f2f3f1'); cg.addColorStop(1, '#d7dbe0');
+    rr(ctx, x, y + h * 0.08, cab, h * 0.84, h * 0.22); ctx.fillStyle = cg; ctx.fill();
+    var bg = ctx.createLinearGradient(0, y + h * 0.08, 0, y + h * 0.92);
+    bg.addColorStop(0, shade(p.body, 0.2)); bg.addColorStop(0.5, p.body); bg.addColorStop(1, shade(p.body, -0.18));
+    ctx.fillStyle = bg; rr(ctx, x + cab * 0.55, y + h * 0.08, cab * 0.45, h * 0.84, h * 0.1); ctx.fill();
+    ctx.fillStyle = glass(ctx, cab * 0.4, h * 0.8, x + cab * 0.21, y + h * 0.5); rr(ctx, x + cab * 0.12, y + h * 0.18, cab * 0.18, h * 0.64, h * 0.08); ctx.fill();
+    ctx.fillStyle = '#b9c0c9'; rr(ctx, x - 1, y + h * 0.16, Math.max(2, cab * 0.05), h * 0.68, 2); ctx.fill();
     ctx.fillStyle = '#fff6c8'; rr(ctx, x + 1, y + h * 0.14, cab * 0.06, h * 0.12, 2); ctx.fill(); rr(ctx, x + 1, y + h * 0.74, cab * 0.06, h * 0.12, 2); ctx.fill();
     ctx.restore();
     return seats;
@@ -6305,7 +6920,76 @@
     ctx.restore();
   }
 
+  // ---------------------------------------------------------------- scene: the car park by day and by night
+  /* Colours for the pre-rendered background (game.js drawBg). The night palette keeps the paint and the cars
+   * readable: only the ground, asphalt and verges go dark, and lamps throw warm pools of light on the lot. */
+  var SCENE = {
+    light: { top: ['#d3e2c2', '#dfe8d0'], verge: ['#e3ebd4', '#d6e2c4'], grass: '#9fc27f', grassD: '#78a35e',
+      road: '#6c737f', roadD: '#5d646f', shoulder: '#8f96a1', ring: '#6c7381', paint: '#ffffff', paintA: 0.9,
+      kerb: '#f1f2f4', kerbD: '#a4abb5', lotTint: null, speck: 0.09, rail: '#c3cad2', railD: '#7f8a96',
+      ink: '#41505f', night: 0, stain: 0.06, bay: 'rgba(255,255,255,.12)', extra: '#ffc61a', lampHead: '#f4f6f8' },
+    dark: { top: ['#121a24', '#16201f'], verge: ['#17221d', '#121a17'], grass: '#2f5038', grassD: '#22392a',
+      road: '#31363e', roadD: '#2a2e35', shoulder: '#3b4049', ring: '#33383f', paint: '#e6ebf0', paintA: 0.72,
+      kerb: '#7f8690', kerbD: '#3f454e', lotTint: ['#20242b', 0.7], speck: 0.13, rail: '#6b7580', railD: '#3a424c',
+      ink: '#c9d2dc', night: 1, stain: 0.1, bay: 'rgba(255,255,255,.05)', extra: '#e3ae14', lampHead: '#ffe7a8' }
+  };
+  function mixHex(a, b, t) {
+    var x = hexToRgb(a), y = hexToRgb(b), o = '#';
+    for (var i = 0; i < 3; i++) o += ('0' + Math.round(x[i] + (y[i] - x[i]) * t).toString(16)).slice(-2);
+    return o;
+  }
+  /* 128 px tile of soft asphalt/ground grain (seeded, so identical every time), used as a repeating pattern */
+  var grainTile = null;
+  function grain() {
+    if (grainTile) return grainTile;
+    var s = 128, c = mk(s, s), x = c.getContext('2d'), seed = 1234567;
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    for (var i = 0; i < 900; i++) {
+      var light = rnd() < 0.45, a = 0.25 + rnd() * 0.55, r = rnd() < 0.85 ? 1 : 2;
+      x.fillStyle = light ? 'rgba(255,255,255,' + a + ')' : 'rgba(0,0,0,' + a + ')';
+      x.fillRect(Math.floor(rnd() * s), Math.floor(rnd() * s), r, r);
+    }
+    for (i = 0; i < 14; i++) {   // a few larger, very faint blotches so the tile does not read as a grid
+      x.fillStyle = 'rgba(0,0,0,' + (0.05 + rnd() * 0.06) + ')';
+      x.beginPath(); x.ellipse(rnd() * s, rnd() * s, 6 + rnd() * 14, 4 + rnd() * 8, rnd() * 3, 0, Math.PI * 2); x.fill();
+    }
+    return (grainTile = c);
+  }
+  /* fill the current path (or a rect) with the grain at alpha a */
+  function grainFill(ctx, a, rect) {
+    var p = ctx.createPattern(grain(), 'repeat');
+    ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = p;
+    if (rect) ctx.fillRect(rect[0], rect[1], rect[2], rect[3]); else ctx.fill();
+    ctx.restore();
+  }
+  /* manhole cover, top view */
+  function drawManhole(ctx, x, y, r, S) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.arc(0, 0, r * 1.12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = S.night ? '#3e434b' : '#7b828d'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = S.night ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.22)'; ctx.lineWidth = Math.max(1, r * 0.12);
+    for (var i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(-r * 0.7, i * r * 0.3); ctx.lineTo(r * 0.7, i * r * 0.3); ctx.stroke(); }
+    ctx.restore();
+  }
+  /* street lamp seen from above: the pole's shadow on the ground and the lamp head */
+  function drawLamp(ctx, x, y, s, S) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.strokeStyle = 'rgba(10,15,25,.22)'; ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(s * 0.9, s * 1.3); ctx.stroke();
+    ctx.fillStyle = S.railD; ctx.beginPath(); ctx.arc(0, 0, s * 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = S.lampHead; ctx.beginPath(); ctx.arc(-s * 0.03, -s * 0.03, s * 0.13, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  /* warm pool of light on the ground (night only; drawn once into the background) */
+  function drawLampGlow(ctx, x, y, rad) {
+    var g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, 'rgba(255,214,140,.20)'); g.addColorStop(0.45, 'rgba(255,200,120,.09)'); g.addColorStop(1, 'rgba(255,200,120,0)');
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g;
+    ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2); ctx.restore();
+  }
+
   var api = { PALETTE: PALETTE, SIGN_BLUE: SIGN_BLUE, setPalette: setPalette, shade: shade, rr: rr, mk: mk,
+    SCENE: SCENE, mixHex: mixHex, grain: grain, grainFill: grainFill, drawManhole: drawManhole, drawLamp: drawLamp, drawLampGlow: drawLampGlow,
     iconPath: iconPath, drawIcon: drawIcon, vehicle: vehicle, drawVehicle: drawVehicle, drawChevron: drawChevron, drawKey: drawKey, drawLock: drawLock,
     drawCone: drawCone, drawTruck: drawTruck, truckSeats: truckSeats, drawSign: drawSign, drawDeco: drawDeco,
     drawCrane: drawCrane, drawSplat: drawSplat, drawSparkle: drawSparkle, drawVhs: drawVhs };
@@ -6352,6 +7036,13 @@
   var CRANE_DUR = 1.5, CRANE_ARM = 1.8, SLOW_AT = 0.5, SLOW_LEN = 0.14, SLOW_K = 0.3, FADE = 0.32;
   var RM = root.matchMedia ? root.matchMedia('(prefers-reduced-motion: reduce)') : null;
   function reducedMotion() { return !!(RM && RM.matches); }
+  /* board theme: the shell's choice (html[data-theme]) when set, else the OS (same rule as the gamekit shell) */
+  var DM = root.matchMedia ? root.matchMedia('(prefers-color-scheme: dark)') : null;
+  function detectTheme() {
+    var de = typeof document !== 'undefined' ? document.documentElement : null, t = de && de.getAttribute('data-theme');
+    if (t === 'dark' || t === 'light') return t;
+    return DM && DM.matches ? 'dark' : 'light';
+  }
   var ANG = { R: 0, D: Math.PI / 2, L: Math.PI, U: -Math.PI / 2 };
 
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -6409,9 +7100,21 @@
       L: null, K: null, st: null, undo: [], cars: [], occ: null, lay: null, bg: null, dpr: 1,
       trucks: { idx: 0, slide: 0, slideT: 1, leaving: [] }, parts: [], flash: 0, crane: null,
       ended: false, offer: null, startTime: 0, settleT: 0, raf: 0, last: 0, rng: null, time: 0,
-      fx: [], boost: null, reduced: null   // booster effects; last booster { id, exits, truck }; null = follow the OS
+      fx: [], boost: null, reduced: null,  // booster effects; last booster { id, exits, truck }; null = follow the OS
+      theme: detectTheme()
     };
     function reduced() { return G.reduced === null ? reducedMotion() : G.reduced; }
+    function scene() { return A.SCENE[G.theme] || A.SCENE.light; }
+    function onTheme() {
+      var t = detectTheme();
+      if (t === G.theme) return;
+      G.theme = t;
+      if (G.L && G.lay && G.lay.cell) { drawBg(); wake(); }
+    }
+    if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+      new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    }
+    if (DM) { if (DM.addEventListener) DM.addEventListener('change', onTheme); else if (DM.addListener) DM.addListener(onTheme); }
 
     // ---------------------------------------------------------------- layout
     function layout() {
@@ -6479,53 +7182,134 @@
     // ---------------------------------------------------------------- background (pre-rendered)
     function drawBg() {
       var l = G.lay, d = G.dpr, pk = (root.AtascoGen && AtascoGen.PACKS[G.L.pack || 0]) || { ground: '#cfd5dc', deco: 'cones' };
-      var c = G.bg && G.bg.width === canvas.width && G.bg.height === canvas.height ? G.bg : A.mk(canvas.width, canvas.height);
-      var x = c.getContext('2d');
+      var bgc = G.bg && G.bg.width === canvas.width && G.bg.height === canvas.height ? G.bg : A.mk(canvas.width, canvas.height);
+      var x = bgc.getContext('2d');
       x.setTransform(d, 0, 0, d, 0, 0);
       x.clearRect(0, 0, l.W, l.H);
-      x.fillStyle = '#e7eddc'; x.fillRect(0, 0, l.W, l.H);
-      // motorway lane at the top
-      x.fillStyle = '#d7dfca'; x.fillRect(0, 0, l.W, l.laneY);
-      x.fillStyle = '#6f7684'; x.fillRect(0, l.laneY, l.W, l.laneH);
-      x.fillStyle = '#fff'; x.fillRect(0, l.laneY + 2, l.W, 2); x.fillRect(0, l.laneY + l.laneH - 4, l.W, 2);
-      x.globalAlpha = 0.6;
+      var T = scene(), q, k, g;
+      var rnd = S.mulberry(G.L.seed || 7), rg = l.ring, r = l.r, c = l.cell;
+      // verge (grass) over the whole canvas, a slightly different verge behind the signs, soft grain on both
+      g = x.createLinearGradient(0, l.dockH, 0, l.H); g.addColorStop(0, T.verge[0]); g.addColorStop(1, T.verge[1]);
+      x.fillStyle = g; x.fillRect(0, 0, l.W, l.H);
+      g = x.createLinearGradient(0, 0, 0, l.laneY); g.addColorStop(0, T.top[0]); g.addColorStop(1, T.top[1]);
+      x.fillStyle = g; x.fillRect(0, 0, l.W, l.laneY);
+      A.grainFill(x, T.speck * 0.7, [0, 0, l.W, l.H]);
+      // guardrail along the motorway, under the gantry signs
+      var gr = l.laneY - 5;
+      x.fillStyle = T.railD; for (q = 10; q < l.W; q += 26) x.fillRect(q, gr - 1, 3, 6);
+      x.fillStyle = T.rail; x.fillRect(0, gr, l.W, 3); x.fillStyle = T.railD; x.fillRect(0, gr + 3, l.W, 1);
+      // motorway lane at the top: asphalt with grain, continuous edge lines, lane dashes (cat's eyes at night)
+      g = x.createLinearGradient(0, l.laneY, 0, l.laneY + l.laneH); g.addColorStop(0, T.road); g.addColorStop(1, T.roadD);
+      x.fillStyle = g; x.fillRect(0, l.laneY, l.W, l.laneH);
+      A.grainFill(x, T.speck, [0, l.laneY, l.W, l.laneH]);
+      x.globalAlpha = T.paintA; x.fillStyle = T.paint;
+      x.fillRect(0, l.laneY + 2, l.W, 2); x.fillRect(0, l.laneY + l.laneH - 4, l.W, 2);
+      x.globalAlpha = T.paintA * 0.65;
       for (var dx = 6; dx < l.W; dx += 28) x.fillRect(dx, l.laneY + l.laneH / 2 - 1, 14, 2);
       x.globalAlpha = 1;
-      // arcen (hard shoulder) with parking bays
-      x.fillStyle = '#9aa1ad'; x.fillRect(0, l.arcenY, l.W, l.arcenH);
-      x.fillStyle = '#fff'; x.fillRect(0, l.arcenY + 1, l.W, 2);
+      if (T.night) {
+        x.fillStyle = 'rgba(255,214,110,.75)';
+        for (dx = 13; dx < l.W; dx += 28) { x.fillRect(dx, l.laneY + 2.5, 2, 1); x.fillRect(dx, l.laneY + l.laneH - 3.5, 2, 1); }
+      }
+      // concrete kerb between the motorway and the hard shoulder
+      x.fillStyle = T.kerb; x.fillRect(0, l.laneY + l.laneH, l.W, l.arcenY - l.laneY - l.laneH);
+      x.fillStyle = T.kerbD; x.fillRect(0, l.arcenY - 1, l.W, 1);
+      // arcen (hard shoulder) with painted parking bays; the extra bays (booster / continue) in hazard yellow
+      g = x.createLinearGradient(0, l.arcenY, 0, l.arcenY + l.arcenH); g.addColorStop(0, A.shade(T.shoulder, 0.04)); g.addColorStop(1, T.shoulder);
+      x.fillStyle = g; x.fillRect(0, l.arcenY, l.W, l.arcenH);
+      A.grainFill(x, T.speck, [0, l.arcenY, l.W, l.arcenH]);
+      x.globalAlpha = T.paintA; x.fillStyle = T.paint; x.fillRect(0, l.arcenY + 1, l.W, 2); x.globalAlpha = 1;
+      x.fillStyle = 'rgba(0,0,0,.16)'; x.fillRect(0, l.arcenY + l.arcenH - 3, l.W, 3);
       var n = G.st ? G.st.slots : G.L.slots;
-      for (var k = 0; k < n; k++) {
-        var sx = l.slotX + l.slotW * k;
-        A.rr(x, sx + 3, l.arcenY + 5, l.slotW - 6, l.arcenH - 10, 7);
-        x.fillStyle = k >= G.L.slots ? '#c7b98a' : '#b7bdc6'; x.fill();
-        x.strokeStyle = 'rgba(255,255,255,.85)'; x.lineWidth = 1.5; x.stroke();
+      for (k = 0; k < n; k++) {
+        var sx = l.slotX + l.slotW * k, extra = k >= G.L.slots, by = l.arcenY + 5, bh = l.arcenH - 10;
+        A.rr(x, sx + 3, by, l.slotW - 6, bh, 7);
+        x.fillStyle = T.bay; x.fill();
+        if (extra) {
+          x.save(); x.clip(); x.strokeStyle = T.extra; x.globalAlpha = 0.28; x.lineWidth = 4;
+          for (q = -bh; q < l.slotW; q += 11) { x.beginPath(); x.moveTo(sx + q, by + bh); x.lineTo(sx + q + bh, by); x.stroke(); }
+          x.restore();
+        }
+        // inner shadow at the top of the bay (the kerb's lip), then the paint
+        x.save(); A.rr(x, sx + 3, by, l.slotW - 6, bh, 7); x.clip();
+        g = x.createLinearGradient(0, by, 0, by + 6); g.addColorStop(0, 'rgba(0,0,0,.18)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        x.fillStyle = g; x.fillRect(sx, by, l.slotW, 6); x.restore();
+        A.rr(x, sx + 3, by, l.slotW - 6, bh, 7);
+        x.strokeStyle = extra ? T.extra : T.paint; x.globalAlpha = extra ? 0.95 : T.paintA * 0.9; x.lineWidth = 1.6; x.stroke(); x.globalAlpha = 1;
       }
-      // ring road + lot
-      var rg = l.ring, r = l.r;
-      A.rr(x, rg.l - r / 2, rg.t - r / 2, rg.r - rg.l + r, rg.b - rg.t + r, r * 0.9); x.fillStyle = '#737a88'; x.fill();
-      x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1.5; x.setLineDash([8, 9]);
-      A.rr(x, rg.l, rg.t, rg.r - rg.l, rg.b - rg.t, r * 0.5); x.stroke(); x.setLineDash([]);
-      // entry from the top road to the arcen
-      x.fillStyle = '#737a88'; x.fillRect(l.W / 2 - r * 0.8, l.arcenY + l.arcenH - 2, r * 1.6, rg.t - l.arcenY - l.arcenH + 4);
-      A.rr(x, l.lotX - 2, l.lotY - 2, l.lotW + 4, l.lotH + 4, 6); x.fillStyle = A.shade(pk.ground, -0.12); x.fill();
-      x.fillStyle = pk.ground; x.fillRect(l.lotX, l.lotY, l.lotW, l.lotH);
-      x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 1;
-      for (var gx = 1; gx < G.L.cols; gx++) { x.beginPath(); x.moveTo(l.lotX + gx * l.cell, l.lotY + 3); x.lineTo(l.lotX + gx * l.cell, l.lotY + l.lotH - 3); x.stroke(); }
+      // ring road: asphalt with grain, a concrete kerb with a lit top edge, dashed centre line
+      var ox = rg.l - r / 2, oy = rg.t - r / 2, ow = rg.r - rg.l + r, oh = rg.b - rg.t + r;
+      A.rr(x, ox - 3, oy - 2, ow + 6, oh + 6, r * 0.9 + 3); x.fillStyle = T.kerbD; x.fill();
+      A.rr(x, ox - 3, oy - 3, ow + 6, oh + 5, r * 0.9 + 3); x.fillStyle = T.kerb; x.fill();
+      A.rr(x, ox, oy, ow, oh, r * 0.9); x.fillStyle = T.ring; x.fill();
+      A.grainFill(x, T.speck);
+      // entry from the arcen down to the ring
+      var ex = l.W / 2 - r * 0.8, ey = l.arcenY + l.arcenH - 2, eh = rg.t - l.arcenY - l.arcenH + 4;
+      x.fillStyle = T.ring; x.fillRect(ex, ey, r * 1.6, eh);
+      A.grainFill(x, T.speck, [ex, ey, r * 1.6, eh]);
+      x.fillStyle = T.kerb; x.fillRect(ex - 3, ey + 2, 3, eh - 6); x.fillRect(ex + r * 1.6, ey + 2, 3, eh - 6);
+      x.strokeStyle = T.paint; x.globalAlpha = T.paintA * 0.6; x.lineWidth = 1.5; x.setLineDash([8, 9]);
+      A.rr(x, rg.l, rg.t, rg.r - rg.l, rg.b - rg.t, r * 0.5); x.stroke(); x.setLineDash([]); x.globalAlpha = 1;
+      // a manhole on the ring road (seeded spot on the bottom stretch)
+      A.drawManhole(x, rg.l + (rg.r - rg.l) * (0.2 + 0.6 * rnd()), rg.b, Math.max(4, r * 0.2), T);
+      // the lot: a kerb frame with a bevel, the ground in the pack colour (dimmed at night), grain, an inner
+      // shadow under the kerb, a few faint oil stains, painted stall lines
+      var ground = T.lotTint ? A.mixHex(pk.ground, T.lotTint[0], T.lotTint[1]) : pk.ground;
+      A.rr(x, l.lotX - 5, l.lotY - 5, l.lotW + 10, l.lotH + 11, 8); x.fillStyle = T.kerbD; x.fill();
+      A.rr(x, l.lotX - 5, l.lotY - 5, l.lotW + 10, l.lotH + 9, 8); x.fillStyle = T.kerb; x.fill();
+      g = x.createLinearGradient(0, l.lotY, 0, l.lotY + l.lotH); g.addColorStop(0, A.shade(ground, 0.05)); g.addColorStop(1, A.shade(ground, -0.05));
+      x.fillStyle = g; x.fillRect(l.lotX, l.lotY, l.lotW, l.lotH);
+      A.grainFill(x, T.speck * 0.8, [l.lotX, l.lotY, l.lotW, l.lotH]);
+      g = x.createLinearGradient(0, l.lotY, 0, l.lotY + c * 0.3); g.addColorStop(0, 'rgba(0,0,0,.16)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(l.lotX, l.lotY, l.lotW, c * 0.3);
+      g = x.createLinearGradient(l.lotX, 0, l.lotX + c * 0.16, 0); g.addColorStop(0, 'rgba(0,0,0,.09)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(l.lotX, l.lotY, c * 0.16, l.lotH);
+      for (var cy = 0; cy < G.L.rows; cy++) for (var cx = 0; cx < G.L.cols; cx++) {
+        if (rnd() > 0.16) continue;
+        var sxp = l.lotX + (cx + 0.25 + 0.5 * rnd()) * c, syp = l.lotY + (cy + 0.25 + 0.5 * rnd()) * c, sr = c * (0.1 + 0.1 * rnd());
+        x.fillStyle = 'rgba(20,20,28,' + T.stain + ')';
+        x.beginPath(); x.ellipse(sxp, syp, sr, sr * 0.7, rnd() * 3, 0, 7); x.fill();
+        x.beginPath(); x.ellipse(sxp + sr * 0.2, syp, sr * 0.45, sr * 0.3, 0, 0, 7); x.fill();
+      }
+      x.strokeStyle = T.paint; x.lineCap = 'round';
+      x.globalAlpha = T.paintA * 0.6; x.lineWidth = 1.5;
+      for (var gx = 1; gx < G.L.cols; gx++) { x.beginPath(); x.moveTo(l.lotX + gx * c, l.lotY + 4); x.lineTo(l.lotX + gx * c, l.lotY + l.lotH - 4); x.stroke(); }
+      x.globalAlpha = T.paintA * 0.4; x.lineWidth = 1;
       for (var gy = 1; gy < G.L.rows; gy++) {
-        x.setLineDash([4, 6]); x.beginPath(); x.moveTo(l.lotX + 3, l.lotY + gy * l.cell); x.lineTo(l.lotX + l.lotW - 3, l.lotY + gy * l.cell); x.stroke();
+        x.setLineDash([4, 6]); x.beginPath(); x.moveTo(l.lotX + 4, l.lotY + gy * c); x.lineTo(l.lotX + l.lotW - 4, l.lotY + gy * c); x.stroke();
       }
-      x.setLineDash([]);
-      (G.L.obstacles || []).forEach(function (o) { A.drawCone(x, l.lotX + (o[0] + 0.5) * l.cell, l.lotY + (o[1] + 0.5) * l.cell, l.cell); });
+      x.setLineDash([]); x.globalAlpha = 1; x.lineCap = 'butt';
+      (G.L.obstacles || []).forEach(function (o) { A.drawCone(x, l.lotX + (o[0] + 0.5) * c, l.lotY + (o[1] + 0.5) * c, c); });
+      // grass tufts along the outside of the ring road kerb (only where the verge is wide enough)
+      var ml = ox - 3, mr = l.W - (ox + ow + 3);
+      for (q = 0; q < 26; q++) {
+        var right = q % 2, room = right ? mr : ml;
+        if (room < 7) continue;
+        var tx = right ? ox + ow + 6 + rnd() * Math.min(room - 6, 16) : ox - 6 - rnd() * Math.min(room - 6, 16);
+        var ty = oy + 8 + rnd() * (oh - 16), th = 3 + rnd() * 3;
+        x.strokeStyle = rnd() < 0.5 ? T.grass : T.grassD; x.lineWidth = 1.4; x.lineCap = 'round';
+        x.beginPath(); x.moveTo(tx, ty); x.lineTo(tx - 1.5, ty - th); x.moveTo(tx, ty); x.lineTo(tx + 0.5, ty - th * 1.1);
+        x.moveTo(tx, ty); x.lineTo(tx + 2, ty - th * 0.8); x.stroke();
+      }
+      x.lineCap = 'butt';
+      // a street lamp on each side of the ring (and its warm light on the lot at night)
+      var lamps = [[ox - 2, oy + oh * 0.5], [ox + ow + 2, oy + oh * 0.5]], ls = Math.max(10, c * 0.42);
+      if (T.night) lamps.forEach(function (p) { A.drawLampGlow(x, p[0], p[1], c * 3.2); });
+      if (ml > ls * 0.5 && mr > ls * 0.5) lamps.forEach(function (p) { A.drawLamp(x, p[0], p[1], ls, T); });
+      if (T.night) {   // a gentle vignette keeps the eye on the lot
+        g = x.createRadialGradient(l.W / 2, (l.lotY + l.lotH / 2), Math.min(l.W, l.H) * 0.3, l.W / 2, (l.lotY + l.lotH / 2), Math.max(l.W, l.H) * 0.75);
+        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.28)');
+        x.fillStyle = g; x.fillRect(0, l.dockH, l.W, l.H - l.dockH);
+      }
       // decorations in the margins (seeded, so stable)
-      var rnd = S.mulberry(G.L.seed || 7), ds = Math.max(14, l.cell * 0.55);
+      var ds = Math.max(14, l.cell * 0.55);
       for (var q = 0; q < 10; q++) {
         var side = q % 2, yy = rg.t + (rg.b - rg.t) * (0.1 + 0.8 * rnd());
         var xx = side ? (rg.r + r / 2 + (l.W - rg.r - r / 2) / 2) : (rg.l - r / 2) / 2;
         if ((side ? l.W - rg.r - r / 2 : rg.l - r / 2) > ds * 0.9) A.drawDeco(x, pk.deco, xx, yy, ds, rnd() * 6);
       }
       for (q = 0; q < 6; q++) A.drawDeco(x, pk.deco, 14 + rnd() * (l.W - 28), 8 + rnd() * (l.laneY - 16) * 0.3, ds * 0.7, rnd() * 6);
-      G.bg = c;
+      G.bg = bgc;
     }
 
     // ---------------------------------------------------------------- level start / rebuild
@@ -6989,7 +7773,7 @@
           A.drawIcon(ctx, col, cx + chip / 2, 6 + l.signH / 2, chip * 0.6, d);
         }
         // trucks left counter
-        ctx.fillStyle = '#41505f'; ctx.font = '700 ' + Math.round(l.signH * 0.42) + 'px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = scene().ink; ctx.font = '700 ' + Math.round(l.signH * 0.42) + 'px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         var gy = 6 + l.signH / 2, gs = l.signH * 0.34;
         A.rr(ctx, 8, gy - gs * 0.55, gs * 0.7, gs * 1.1, 3); ctx.fill(); A.rr(ctx, 8 + gs * 0.8, gy - gs * 0.55, gs * 1.5, gs * 1.1, 3); ctx.fill();
         ctx.fillText((K.trucks.length - dt) + '', 12 + gs * 2.4, gy);

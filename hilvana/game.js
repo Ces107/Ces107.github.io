@@ -93,7 +93,7 @@
       slots: 4,
       // rarity tiers: common / rare / epic / legendary (colours in shell/fun.css)
       types: {
-        wood: { unlockMin: 15, coins: 25, boosters: 0, rarity: 'common' },
+        wood: { unlockMin: 15, coins: 15, boosters: 0, rarity: 'common' },   // v3 (win chests): 25 -> 15
         silver: { unlockMin: 60, coins: 50, boosters: 1, rarity: 'rare' },
         gold: { unlockMin: 180, coins: 100, boosters: 2, rarity: 'epic' },
         crystal: { unlockMin: 360, coins: 250, boosters: 3, rarity: 'legendary' }
@@ -103,9 +103,30 @@
       // Chests from paid sources (premium pass) are fixed and never roll.
       lucky: { wood: 0.10, silver: 0.06, gold: 0.03 },
       boosterOrder: [],      // game: which boosters a chest gives, in order
-      levelMilestone: 20,    // a silver chest every 20 levels won for the first time
-      adSkipsPerDay: 3       // R3: a rewarded ad opens the chest that is unlocking
+      levelMilestone: 0,     // (was a silver chest every 20 first wins; the win chests below replace it. 0 = off)
+      adSkipsPerDay: 3,      // R3: a rewarded ad opens the chest that is unlocking
+      // Clash-style win chests: every `every` wins (level won, or a finished game of a mode in `modes`) the next type of
+      // the fixed cycle drops into a free slot (none when the 4 slots are full). Deterministic, never random.
+      win: { every: 5, modes: ['daily'], cycle: ['wood', 'wood', 'wood', 'wood', 'silver', 'wood', 'wood', 'wood', 'wood', 'wood'] },
+      // "Abrir ya" with coins: price = minutes left x perMin (at least min). Locked chests: their whole timer
+      skipCoins: { perMin: 2, min: 20 }
     },
+
+    // ---- chest shop: chests bought with COINS (soft currency; never with real money directly). Coins can be bought,
+    //      so each tier is a randomized item: its drop table is shown before buying (Play "loot box" odds disclosure),
+    //      contents are in-game items only (coins, boosters), the reveal shows the real outcome (no near-miss).
+    //      Expected value (boosters at their coin price) rises slightly with the tier; MONETIZATION.md addendum E.
+    //      A free player (~350 coins/day) affords the small one every 1-2 days; the big ones take weeks or bought coins.
+    chestShop: [
+      { id: 'small', art: 'wood', price: 450, drops: [
+        { w: 60, coins: 120, boosters: 1 }, { w: 25, coins: 100, boosters: 2 }, { w: 15, coins: 450, boosters: 0 }] },
+      { id: 'big', art: 'silver', price: 1500, drops: [
+        { w: 60, coins: 250, boosters: 4 }, { w: 25, coins: 150, boosters: 6 }, { w: 15, coins: 900, boosters: 2 }] },
+      { id: 'epic', art: 'gold', price: 4000, drops: [
+        { w: 60, coins: 500, boosters: 12 }, { w: 28, coins: 400, boosters: 16 }, { w: 12, coins: 2000, boosters: 8 }] },
+      { id: 'legendary', art: 'crystal', price: 9000, drops: [
+        { w: 60, coins: 1200, boosters: 28 }, { w: 30, coins: 1000, boosters: 36 }, { w: 10, coins: 6000, boosters: 14 }] }
+    ],
 
     // ---- streak (Duolingo-style flame) ----
     streak: {
@@ -135,7 +156,7 @@
     },
 
     // ---- player level (lifetime XP, same XP as the pass): need(n) = base + step * (n - 1) ----
-    levels: { base: 120, step: 30, coins: 12, coinsStep: 2, spinEvery: 3, chestEvery: 10, chest: 'silver' },
+    levels: { base: 120, step: 30, coins: 12, coinsStep: 2, spinEvery: 3, chestEvery: 10, chest: 'wood' },   // v3: silver -> wood (win chests add supply)
 
     // ---- lucky moment: the game reports a big moment (combo); chance of x2 game coins, bounded ----
     lucky: { chance: 0.12, minStrength: 3, maxPerDay: 2, mult: 2, cap: 60 },
@@ -145,8 +166,17 @@
       tiers: ['bronze', 'silver', 'gold', 'sapphire', 'ruby', 'emerald', 'amethyst', 'diamond'],
       size: 30, promote: 5, demote: 5,
       base: 420, growth: 1.18,           // rivals' typical week at tier t: base * growth^t (nudged by the player's own pace)
-      rewards: [{ to: 1, chest: 'gold' }, { to: 3, chest: 'silver' }, { to: 10, chest: 'wood' }],
-      legendaryFrom: 4                   // 1st place from tier 4 (ruby) up gets the legendary chest
+      // weekly prizes by final rank (brackets up to `to`), shown on the menu card and the league sheet. Higher tiers pay more:
+      // coins x (1 + tierCoins x tier) (Bronce x1 ... Diamante x2.75), the chest moves up one rarity every chestStep tiers
+      // (Zafiro, Amatista), and the top 3 get +1 booster every boosterStep tiers.
+      rewards: [
+        { to: 1, chest: 'gold', coins: 120, boosters: 1 },
+        { to: 2, chest: 'silver', coins: 80 },
+        { to: 3, chest: 'silver', coins: 60 },
+        { to: 5, chest: 'wood', coins: 30 },     // the rest of the promotion zone
+        { to: 10, coins: 10 }
+      ],
+      tierCoins: 0.25, chestStep: 3, boosterStep: 2
     },
 
     // ---- ranking (daily challenge): rewards granted by the server next login; CPU rivals top up thin tables ----
@@ -177,7 +207,7 @@
     },
 
     // ---- offers ----
-    starterPack: { afterLevel: 10, windowHours: 72 },
+    starterPack: { afterLevel: 10, afterGames: 1, windowHours: 72 },   // the window opens after the first finished game (or level 10)
     piggy: { share: 0.30, breakAt: 1200, cap: 3000 },   // v2: income is lower, so a bigger share fills it in ~2 weeks
     // limited-time offers + the between-games rhythm (meta/offers.js, MONETIZATION.md addendum D). Every number is a
     // Remote Config key (offers.breakMin, offers.oneshot.1.cooldownDays, ...). Timers are real: an offer that ends is gone.
@@ -201,7 +231,10 @@
         { product: 'offer_oneshot_m', weight: 1, cooldownDays: 14 },
         { product: 'double_2h', weight: 2, cooldownDays: 2 }
       ],
-      appStart: { minSessions: 2, minGames: 3 }   // app-start popup: never on the first launch, only after 3 finished games
+      // app-start popup: never on the first launch. League / weekend packs after 3 finished games and the offers unlock;
+      // the starter (welcome) pack from the 2nd session, once per session while its window is live (still within the
+      // daily cap and the 20-min gap; a menu screen, closable, never over a level)
+      appStart: { minSessions: 2, minGames: 3, starterMinGames: 1, starterEverySession: true }
     },
 
     // ---- feature unlock order (avoid day-1 overload): reached level OR finished games ----
@@ -211,7 +244,7 @@
       chests: { level: 8, games: 6 },
       pass: { level: 15, games: 12 },
       freeze: { days: 2 },
-      starter: { level: 10 },
+      starter: { level: 10, games: 1 },
       piggy: { level: 20 },
       offers: { level: 6, games: 5 }   // offer popups (also gated by the day-0 grace of the ads)
     },
@@ -642,8 +675,10 @@
  *   meta.addXp(n), meta.passTier(), meta.claimPass(tier, 'free'|'premium')
  *   meta.earnChest(type), meta.startUnlock(i), meta.chestState(i), meta.openChest(i), meta.adSkip(i), meta.chestContents(type)
  *   meta.canDailyGift/claimDailyGift(booster), meta.canShopCoins/claimShopCoins(), meta.canRepairStreak/repairStreak()
- *   meta.unlocked(feature, {level, games}), meta.starterOpen(level), meta.passProductId()
- * Chests are only earned by playing, never sold, and their contents are fixed and shown up front (chestContents).
+ *   meta.unlocked(feature, {level, games}), meta.starterOpen(level, games), meta.passProductId()
+ *   meta.onWin() (win chests), meta.skipCost(i) / coinSkip(i) ("abrir ya" with coins), meta.shopOdds(id) / buyChest(id) (chest shop)
+ * Slot chests are earned by playing (never sold) and their contents are fixed and shown up front (chestContents).
+ * Shop chests are bought with coins and opened at once; their drop table is shown before buying (shopOdds).
  */
 (function (root) {
   'use strict';
@@ -663,7 +698,8 @@
       gift: '',           // day the daily gift was claimed
       shopCoins: null,    // { day, n } rewarded free coins in the shop
       repairDay: '',      // last streak repair
-      starterFrom: 0      // when the starter pack window opened
+      starterFrom: 0,     // when the starter pack window opened
+      wins: 0, winChests: 0   // wins counted for the win chests, win chests dropped (position in the cycle)
     };
   }
 
@@ -840,6 +876,61 @@
         c.opensAt = now();
         return true;
       },
+      // "Abrir ya" with coins: minutes left (a locked chest: its whole timer) x skipCoins.perMin, at least skipCoins.min
+      skipCost: function (i) {
+        var c = state.chests[i], k = cfg.chests.skipCoins || { perMin: 2, min: 20 };
+        if (!c) return 0;
+        var st = meta.chestState(i);
+        if (st.status === 'ready') return 0;
+        var mins = st.status === 'unlocking' ? Math.ceil(st.msLeft / 60000) : cfg.chests.types[c.type].unlockMin;
+        return Math.max(k.min, mins * k.perMin);
+      },
+      coinSkip: function (i) {
+        var c = state.chests[i], cost = meta.skipCost(i);
+        if (!c || !cost || !eco.spend(cost, 'chest_skip')) return false;
+        c.opensAt = now();
+        track('chest_skip', { type: c.type, coins: cost });
+        return true;
+      },
+      // a win (level won, or a finished game of a chests.win.modes mode): every `every` wins the next chest of the cycle
+      // drops into a free slot. Returns the chest type, or null (not due, or the slots are full: Clash rules)
+      onWin: function () {
+        var W = cfg.chests.win;
+        if (!W || !W.every || !W.cycle || !W.cycle.length) return null;
+        state.wins = (state.wins || 0) + 1;
+        if (state.wins % W.every) return null;
+        var type = W.cycle[(state.winChests || 0) % W.cycle.length];
+        if (!meta.earnChest(type)) return null;
+        state.winChests = (state.winChests || 0) + 1;
+        return type;
+      },
+      winsToChest: function () { var W = cfg.chests.win; return W && W.every ? W.every - ((state.wins || 0) % W.every) : 0; },
+      // chest shop (bought with coins): the drop table of a tier, as shown in its odds sheet
+      shopChest: function (id) { return (cfg.chestShop || []).filter(function (t) { return t.id === id; })[0] || null; },
+      shopOdds: function (id) {
+        var t = meta.shopChest(id);
+        if (!t) return [];
+        var sum = t.drops.reduce(function (a, d) { return a + d.w; }, 0);
+        return t.drops.map(function (d) { return { p: d.w / sum, coins: d.coins || 0, boosters: meta.boosterSplit(d.boosters || 0, 0) }; });
+      },
+      // n boosters spread over the game's booster order, starting at `from` (fixed rule, shown in the odds sheet)
+      boosterSplit: function (n, from) {
+        var order = cfg.chests.boosterOrder, b = {};
+        for (var k = 0; k < n && order.length; k++) { var id = order[(k + (from || 0)) % order.length]; b[id] = (b[id] || 0) + 1; }
+        return b;
+      },
+      // buy a shop chest with coins and open it at once. r: random number in [0, 1) (tests pass it). The outcome is
+      // drawn here, before any animation, with exactly the odds of shopOdds(id)
+      buyChest: function (id, r) {
+        var t = meta.shopChest(id);
+        if (!t || !eco.spend(t.price, 'chest_shop_' + id)) return null;
+        var odds = meta.shopOdds(id), x = r == null ? Math.random() : r, k = 0;
+        for (var acc = 0; k < odds.length - 1; k++) { acc += odds[k].p; if (x < acc) break; }
+        var o = odds[k], got = eco.grant({ coins: o.coins, boosters: o.boosters }, 'chest_shop_' + id);
+        track('chest_buy', { tier: id, price: t.price, outcome: k, coins: o.coins });
+        got.chestType = t.art; got.from = t.art; got.lucky = false; got.shop = id; got.outcome = k;
+        return got;
+      },
       // fixed contents: exactly what the chest card shows (no randomness anywhere)
       chestContents: function (type) {
         var t = cfg.chests.types[type], order = cfg.chests.boosterOrder, b = {};
@@ -909,9 +1000,10 @@
         return (u.level && ctx.level >= u.level) || (u.games && ctx.games >= u.games) || false;
       },
       // starter pack: a 72 h window that opens the first time the player reaches level N
-      starterOpen: function (level) {
+      // games: finished games so far (the window also opens after sp.afterGames games)
+      starterOpen: function (level, games) {
         var sp = cfg.starterPack;
-        if (!state.starterFrom && level >= sp.afterLevel) state.starterFrom = now();
+        if (!state.starterFrom && (level >= sp.afterLevel || (sp.afterGames && games >= sp.afterGames))) state.starterFrom = now();
         return !!state.starterFrom && now() < state.starterFrom + sp.windowHours * 3600000;
       },
       passProductId: function () { var n = state.pass.season + 1; return 'pass_s' + (n < 10 ? '0' : '') + n; },
@@ -938,7 +1030,7 @@
         var chest = null;
         if (firstWin) {
           state.firstWins++;
-          if (state.firstWins % cfg.chests.levelMilestone === 0 && meta.earnChest('silver')) chest = 'silver';
+          if (cfg.chests.levelMilestone && state.firstWins % cfg.chests.levelMilestone === 0 && meta.earnChest('silver')) chest = 'silver';
         }
         return { quests: done, chest: chest };
       }
@@ -1266,6 +1358,19 @@
     function dayIdx() { return (U.dayNumber(today(), epoch) - 1) % 7; }
     function hourNow() { var d = new Date(now()); return d.getHours() + d.getMinutes() / 60; }
     function base(tier) { return Math.round(C.base * Math.pow(C.growth, tier)); }
+    // a reward bracket at a tier: coins x (1 + tierCoins x tier), chest up one rarity every chestStep tiers, top 3 +1
+    // booster every boosterStep tiers (boosters follow the game's booster order: fixed, no randomness)
+    function scaled(rw, tier, top3) {
+      var order = (cfg.chests && cfg.chests.order) || ['wood', 'silver', 'gold', 'crystal'];
+      var out = { chest: null, coins: 0, boosters: 0 };
+      if (rw.chest) {
+        var ci = order.indexOf(rw.chest) + (C.chestStep ? Math.floor(tier / C.chestStep) : 0);
+        out.chest = order[Math.min(order.length - 1, Math.max(0, ci))];
+      }
+      if (rw.coins) out.coins = Math.round(rw.coins * (1 + (C.tierCoins || 0) * tier));
+      out.boosters = (rw.boosters || 0) + (top3 && C.boosterStep ? Math.floor(tier / C.boosterStep) : 0);
+      return out;
+    }
 
     // rivals for (week, tier): fixed for the whole week
     function rivals(week, tier, n) {
@@ -1312,12 +1417,23 @@
         return '';
       },
       myRank: function () { var t = lg.table(); for (var i = 0; i < t.length; i++) if (t[i].me) return t[i].rank; return C.size; },
+      // prize for a final rank in a tier: { chest, coins, boosters } (null below the last bracket). Scaled by tier, see config
       rewardFor: function (rank, tier) {
+        tier = tier == null ? state.tier : tier;
         for (var i = 0; i < C.rewards.length; i++) {
           var rw = C.rewards[i];
-          if (rank <= rw.to) return { chest: rank === 1 && tier >= C.legendaryFrom ? 'crystal' : rw.chest };
+          if (rank <= rw.to) return scaled(rw, tier, i < 3);
         }
         return null;
+      },
+      // the prize brackets of a tier, for the UI: [{ from, to, chest, coins, boosters }]
+      rewardTable: function (tier) {
+        tier = tier == null ? state.tier : tier;
+        return C.rewards.map(function (rw, i) {
+          var r = scaled(rw, tier, i < 3);
+          r.from = i ? C.rewards[i - 1].to + 1 : 1; r.to = rw.to;
+          return r;
+        });
       },
       addXp: function (n) {
         lg.roll();
@@ -1343,8 +1459,15 @@
           if (rank <= C.promote && from < C.tiers.length - 1) to = from + 1;
           else if (rank > C.size - C.demote && from > 0) to = from - 1;
           var rw = lg.rewardFor(rank, from), got = null;
-          if (rw && rw.chest) {
-            got = meta.earnChest(rw.chest) ? { chest: rw.chest } : { coins: eco.earn(meta.chestContents(rw.chest).coins, 'league_' + rw.chest) };
+          if (rw && (rw.chest || rw.coins || rw.boosters)) {
+            var g = { coins: rw.coins };
+            if (rw.boosters && meta.boosterSplit) g.boosters = meta.boosterSplit(rw.boosters, rank - 1);
+            got = eco.grant(g, 'league_' + from) || {};
+            // the chest goes to a free slot; with the 4 slots full, its coins instead
+            if (rw.chest) {
+              if (meta.earnChest(rw.chest)) got.chest = rw.chest;
+              else got.coins = (got.coins || 0) + eco.earn(meta.chestContents(rw.chest).coins, 'league_' + rw.chest);
+            }
           }
           res = { week: keepWeek, rank: rank, from: from, to: to, xp: state.xp, reward: rw, got: got };
           state.history.unshift({ week: keepWeek, rank: rank, tier: from, xp: state.xp });
@@ -1796,9 +1919,9 @@
       if (end && !deps.owns('starter_pack')) add('starter', 'starter', 'starter_pack', end);
     }
 
-    function popupOk() {
-      return deps.iapAvailable() && deps.allowed() && dayCount() < O.maxPerDay && now() - state.lastPopupAt >= O.minGapMin * 60000;
-    }
+    // the popup caps (per day, minutes apart), shared by every offer popup
+    function capsOk() { return dayCount() < O.maxPerDay && now() - state.lastPopupAt >= O.minGapMin * 60000; }
+    function popupOk() { return deps.iapAvailable() && deps.allowed() && capsOk(); }
     function timedCandidate() {
       var t = now();
       return state.live.filter(function (o) { return ORDER[o.kind] != null && !o.bought && o.shows < O.perOffer && o.expiresAt - t > 60000; })
@@ -1889,13 +2012,39 @@
         var o = get(key);
         if (o && (o.kind === 'oneshot' || o.kind === 'promo')) { state.live.splice(state.live.indexOf(o), 1); track('offer_end', { product: o.product, kind: o.kind, bought: !!o.bought }); }
       },
-      // app start: at most one popup per session, never on the first launches, only for a live timed offer
+      // app start: at most one popup per session, never on the first launch, only for a live timed offer.
+      // League / weekend packs: after appStart.minGames and the offers unlock (+ day-0 grace), perOffer popups each.
+      // The starter (welcome) pack: from the 2nd session after appStart.starterMinGames finished games, once per session
+      // while its window is live (appStart.starterEverySession; not limited by perOffer). Caps always apply.
       startOffer: function () {
         refresh();
         var A = O.appStart;
-        if (state.startSession === state.sessions || state.sessions < A.minSessions || deps.games() < A.minGames || !popupOk()) return null;
-        var c = timedCandidate();
+        if (state.startSession === state.sessions || state.sessions < A.minSessions || !deps.iapAvailable() || !capsOk()) return null;
+        var c = deps.games() >= A.minGames && deps.allowed() ? timedCandidate() : null;
+        if (!c && deps.games() >= (A.starterMinGames || A.minGames)) {
+          var t = now();
+          c = state.live.filter(function (o) {
+            return o.kind === 'starter' && !o.bought && o.expiresAt - t > 60000 && (A.starterEverySession || (o.shows < O.perOffer && deps.allowed()));
+          })[0] || null;
+        }
         return c ? off.open(c, 'start') : null;
+      },
+      // the player tapped something that costs more coins than they have (continue, booster): a live timed offer whose
+      // coins cover `need`, else a one-shot coin offer from the pool when the popup caps and its cooldown allow it
+      // (opened now as where 'coins': it counts for the caps and the cooldown, never for the between-games rhythm)
+      coinOffer: function (need) {
+        refresh();
+        if (!deps.iapAvailable()) return null;
+        var t = now(), coinsOf = function (pid) { var p = product(pid); return (p && p.grant && p.grant.coins) || 0; };
+        var live = state.live.filter(function (o) { return ORDER[o.kind] != null && !o.bought && o.expiresAt - t > 60000 && coinsOf(o.product) >= need; })
+          .sort(function (a, b) { return a.expiresAt - b.expiresAt; })[0];
+        if (live) return live;
+        if (!popupOk()) return null;
+        var pick = (O.oneshot || []).filter(function (x) {
+          var p = product(x.product);
+          return p && p.offer === 'oneshot' && coinsOf(x.product) >= need && x.product !== state.lastOneshot && t - (state.lastShown[x.product] || 0) >= x.cooldownDays * DAY;
+        })[0];
+        return pick ? off.open({ kind: 'oneshot', product: pick.product }, 'coins') : null;
       }
     };
     return off;
@@ -2303,7 +2452,7 @@
     var save = Save.create({ key: gameId + '.save', storage: opts.storage, defaults: function () {
       return { settings: { muted: false, theme: null }, progress: { stars: {}, unlocked: 1, run: null },
         economy: Economy.defaults(cfg), meta: Meta.defaults(cfg), fun: Fun.defaults(), league: League.defaults(), offers: Offers.defaults(),
-        stats: { games: 0, levels: 0, byMode: {} }, game: opts.saveDefaults ? opts.saveDefaults() : {} };
+        stats: { games: 0, levels: 0, byMode: {} }, ui: { nickAsked: false }, game: opts.saveDefaults ? opts.saveDefaults() : {} };
     } });
     var D = function () { return save.data; };
     var hooks = { track: function (n, p) { An.track(n, p); }, onChange: function () { emit('wallet'); } };
@@ -2344,7 +2493,7 @@
       owns: function (id) { return eco.ownsProduct(id); }, doubleActive: function () { return eco.doubleActive(); },
       games: function () { return D().stats.games; },
       starterEnd: function () {
-        if (!P.unlocked('starter') || !meta.starterOpen(D().progress.unlocked)) return 0;
+        if (!P.unlocked('starter') || !meta.starterOpen(D().progress.unlocked, D().stats.games)) return 0;
         return D().meta.starterFrom + cfg.starterPack.windowHours * 3600000;
       }
     });
@@ -2419,6 +2568,12 @@
           hooks.track('game_end', { mode: r.mode, score: r.score || 0 });
         }
         d.stats.games++;
+        // Clash-style win chest: a won level or a finished game of a chests.win.modes mode counts as a win
+        var W = cfg.chests.win;
+        if (P.unlocked('chests') && (r.level ? r.won : W && (W.modes || []).indexOf(r.mode) >= 0)) {
+          out.winChest = meta.onWin();
+          if (out.winChest && !out.chest) out.chest = out.winChest;
+        }
         var bm = d.stats.byMode = d.stats.byMode || {};
         bm[r.level ? 'level' : r.mode] = (bm[r.level ? 'level' : r.mode] || 0) + 1;
         Ads.levelEnded();
@@ -2535,6 +2690,27 @@
         return P.buy(o.product);
       },
 
+      // ---- chests: "abrir ya" (coins or a rewarded ad) and the chest shop (coins) ----
+      // how: 'coins' | 'ad'. cb(true) when the chest is ready to open
+      openChestNow: function (i, how, cb) {
+        cb = cb || function () {};
+        if (how === 'ad') {
+          var st = meta.chestState(i);
+          if (!st || !meta.canAdSkip() || !Ads.rewardedReady()) { cb(false); return; }
+          Ads.showRewarded(function (ok) { var done = ok && meta.adSkip(i); if (done) save.commit(); cb(!!done); }, 'chest');
+          return;
+        }
+        var ok = meta.coinSkip(i);
+        if (ok) { save.commit(); emit('wallet'); }
+        cb(ok);
+      },
+      // r optional (tests). -> what was granted (+ chestType, shop, outcome) or null (not enough coins)
+      buyChest: function (id, r) {
+        var got = meta.buyChest(id, r);
+        if (got) { save.commit(); emit('wallet'); }
+        return got;
+      },
+
       // ---- boosters: the platform owns counts; the game owns the effect ----
       // cb(true) when one is available (owned, bought with coins, or earned with a rewarded ad)
       acquireBooster: function (id, cb) {
@@ -2625,7 +2801,8 @@
       piggyFill: 'Fills up as you play', piggyBreak: 'Ready to break!', left: 'Ends in', empty: 'Empty', locked: 'Locked', owned: 'Owned',
       tap: 'Tap to unlock', unlocking: 'Opening', noAdsWhat: 'No breaks between games', freezeWhat: 'Saves your streak one day',
       hard: 'HARD LEVEL', superHard: 'SUPER HARD!', questsL: 'Quests', shopL: 'Shop', easy: 'Easy', play: 'Play', upTo: 'Up to', level: 'Level',
-      x2: 'Coins ×2', x2On: 'Active', q: {}, skins: {} },
+      x2: 'Coins ×2', x2On: 'Active', chestsH: 'CHESTS', chestNames: { small: 'Small chest', big: 'Big chest', epic: 'Epic chest', legendary: 'Legendary chest' },
+      odds: 'Odds', q: {}, skins: {} },
     es: { claim: 'Recoger', open: 'Abrir', dailyQ: 'HOY', weeklyQ: 'ESTA SEMANA', boosters: 'AYUDAS', blocks: 'ASPECTOS', boards: 'TABLEROS',
       streak: 'RACHA', store: 'TIENDA', equip: 'Usar', removeAds: 'Sin anuncios', pass: 'Pase', wait: 'Un cofre cada vez', min: 'min', h: 'h', d: 'd',
       free: 'GRATIS', starter: 'Pack inicial', piggy: 'Hucha', passWhat: 'Fila premium: monedas, cofres de oro, 2 aspectos', restore: 'Restaurar compras',
@@ -2635,7 +2812,8 @@
       piggyFill: 'Se llena al jugar', piggyBreak: '¡Lista para romper!', left: 'Termina en', empty: 'Vacío', locked: 'Bloqueado', owned: 'Tuyo',
       tap: 'Toca para abrir', unlocking: 'Abriendo', noAdsWhat: 'Sin pausas entre partidas', freezeWhat: 'Salva tu racha un día',
       hard: 'NIVEL DIFÍCIL', superHard: '¡SÚPER DIFÍCIL!', questsL: 'Misiones', shopL: 'Tienda', easy: 'Fácil', play: 'Jugar', upTo: 'Hasta', level: 'Nivel',
-      x2: 'Monedas ×2', x2On: 'Activo', q: {}, skins: {} }
+      x2: 'Monedas ×2', x2On: 'Activo', chestsH: 'COFRES', chestNames: { small: 'Cofre pequeño', big: 'Cofre grande', epic: 'Cofre épico', legendary: 'Cofre legendario' },
+      odds: 'Probabilidades', q: {}, skins: {} }
   };
   var BOOST_COL = ['#ff8a3d', '#3f9bff', '#a066ff', '#2fbf71', '#ff4f7b', '#ffb320'];
   var DIFF = { dificil: 'hard', superdificil: 'super', facil: 'easy' };
@@ -2688,7 +2866,9 @@
       if (def.onShow) def.onShow(prev);
       refresh();
       if (opts.onScreen) opts.onScreen(name, prev);
+      screenFns.forEach(function (fn) { try { fn(name, prev); } catch (e) { if (root.console) root.console.error(e); } });
     }
+    var screenFns = [];   // platform UI listeners (fun-ui: menu card refresh, first-run nickname popup)
     function boostersOn() {
       var hud = (screens[screen] || {}).hud || {}, on = typeof hud.boosters === 'function' ? hud.boosters() : !!hud.boosters;
       return on && P.unlocked('boosters');
@@ -2954,6 +3134,7 @@
       }
       if (ch) {
         var i = +ch.dataset.i, st = meta.chestState(i);
+        if (api.chestTap) { api.chestTap(i); return; }
         if (st.status === 'locked') { if (!meta.startUnlock(i)) toast(TX.wait); else sfx.tick(); }
         else if (st.status === 'unlocking' && Ads.rewardedReady() && meta.canAdSkip()) {
           Ads.showRewarded(function (ok) { if (ok && meta.adSkip(i)) { P.commit(); renderQuests(); } }, 'chest');
@@ -2978,7 +3159,7 @@
         if (cfg.skins.some(function (s) { return s.iap === p.id; })) return false;          // shown with the skins
         if (p.type !== 'consumable' && eco.ownsProduct(p.id)) return false;
         if (p.id === 'remove_ads' && eco.state.noAds) return false;
-        if (p.offer === 'starter' && !(P.unlocked('starter') && meta.starterOpen(P.progress.unlocked()))) return false;
+        if (p.offer === 'starter' && !(P.unlocked('starter') && meta.starterOpen(P.progress.unlocked(), P.data.stats.games))) return false;
         if (p.offer === 'piggy' && !(P.unlocked('piggy') && eco.piggyBreakable())) return false;
         if (p.season && (!P.unlocked('pass') || meta.hasPremiumPass())) return false;
         if (p.offer && p.offer !== 'starter' && p.offer !== 'piggy') return false;   // limited-time offers: only as live offer cards (offers-ui)
@@ -3030,6 +3211,17 @@
           (pig ? priceBtn('data-iap="' + pig.id + '"', IAP.price(pig.id), 'cta') : '<span class="gk-lockpill">' + ico('lock') + cfg.piggy.breakAt + '</span>') + '</div>';
       }
       products.forEach(function (p) { h += wide(rewardTiles(p.grant), p.title || '', '', priceBtn('data-iap="' + p.id + '"', IAP.price(p.id), 'cta'), 'bundle'); });
+      // 4b. chests for coins (fun-ui opens the odds sheet first: what each tier can contain, with its exact odds)
+      if ((cfg.chestShop || []).length && api.chestShopOpen) {
+        h += '<h4><span>' + TX.chestsH + '</span></h4><div class="srow gk-chshop">';
+        cfg.chestShop.forEach(function (t) {
+          var rar = (cfg.chests.types[t.art] || {}).rarity || 'common';
+          h += '<div class="item gk-chitem r-' + rar + '"><button class="gk-chinfo" data-chodds="' + t.id + '" aria-label="' + TX.odds + '">i</button>' +
+            '<span class="gk-art">' + chestArt(t.art, 'gk-chestshop') + '</span><span>' + (TX.chestNames[t.id] || t.id) + '</span>' +
+            priceBtn('data-chest="' + t.id + '"', t.price.toLocaleString(lang) + ' ' + ico('coin'), 'buy') + '</div>';
+        });
+        h += '</div>';
+      }
       // 5. boosters for coins
       if (BOOST.length) {
         h += '<h4><span>' + TX.boosters + '</span></h4><div class="srow">';
@@ -3080,6 +3272,7 @@
       if (d.freeze && meta.buyFreeze()) { sfx.coin(); if (api.spendFx) api.spendFx(t, before - eco.coins); }
       if (d.iap) P.buy(d.iap).then(function () { if (screen === 'shop') renderShop(); });
       if (d.offer && api.onOfferTap) { api.onOfferTap(d.offer, t); return; }
+      if ((d.chest || d.chodds) && api.chestShopOpen) { api.chestShopOpen(d.chest || d.chodds); return; }
       if (d.restore) P.restore(true).then(function () { toast('✓'); });
       if (d.legal) legalOpen = !legalOpen;
       if (d.privacy) Ads.showPrivacyOptions();
@@ -3143,17 +3336,29 @@
         res.byAd = offer.byAd;
         var label = opts.contLabel ? opts.contLabel() : '<span>' + TX.cont + '</span>';
         b.innerHTML = offer.byAd ? ico('ad', 'adi') + label : label + ' ' + offer.coins + ' ' + ico('coin');
-        b.disabled = !offer.affordable;
+        // store builds: a tap without enough coins opens the buy-coins popup (offers-ui), so the button stays live
+        b.disabled = !offer.affordable && !(IAP.available && api.needCoins);
+        b.classList.toggle('gk-short', !offer.affordable);
       }
       if (summary.chest) setTimeout(function () { toast(ico('chest') + ' +1'); }, 900);
       if (summary.streakGift && summary.streakGift.coins) setTimeout(function () { toast(ico('flame') + ' ' + meta.liveStreak() + ' &nbsp;+' + summary.streakGift.coins + ' ' + ico('coin')); }, 1300);
       if (api.onResult) api.onResult(summary);
       refresh();
     }
-    tap('o-cont', function () {
+    function doContinue() {
       var b = $('o-cont');
+      if (!b || !res.onRevive) return;
       b.disabled = true;
-      P.requestContinue(function (ok) { b.disabled = false; if (ok && res.onRevive) { if (!res.byAd) sfx.coin(); res.onRevive(); } });
+      res.byAd = Ads.rewardedReady();
+      P.requestContinue(function (ok) { b.disabled = false; if (ok && res.onRevive) { if (!res.byAd) sfx.coin(); var f = res.onRevive; res.onRevive = null; f(); } });
+    }
+    tap('o-cont', function () {
+      // not enough coins and no rewarded ad: suggest coin packs (store builds), then continue if the player bought some
+      if (!Ads.rewardedReady() && eco.coins < cfg.continueCoins) {
+        if (IAP.available && api.needCoins) api.needCoins(cfg.continueCoins, { reason: 'continue', retry: doContinue });
+        return;
+      }
+      doContinue();
     });
     tap('o-double', function () {
       var b = $('o-double');
@@ -3184,6 +3389,10 @@
       shopOffers: null,    // set by shell/offers-ui.js: html of the live offer cards at the top of the shop
       onOfferTap: null,    // idem: a [data-offer] button in the shop was tapped
       renderShop: renderShop, fmtLeft: fmtLeft,
+      needCoins: null,     // set by shell/offers-ui.js: fn(coins, { reason, retry }) buy-coins popup (store builds)
+      chestTap: null,      // set by fun-ui: a chest slot was tapped (menu or quests sheet)
+      chestShopOpen: null, // set by fun-ui: odds sheet + purchase of a shop chest
+      onScreenChange: function (fn) { screenFns.push(fn); },
       isMenu: function () { var d = screens[screen]; return !!(d && d.hud && d.hud.menu); },
       id: function (defaultId) { return IDS[defaultId] || defaultId; },   // element id in this page
       el: $,
@@ -3417,6 +3626,8 @@
             else H.impact({ style: kind === 'heavy' ? 'HEAVY' : kind === 'medium' ? 'MEDIUM' : 'LIGHT' });
             return;
           }
+          var ua = root.navigator && root.navigator.userActivation;
+          if (ua && !ua.hasBeenActive) return;
           if (root.navigator && root.navigator.vibrate) root.navigator.vibrate(Array.isArray(kind) ? kind : map[kind] || [8]);
         } catch (e) { /* ignore */ }
       },
@@ -3762,7 +3973,10 @@
     es: { wheel: 'Ruleta', spin: 'Girar', free: 'Gratis', odds: 'Probabilidades', oddsNote: 'Las tiradas no se venden: 1 gratis al día, +1 con anuncio y más jugando (misiones, racha, niveles). El tamaño de cada porción es su probabilidad.',
       tomorrow: 'Mañana', booster: 'Ayuda', skin: 'Aspecto', coins: 'monedas', chest: 'Cofre', tap: 'Toca', lucky: '¡Suerte!', collect: 'Recoger', contents: 'Contiene',
       luckyUp: 'Mejora', level: 'Nivel', newSkin: 'Nuevo aspecto', equip: 'Usar', ok: 'OK', streak: 'Racha', days: 'días', gift: 'Regalo', league: 'Liga', ends: 'Termina en',
-      up: 'Ascenso', down: 'Descenso', cpu: 'Incluye rivales CPU', leagueRules: 'Puntos = XP de la semana. Los 5 primeros suben, los 5 últimos bajan. Premios: 1º cofre épico, 2º–3º raro, 4º–10º común.',
+      up: 'Ascenso', down: 'Descenso', cpu: 'Incluye rivales CPU', leagueRules: 'Puntos = XP de la semana. Los 5 primeros suben y los 5 últimos bajan. Cuanto más alta la liga, mejores premios.',
+      prizes: 'Premios', start: 'Empezar', openNow: 'Abrir ya', oneAtATime: 'Un cofre cada vez', ready: '¡Abrir!', wins: 'victorias', full: 'Huecos llenos',
+      possible: 'Contenido posible', oddsExact: 'Probabilidades exactas. Solo objetos del juego, sin valor fuera de él.', buy: 'Comprar', short: 'Te faltan',
+      nickTitle: 'Tu apodo', nickSub: 'Así te verán en la liga y el ranking.', save: 'Guardar', later: 'Ahora no',
       ranking: 'Ranking', today: 'Hoy', week: 'Semana', all: 'Siempre', you: 'Tú', playDaily: 'Jugar el diario', offline: 'Sin conexión',
       rankRules: 'Premios del diario, al día siguiente: top 3 · top 10 % · por participar.', profile: 'Perfil', nick: 'Apodo', flag: 'Bandera', hide: 'No salir en el ranking',
       privacy: 'Para el ranking guardamos tu apodo, tu bandera y tus puntuaciones con un identificador anónimo. Sin cuenta ni email.', privacyLink: 'Privacidad', termsLink: 'Condiciones',
@@ -3774,7 +3988,10 @@
     en: { wheel: 'Wheel', spin: 'Spin', free: 'Free', odds: 'Odds', oddsNote: 'Spins are never sold: 1 free a day, +1 with an ad, more by playing (quests, streak, levels). Each slice is drawn at its real probability.',
       tomorrow: 'Tomorrow', booster: 'Booster', skin: 'Skin', coins: 'coins', chest: 'Chest', tap: 'Tap', lucky: 'Lucky!', collect: 'Collect', contents: 'Contains',
       luckyUp: 'Upgrade', level: 'Level', newSkin: 'New skin', equip: 'Use', ok: 'OK', streak: 'Streak', days: 'days', gift: 'Gift', league: 'League', ends: 'Ends in',
-      up: 'Promotion', down: 'Relegation', cpu: 'Includes CPU rivals', leagueRules: 'Points = XP this week. Top 5 move up, bottom 5 move down. Rewards: 1st epic chest, 2nd–3rd rare, 4th–10th common.',
+      up: 'Promotion', down: 'Relegation', cpu: 'Includes CPU rivals', leagueRules: 'Points = XP this week. Top 5 move up, bottom 5 move down. Higher leagues pay better prizes.',
+      prizes: 'Prizes', start: 'Start', openNow: 'Open now', oneAtATime: 'One chest at a time', ready: 'Open!', wins: 'wins', full: 'Slots full',
+      possible: 'Possible contents', oddsExact: 'Exact odds. In-game items only, with no value outside the game.', buy: 'Buy', short: 'You need',
+      nickTitle: 'Your nickname', nickSub: 'This is how others see you in the league and the ranking.', save: 'Save', later: 'Not now',
       ranking: 'Ranking', today: 'Today', week: 'Week', all: 'All time', you: 'You', playDaily: 'Play the daily', offline: 'Offline',
       rankRules: 'Daily rewards, the next day: top 3 · top 10% · for taking part.', profile: 'Profile', nick: 'Nickname', flag: 'Flag', hide: 'Hide me from the ranking',
       privacy: 'For the ranking we store your nickname, flag and scores under an anonymous id. No account, no email.', privacyLink: 'Privacy', termsLink: 'Terms',
@@ -3833,7 +4050,7 @@
       '<div class="gk-wheelstage"><div class="gk-wheelbox"><canvas id="gk-wheel-cv"></canvas><div class="gk-pointer" id="gk-pointer"></div><button class="gk-hub" id="gk-hub">' + T.spin + '</button></div></div>' +
       '<div class="gk-spins" id="gk-spins"></div><div class="gk-prize" id="gk-prize"></div>');
     section('gk-league', '<span class="k" id="gk-lg-title">' + T.league + '</span><button class="ic" id="gk-lg-info" aria-label="i">' + sico('info') + '</button>',
-      '<div class="gk-lg-head" id="gk-lg-head"></div><div class="gk-ladder" id="gk-ladder"></div><div class="gk-rows" id="gk-lg-rows"></div>');
+      '<div class="gk-lg-head" id="gk-lg-head"></div><div class="gk-lgpz" id="gk-lg-prizes"></div><div class="gk-ladder" id="gk-ladder"></div><div class="gk-rows" id="gk-lg-rows"></div>');
     section('gk-rank', '<span class="k">' + T.ranking + '</span><span class="gk-hbtns"><button class="ic" id="gk-rk-info" aria-label="i">' + sico('info') + '</button><button class="ic" id="gk-rk-prof" aria-label="' + T.profile + '">' + sico('edit') + '</button></span>',
       '<div class="gk-tabs" id="gk-rk-tabs"><button data-p="daily" class="on">' + T.today + '</button><button data-p="weekly">' + T.week + '</button><button data-p="alltime">' + T.all + '</button></div>' +
       '<div class="gk-rk-status" id="gk-rk-status"></div><div class="gk-podium" id="gk-rk-pod"></div><div class="gk-rows" id="gk-rk-rows"></div><button class="btn pri gk-play" id="gk-rk-play" hidden>' + T.playDaily + '</button>');
@@ -3883,6 +4100,59 @@
       setArt('wheel', wheelIcon());
       setArt('ranking', Art ? Art.trophy() : sico('trophy'));
     }
+    // menu: league card (position, time left, prizes for 1st / 2nd / 3rd) and the chest slots (Clash style)
+    var home = opts.home ? $(opts.home) : null;
+    if (!home && dock && dock.parentNode) {
+      home = doc.createElement('div');
+      dock.parentNode.insertBefore(home, dock);
+    }
+    if (home) {
+      home.classList.add('gk-home', 'gk-tok');
+      home.innerHTML = '<button class="gk-hlg" id="gk-hlg"></button><div class="gk-hch" id="gk-hch"></div>';
+      home.addEventListener('click', function (e) {
+        var sl = e.target.closest('.gk-hslot');
+        if (sl) { fx.sfx.pop(); if (sl.dataset.i != null) chestTap(+sl.dataset.i); else shell.show('shop'); return; }
+        if (e.target.closest('#gk-hlg')) { fx.sfx.pop(); shell.show('league'); }
+      });
+    }
+    var homeSig = '';
+    function prizeMini(r, rank) {
+      return '<span class="gk-pz p' + rank + '"><i>' + rank + '</i>' + (r.chest ? chestArt(r.chest, 'gk-chestmini') : '') +
+        (r.coins ? '<b>' + ico('coin') + r.coins + '</b>' : '') + '</span>';
+    }
+    function renderHome() {
+      if (!home) return;
+      var tier = lg.state.tier, id = lg.tiers()[tier], tbl = lg.rewardTable(tier), rank = lg.myRank();
+      var lgHtml = emblem(tier, 44) + '<span class="gk-hlg-t"><b>' + T.league + ' ' + T.tiers[id] + '</b><small><em>' + rank + 'º</em>' + gic('stopwatch') + fmtLeft(lg.msLeft()) + '</small></span>' +
+        '<span class="gk-hlg-pz">' + [0, 1, 2].map(function (k) { return prizeMini(tbl[k], k + 1); }).join('') + '</span>';
+      var lgEl = $('gk-hlg');
+      lgEl.style.setProperty('--tc', TIER_COL[id]);
+      lgEl.classList.toggle('up', rank <= cfg.league.promote && tier < lg.tiers().length - 1);
+      if (lgEl.innerHTML !== lgHtml) lgEl.innerHTML = lgHtml;
+      var on = P.unlocked('chests'), hc = $('gk-hch');
+      hc.hidden = !on;
+      if (!on) return;
+      var sig = '', h = '', firstEmpty = true;
+      for (var i = 0; i < cfg.chests.slots; i++) {
+        var st = meta.chestState(i);
+        if (!st) {
+          var w = meta.winsToChest();
+          h += '<button class="gk-hslot empty">' + (firstEmpty && w ? '<span class="gk-hwin">' + (Art ? Art.trophy() : sico('trophy')) + '<b>' + w + '</b></span>' : '<span class="gk-ghost">' + ico('chest') + '</span>') + '</button>';
+          sig += 'e' + (firstEmpty ? w : '');
+          firstEmpty = false;
+          continue;
+        }
+        var rar = rarityOf(st.type), o = meta.chestOdds(st.type);
+        sig += st.type + st.status;
+        var lab = st.status === 'ready' ? '<span class="gk-cl go">' + T.ready + '</span>'
+          : st.status === 'unlocking' ? '<span class="gk-cl run">' + gic('stopwatch') + '<b data-hleft="' + i + '">' + shell.fmtLeft(st.msLeft) + '</b></span>'
+          : '<span class="gk-cl">' + gic('stopwatch') + (o.unlockMin >= 60 ? o.unlockMin / 60 + ' h' : o.unlockMin + ' min') + '</span>';
+        h += '<button class="gk-hslot r-' + rar + ' ' + st.status + '" data-i="' + i + '"><span class="gk-chestglow"></span>' + chestArt(st.type, 'gk-hsart') + lab + '</button>';
+      }
+      if (sig !== homeSig) { homeSig = sig; hc.innerHTML = h; }
+      else hc.querySelectorAll('[data-hleft]').forEach(function (b) { var st2 = meta.chestState(+b.getAttribute('data-hleft')); if (st2 && st2.msLeft) b.textContent = shell.fmtLeft(st2.msLeft); });
+    }
+    setInterval(function () { if (home && shell.isMenu && shell.isMenu()) renderHome(); }, 1000);
     var xpbar = opts.xpbar && $(opts.xpbar);
     function renderXp(animateFrom) {
       if (!xpbar) return;
@@ -3907,6 +4177,7 @@
       }
       var m = fun.streakMult(meta.liveStreak());
       if (multEl) multEl.textContent = m > 1 ? '×' + m : '';
+      try { renderHome(); } catch (e) { /* the menu card never blocks the wallet refresh */ }
     }
     function badgePop(el) { if (el && el.textContent && el.animate && !fx.reduced) el.animate([{ transform: 'scale(.2)' }, { transform: 'scale(1.4)' }, { transform: 'scale(1)' }], { duration: 450, easing: 'cubic-bezier(.3,1.6,.5,1)' }); }
     P.on('wallet', refreshMenu);
@@ -4007,6 +4278,7 @@
         var before = eco.coins;
         return acquire.call(P, id, function (ok, how) {
           if (ok) { try { boosterFx(id, how, before - eco.coins); } catch (e) { /* visuals never block the booster */ } }
+          else if (how === 'price' && P.iap.available && shell.needCoins) shell.needCoins(cfg.boosters.price[id], { reason: 'booster' });
           if (cb) cb(ok, how);
         });
       };
@@ -4037,7 +4309,8 @@
       var fn = queue.shift();
       if (!fn) { busy = false; ov.className = 'gk-ov'; ov.innerHTML = ''; return; }
       busy = true;
-      fn(function close() { ov.classList.remove('show'); setTimeout(nextOv, 220); });
+      var shut = false;   // each overlay closes once (a second close must never dismiss the next one)
+      fn(function close() { if (shut) return; shut = true; ov.classList.remove('show'); setTimeout(nextOv, 220); });
     }
     function showOv(cls, html) { ov.className = 'gk-ov show ' + cls; ov.innerHTML = html; return ov; }
     function info(title, html) {
@@ -4287,17 +4560,23 @@
     shell.chestOpener = function (i) {
       var st = meta.chestState(i);
       if (!st || st.status !== 'ready') return;
-      var from = st.type, luckOdds = st.lucky, nxt = fun.nextChest(from);
       var got = meta.openChest(i);              // the outcome is fixed now; the animation only reveals it
       P.commit();
+      revealChest(st.type, got, { luck: st.lucky });
+      refreshMenu();
+    };
+    // o: { luck: upgrade odds shown before opening, title: shop chest name (its odds were shown before buying) }
+    function revealChest(from, got, o) {
+      o = o || {};
+      var luckOdds = o.luck || 0, nxt = fun.nextChest(from);
       var before = eco.coins - (got.coins || 0);
       enqueue(function (close) {
         var rar = rarityOf(from);
         showOv('gk-chestov r-' + rar, '<div class="gk-rays"></div><div class="gk-spot"></div><div class="gk-chestbox" style="' + rarityVars(from) + '">' +
-          '<div class="gk-rar r-' + rar + '" id="gk-rar">' + T.rarity[rar] + '</div>' +
+          '<div class="gk-rar r-' + rar + '" id="gk-rar">' + esc(o.title || T.rarity[rar]) + '</div>' +
           '<div class="gk-chestwrap"><div class="gk-leak"></div>' + chestArt(from, 'gk-bigchest') + '</div>' +
           '<div class="gk-taps" id="gk-taps"><i></i><i></i><i></i></div>' +
-          '<div class="gk-maybe" id="gk-maybe"><small>' + T.contents + '</small><div>' + contentsLine(from) + '</div>' +
+          '<div class="gk-maybe" id="gk-maybe"' + (o.title ? ' hidden' : '') + '><small>' + T.contents + '</small><div>' + contentsLine(from) + '</div>' +
           (luckOdds && nxt ? '<small class="gk-luckodds">✦ ' + Math.round(luckOdds * 100) + ' % → ' + T.rarity[rarityOf(nxt)] + '</small>' : '') + '</div>' +
           '<div class="gk-items" id="gk-items"></div><button class="btn pri" id="gk-collect" hidden>' + T.collect + '</button></div>');
         var box = ov.querySelector('.gk-chestbox'), svg = ov.querySelector('.gk-bigchest'), taps = 0, opened = false;
@@ -4333,8 +4612,8 @@
             fx.sparks(cx, cy, '#fff3c4', epic ? 70 : 40);
             $('gk-maybe').hidden = true;
             $('gk-taps').hidden = true;
-            var items = [], c = meta.chestContents(got.chestType);
-            items.push({ html: ico('coin') + '<b class="gk-count">+0</b>', coin: c.coins });
+            var items = [], c = { coins: got.coins || 0, boosters: got.boosters || {} };
+            if (c.coins) items.push({ html: ico('coin') + '<b class="gk-count">+0</b>', coin: c.coins });
             Object.keys(c.boosters || {}).forEach(function (k) { items.push({ html: '<i class="gk-bt big" style="--bc:' + boostCol(k) + '">' + ico(k) + '</i><b>+' + c.boosters[k] + '</b>' }); });
             var gap = epic ? 480 : 320, start0 = epic ? 650 : 350;
             items.forEach(function (it, k) {
@@ -4370,7 +4649,97 @@
           } else go();
         }
       });
-    };
+    }
+
+    // ---------- chest slot tapped (menu or quests sheet): open, or the chest card with its options ----------
+    function chestTap(i) {
+      var st = meta.chestState(i);
+      if (!st) return;
+      if (st.status === 'ready') { shell.chestOpener(i); return; }
+      enqueue(function (close) {
+        var rar = rarityOf(st.type), o = meta.chestOdds(st.type), nxt = fun.nextChest(st.type);
+        var busyOther = P.data.meta.chests.some(function (c, k) { return k !== i && c.opensAt && c.opensAt > Date.now(); });
+        var cost = meta.skipCost(i), adOk = st.status === 'unlocking' && meta.canAdSkip() && P.ads.rewardedReady();
+        showOv('gk-chcardov', '<div class="gk-card gk-chcard r-' + rar + '" style="' + rarityVars(st.type) + '"><h3>' + T.chest + ' ' + T.rarity[rar].toLowerCase() + '</h3>' +
+          '<button class="ic gk-x" id="gk-chc-x" aria-label="×">' + sico('close') + '</button>' +
+          '<div class="gk-chc-art"><span class="gk-chestglow"></span>' + chestArt(st.type, 'gk-chcart') + '</div>' +
+          '<div class="gk-chc-in"><small>' + T.contents + '</small><div>' + contentsLine(st.type) + '</div>' +
+          (st.lucky && nxt ? '<small class="gk-luckodds">✦ ' + Math.round(st.lucky * 100) + ' % → ' + T.rarity[rarityOf(nxt)] + '</small>' : '') + '</div>' +
+          '<div class="gk-chc-t">' + gic('stopwatch') + '<b' + (st.status === 'unlocking' ? ' data-chc="' + i + '">' + shell.fmtLeft(st.msLeft) : '>' + (o.unlockMin >= 60 ? o.unlockMin / 60 + ' h' : o.unlockMin + ' min')) + '</b></div>' +
+          '<div class="gk-chc-btns">' +
+          (st.status === 'locked' ? (busyOther ? '<span class="gk-note">' + T.oneAtATime + '</span>' : '<button class="btn pri" id="gk-chc-start">' + T.start + '</button>') : '') +
+          (adOk ? '<button class="btn cta" id="gk-chc-ad">' + ico('ad') + T.openNow + '</button>' : '') +
+          '<button class="btn buy gk-buybtn" id="gk-chc-coins"><span>' + T.openNow + '</span><b>' + cost + ico('coin') + '</b></button>' +
+          '</div></div>');
+        var t = setInterval(function () {
+          var e = ov.querySelector('[data-chc]'), s2 = meta.chestState(i);
+          if (!e || !s2) { clearInterval(t); return; }
+          if (s2.status === 'ready') { if (done()) setTimeout(function () { shell.chestOpener(i); }, 260); return; }
+          e.textContent = shell.fmtLeft(s2.msLeft);
+          var cb = $('gk-chc-coins'); if (cb) cb.querySelector('b').innerHTML = meta.skipCost(i) + ico('coin');
+        }, 1000);
+        var closed = false;
+        function done() { if (closed) return false; closed = true; clearInterval(t); close(); refreshMenu(); shell.refresh(); return true; }
+        tap('gk-chc-x', done);
+        tap('gk-chc-start', function () { if (meta.startUnlock(i)) { P.commit(); fx.sfx.tick(); } done(); });
+        tap('gk-chc-ad', function () { clearInterval(t); P.openChestNow(i, 'ad', function (ok) { if (done() && ok) setTimeout(function () { shell.chestOpener(i); }, 260); }); });
+        tap('gk-chc-coins', function () {
+          var c = meta.skipCost(i);
+          if (eco.coins < c) {
+            if (P.iap.available && shell.needCoins) { done(); setTimeout(function () { shell.needCoins(c, { reason: 'chest' }); }, 240); }
+            else { fx.shake($('gk-chc-coins'), 5, 300); shell.toast(T.short + ' ' + (c - eco.coins) + ' ' + ico('coin')); }
+            return;
+          }
+          var b = $('gk-chc-coins');
+          P.openChestNow(i, 'coins', function (ok) {
+            if (!ok) return;
+            spendFx(b, c, true);
+            clearInterval(t);
+            setTimeout(function () { if (done()) setTimeout(function () { shell.chestOpener(i); }, 260); }, 450);
+          });
+        });
+      });
+    }
+    shell.chestTap = chestTap;
+
+    // ---------- chest shop: the odds sheet ("contenido posible") comes first, the purchase is a button on it ----------
+    function dropChips(o) {
+      var out = [];
+      if (o.coins) out.push('<span class="gk-chip coin">' + ico('coin') + '<b>' + o.coins + '</b></span>');
+      Object.keys(o.boosters || {}).forEach(function (k) { out.push('<span class="gk-chip"><i class="gk-bt" style="--bc:' + boostCol(k) + '">' + ico(k) + '</i><b>' + o.boosters[k] + '</b></span>'); });
+      return out.join('');
+    }
+    function chestShopOpen(id) {
+      var t = meta.shopChest(id);
+      if (!t) return;
+      var name = (shell.TX.chestNames || {})[id] || id, rar = rarityOf(t.art);
+      enqueue(function (close) {
+        var odds = meta.shopOdds(id);
+        showOv('gk-chcardov', '<div class="gk-card gk-chcard gk-shopcard r-' + rar + '" style="' + rarityVars(t.art) + '"><h3>' + esc(name) + '</h3>' +
+          '<button class="ic gk-x" id="gk-cs-x" aria-label="×">' + sico('close') + '</button>' +
+          '<div class="gk-chc-art"><span class="gk-chestglow"></span>' + chestArt(t.art, 'gk-chcart') + '</div>' +
+          '<h4 class="gk-poss"><span>' + T.possible + '</span></h4>' +
+          '<ul class="gk-odds gk-drops" id="gk-drops">' + odds.map(function (o) {
+            return '<li><span class="gk-dr">' + dropChips(o) + '</span><b>' + (Math.round(o.p * 1000) / 10).toLocaleString(shell.lang) + ' %</b></li>';
+          }).join('') + '</ul><p class="gk-note">' + T.oddsExact + '</p>' +
+          '<button class="btn buy gk-buybtn" id="gk-cs-buy"><span>' + T.buy + '</span><b>' + t.price.toLocaleString(shell.lang) + ico('coin') + '</b></button></div>');
+        tap('gk-cs-x', close);
+        tap('gk-cs-buy', function () {
+          var b = $('gk-cs-buy');
+          if (eco.coins < t.price) {
+            if (P.iap.available && shell.needCoins) { close(); setTimeout(function () { shell.needCoins(t.price, { reason: 'chest_shop' }); }, 240); }
+            else { fx.shake(b, 5, 300); shell.toast(T.short + ' ' + (t.price - eco.coins) + ' ' + ico('coin')); }
+            return;
+          }
+          var got = P.buyChest(id);
+          if (!got) return;
+          spendFx(b, t.price, true);
+          if (shell.screen === 'shop') shell.renderShop();
+          setTimeout(function () { close(); revealChest(t.art, got, { title: name }); }, 500);
+        });
+      });
+    }
+    shell.chestShopOpen = chestShopOpen;
 
     // ================= HARD-LEVEL INTRO =================
     shell.introOpener = function (o, go) {
@@ -4503,7 +4872,13 @@
       var me = t.filter(function (r) { return r.me; })[0];
       $('gk-lg-head').innerHTML = emblem(tier, 76) + '<div><b>' + T.tiers[id] + '</b><span class="gk-timer">' + gic('stopwatch') + T.ends + ' ' + fmtLeft(lg.msLeft()) + '</span></div><div class="gk-myxp"><b>' + me.xp + '</b><small>XP</small></div>';
       $('gk-ladder').innerHTML = lg.tiers().map(function (tid, k) { return '<span class="' + (k === tier ? 'on' : k < tier ? 'past' : '') + '" title="' + T.tiers[tid] + '">' + (Art ? Art.shield(k, TIER_COL[tid]) : '') + '</span>'; }).join('');
-      var rewardAt = {}; C.rewards.forEach(function (rw, k) { var from = k ? C.rewards[k - 1].to + 1 : 1; rewardAt[from] = rw.to === 1 && tier >= C.legendaryFrom ? 'crystal' : rw.chest; });
+      var tbl = lg.rewardTable(tier), rewardAt = {};
+      tbl.forEach(function (rw) { for (var k = rw.from; k <= rw.to; k++) rewardAt[k] = rw; });
+      $('gk-lg-prizes').innerHTML = tbl.slice(0, 4).map(function (rw, k) {
+        return '<div class="gk-lgp p' + (k + 1) + (k === 3 ? ' zone' : '') + '"><i>' + (rw.from === rw.to ? rw.from + 'º' : rw.from + 'º–' + rw.to + 'º') + '</i>' +
+          (rw.chest ? '<span class="gk-lgp-ch r-' + rarityOf(rw.chest) + '">' + chestArt(rw.chest, 'gk-chestmini') + '</span>' : '') +
+          '<b>' + ico('coin') + rw.coins + '</b>' + (rw.boosters ? '<small>+' + rw.boosters + ' ' + T.booster.toLowerCase() + '</small>' : '') + '</div>';
+      }).join('');
       var h = '';
       t.forEach(function (r) {
         if (r.rank === C.promote + 1 && tier < lg.tiers().length - 1) h += '<div class="gk-div up">' + sico('up') + T.up + sico('up') + '</div>';
@@ -4511,13 +4886,23 @@
         var rw = rewardAt[r.rank];
         h += '<div class="gk-row' + (r.me ? ' me' : '') + (r.zone ? ' z-' + r.zone : '') + (r.rank <= 3 ? ' m' + r.rank : '') + '"' + (r.cpu ? ' data-cpu="1"' : '') + '><span class="gk-rk">' + r.rank + '</span>' + avatar(r) +
           '<span class="gk-nm">' + esc(r.me ? r.name + ' · ' + T.you : r.name) + (r.cpu ? cpuMark() : '') + '</span>' +
-          (rw ? '<span class="gk-rwc r-' + rarityOf(rw) + '">' + chestArt(rw, 'gk-chestmini') + '</span>' : '<span></span>') + '<b class="gk-xp">' + r.xp + '</b></div>';
+          (rw ? (rw.chest ? '<span class="gk-rwc r-' + rarityOf(rw.chest) + '">' + chestArt(rw.chest, 'gk-chestmini') + '</span>' : '<span class="gk-rwc coin">' + ico('coin') + '<small>' + rw.coins + '</small></span>') : '<span></span>') + '<b class="gk-xp">' + r.xp + '</b></div>';
       });
       $('gk-lg-rows').innerHTML = h;
       if (scroll) setTimeout(function () { var m = $('gk-lg-rows').querySelector('.me'); if (m) m.scrollIntoView({ block: 'center' }); }, 40);
     }
     P.on('league', function () { if (shell.screen === 'league') renderLeague(false); });
-    tap('gk-lg-info', function () { info(T.league, '<p>' + T.leagueRules + '</p><p class="gk-cpuline">' + sico('cpu', 'gk-cpu') + ' ' + T.cpu + '</p>'); });
+    tap('gk-lg-info', function () {
+      var rows = lg.rewardTable().map(function (rw) {
+        return '<li><i style="background:' + (rw.chest ? RAR_COL[rarityOf(rw.chest)] : '#ffc53a') + '"></i><span>' + (rw.from === rw.to ? rw.from + 'º' : rw.from + 'º–' + rw.to + 'º') + '</span><b>' +
+          (rw.chest ? T.chest + ' ' + T.rarity[rarityOf(rw.chest)].toLowerCase() + ' · ' : '') + ico('coin') + rw.coins + (rw.boosters ? ' · +' + rw.boosters + ' ' + T.booster.toLowerCase() : '') + '</b></li>';
+      }).join('');
+      info(T.league, '<p>' + T.leagueRules + '</p><ul class="gk-odds">' + rows + '</ul><p class="gk-cpuline">' + sico('cpu', 'gk-cpu') + ' ' + T.cpu + '</p>');
+    });
+    // my own row: edit the nickname
+    ['gk-lg-rows', 'gk-rk-rows', 'gk-rk-pod'].forEach(function (id) {
+      $(id).addEventListener('click', function (e) { if (e.target.closest('.gk-row.me, .gk-pod.me')) { fx.sfx.pop(); shell.show('profile'); } });
+    });
     function leagueResult(res) {
       enqueue(function (close) {
         var up = res.to > res.from, down = res.to < res.from, id = lg.tiers()[res.to];
@@ -4582,7 +4967,7 @@
       var me = R.rows.filter(function (r) { return r.me; })[0];
       if (me && me.rank > 50) h += '<div class="gk-div">…</div><div class="gk-row me"><span class="gk-rk">' + me.rank + '</span>' + avatar(me) + '<span class="gk-nm">' + esc(me.name) + '</span><span></span><b class="gk-xp">' + fmtScore(me.score) + '</b></div>';
       $('gk-rk-rows').innerHTML = h || '<p class="gk-note">' + T.none + '</p>';
-      $('gk-rk-status').innerHTML = '<span>' + (on.online === false || !on.enabled ? sico('cloud') + ' ' + T.offline : '') + '</span>' + (R.bots ? '<span class="gk-cpuline">' + sico('cpu', 'gk-cpu') + ' ' + T.cpu + '</span>' : '');
+      $('gk-rk-status').innerHTML = '<span>' + (on.online === false || !on.enabled ? sico('cloud') + ' ' + T.offline : '') + '</span>';
       var played = opts.localScore && opts.localScore('daily') != null;
       $('gk-rk-play').hidden = played || !opts.playDaily;
     }
@@ -4636,9 +5021,38 @@
       }).join('');
     }
     on.onNickChanged = function () { if (shell.screen === 'profile') renderProfile(); };
+    // first run: after the first finished game, the first menu visit asks for a nickname (auto fun name prefilled)
+    function nickPopup() {
+      P.data.ui = P.data.ui || {};
+      if (P.data.ui.nickAsked || root.GAMEKIT_NO_NICK) return;   // GAMEKIT_NO_NICK: test runs of the games' own e2e suites
+      P.data.ui.nickAsked = true;
+      P.commit();
+      enqueue(function (close) {
+        var p = on.profile;
+        showOv('gk-nickov', '<div class="gk-card gk-nickcard"><h3>' + T.nickTitle + '</h3><div class="gk-prof-av" id="gk-nk-av">' +
+          avatar({ color: ME_COL, initial: String(p.nickname || '?').charAt(0).toUpperCase(), country: p.showFlag ? p.country : '' }, 'huge') + '</div>' +
+          '<p>' + T.nickSub + '</p><div class="gk-nickrow"><input id="gk-nk-in" maxlength="16" autocomplete="off" spellcheck="false" value="' + esc(p.nickname) + '">' +
+          '<button class="ic" id="gk-nk-dice" aria-label="random">' + sico('dice') + '</button></div><small class="gk-nk-err" id="gk-nk-err"></small>' +
+          '<button class="btn cta" id="gk-nk-save">' + T.save + '</button><button class="mini ghost" id="gk-nk-later">' + T.later + '</button></div>');
+        var input = $('gk-nk-in');
+        var setAv = function () { var a = $('gk-nk-av'); if (a) a.innerHTML = avatar({ color: ME_COL, initial: String(input.value || '?').trim().charAt(0).toUpperCase(), country: p.showFlag ? p.country : '' }, 'huge'); };
+        input.addEventListener('input', function () { $('gk-nk-err').textContent = ''; setAv(); });
+        tap('gk-nk-dice', function () { input.value = GameKit.funName(Math.random, shell.lang); setAv(); });
+        tap('gk-nk-later', close);
+        tap('gk-nk-save', function () {
+          if (!on.setProfile({ nickname: input.value, showFlag: p.showFlag, hidden: p.hidden })) { fx.shake(input, 6, 300); $('gk-nk-err').textContent = T.badNick; return; }
+          shell.toast(T.saved);
+          close();
+        });
+      });
+    }
+    if (shell.onScreenChange) shell.onScreenChange(function (name) {
+      if (shell.isMenu && shell.isMenu()) { renderHome(); if (P.data.stats.games >= 1) setTimeout(nickPopup, 400); }
+    });
 
     refreshMenu();
-    var ui = { fx: fx, refresh: refreshMenu, info: info, renderLeague: renderLeague, renderRank: renderRank, spendFx: spendFx, coinFly: coinFly };
+    var ui = { fx: fx, refresh: refreshMenu, info: info, renderLeague: renderLeague, renderRank: renderRank, spendFx: spendFx, coinFly: coinFly,
+      renderHome: renderHome, chestTap: chestTap, chestShopOpen: chestShopOpen, nickPopup: nickPopup, revealChest: revealChest };
     // limited-time offers (shell/offers-ui.js): popups share this overlay queue, so one big moment shows at a time
     if (root.GamekitOffersUI) {
       ui.offers = root.GamekitOffersUI.attach(P, shell, { fx: fx, enqueue: enqueue, showOv: showOv, ov: ov, tap: tap, sico: sico, center: center,
@@ -4672,11 +5086,13 @@
   'use strict';
   var TX = {
     es: { one: '¡OFERTA ÚNICA!', onlyNow: 'Solo ahora', ends: 'Termina en', value: 'de valor', coins: 'monedas', up: '¡Ascenso a {t}!',
-      weekend: '¡FIN DE SEMANA!', limited: '¡OFERTA LIMITADA!', promo: '¡MONEDAS ×2!', tag: 'Oferta', vs: 'vs.',
+      weekend: '¡FIN DE SEMANA!', limited: '¡OFERTA LIMITADA!', promo: '¡MONEDAS ×2!', tag: 'Oferta', vs: 'vs.', welcome: '¡PACK DE BIENVENIDA!',
+      short: '¡Te faltan monedas!', have: 'Tienes', need: 'Necesitas', ad: 'Ver anuncio', later: 'Ahora no',
       names: { offer_silver: 'Pack Plata', offer_gold: 'Pack Oro', offer_diamond: 'Pack Diamante', offer_weekend: 'Pack de fin de semana',
         offer_oneshot_s: 'Pack de ayudas', offer_oneshot_m: 'Montaña de monedas', double_2h: 'Monedas ×2', starter_pack: 'Pack inicial' } },
     en: { one: 'ONE-TIME OFFER!', onlyNow: 'Only now', ends: 'Ends in', value: 'value', coins: 'coins', up: 'Promoted to {t}!',
-      weekend: 'WEEKEND DEAL!', limited: 'LIMITED OFFER!', promo: 'COINS ×2!', tag: 'Offer', vs: 'vs.',
+      weekend: 'WEEKEND DEAL!', limited: 'LIMITED OFFER!', promo: 'COINS ×2!', tag: 'Offer', vs: 'vs.', welcome: 'WELCOME PACK!',
+      short: 'Not enough coins!', have: 'You have', need: 'You need', ad: 'Watch an ad', later: 'Not now',
       names: { offer_silver: 'Silver pack', offer_gold: 'Gold pack', offer_diamond: 'Diamond pack', offer_weekend: 'Weekend pack',
         offer_oneshot_s: 'Booster pack', offer_oneshot_m: 'Coin mountain', double_2h: 'Coins ×2', starter_pack: 'Starter pack' } }
   };
@@ -4702,6 +5118,7 @@
       if (o.kind === 'weekend') return T.weekend;
       if (o.kind === 'oneshot') return T.one;
       if (o.kind === 'promo') return T.promo;
+      if (o.kind === 'starter') return T.welcome;
       return T.limited;
     }
     function boosterFan(b) {
@@ -4806,6 +5223,71 @@
     shell.onOfferTap = function (key, btn) {
       btn.disabled = true;
       P.buyOffer(key).then(function () { if (shell.screen === 'shop') shell.renderShop(); }, function () { btn.disabled = false; });
+    };
+
+    // ---------- not enough coins (continue, booster, chest): coin packs, a suitable offer, a rewarded alternative ----------
+    // ctx: { reason: 'continue' | 'booster' | 'chest' | 'chest_shop', retry: fn (run again once the coins are there) }
+    // Store builds only (callers check IAP.available); one popup in the overlay queue, closable, never over a level start.
+    shell.needCoins = function (need, ctx) {
+      ctx = ctx || {};
+      if (!IAP.available) return false;
+      var packs = P.products().filter(function (p) { return !p.offer && !p.sameAs && p.grant && p.grant.coins > 0 && Object.keys(p.grant).length === 1; })
+        .sort(function (a, b) { return a.grant.coins - b.grant.coins; });
+      var oo = off.coinOffer ? off.coinOffer(need) : null;
+      P.commit();
+      P.track('need_coins', { reason: ctx.reason || '', need: need, have: eco.coins, offer: oo ? oo.product : '' });
+      k.enqueue(function (close) {
+        var op = oo && P.product(oo.product), c = oo && off.claims(oo.product);
+        var adOk = ctx.reason === 'continue' && ctx.retry && P.ads.rewardedReady();
+        k.showOv('gk-offerov k-coins', '<div class="gk-rays"></div><div class="gk-offer gk-coinsbox k-coins">' +
+          '<button class="ic gk-x" id="gk-nc-x" aria-label="×">' + k.sico('close') + '</button>' +
+          '<div class="gk-of-ban">' + T.short + '</div>' +
+          '<div class="gk-nc-have"><span>' + T.have + ' <b id="gk-nc-have">' + ico('coin') + eco.coins.toLocaleString(shell.lang) + '</b></span><span>' + T.need + ' <b>' + ico('coin') + need.toLocaleString(shell.lang) + '</b></span></div>' +
+          (op ? '<div class="gk-nc-offer k-' + oo.kind + '"><div class="gk-of-art sm">' + art(oo, op.grant || {}) + badge(c) + '</div><div class="gk-nc-oi"><b>' + esc(name(oo.product)) + '</b>' +
+            shell.rewardTiles(op.grant) + timer(oo) + '</div>' + priceBlock(oo, c, 'id="gk-nc-offer" data-key="' + esc(oo.key) + '"', 'mini cta big') + '</div>' : '') +
+          '<div class="gk-nc-packs">' + packs.map(function (p, i) {
+            return '<div class="gk-nc-pack p' + (i + 1) + '"><span class="gk-art">' + (Art ? Art.coinPile(Math.min(3, i + 1)) : ico('coin')) + '</span><span class="gk-amt">' + ico('coin') +
+              p.grant.coins.toLocaleString(shell.lang) + '</span><button class="mini cta" data-ncp="' + p.id + '">' + esc(IAP.price(p.id)) + '</button></div>';
+          }).join('') + '</div>' +
+          (adOk ? '<button class="btn pri gk-nc-ad" id="gk-nc-ad">' + ico('ad') + T.ad + '</button>' : '') +
+          '<button class="mini ghost" id="gk-nc-later">' + T.later + '</button></div>');
+        fx.sfx.whoosh();
+        var finished = false;
+        function finish(then) {
+          if (finished) return;
+          finished = true;
+          if (oo && (oo.kind === 'oneshot' || oo.kind === 'promo')) off.close(oo.key);   // a one-shot is gone once its popup closes
+          P.commit();
+          close();
+          if (then) setTimeout(then, 240);
+        }
+        function bought(btn, got) {
+          if (!got) return;
+          var ce = k.center(btn);
+          fx.confetti(ce.x, ce.y, { n: 110, power: 640 }); fx.sfx.big(); fx.haptic('success');
+          if (got.coins) k.coinFly(btn, got.coins);
+          var h = doc.getElementById('gk-nc-have'); if (h) h.innerHTML = ico('coin') + eco.coins.toLocaleString(shell.lang);
+          // enough now: carry on with what the player wanted (the continue, for instance)
+          if (eco.coins >= need) setTimeout(function () { finish(ctx.retry); }, 700);
+        }
+        k.tap('gk-nc-x', function () { finish(); });
+        k.tap('gk-nc-later', function () { finish(); });
+        k.tap('gk-nc-ad', function () { finish(ctx.retry); });
+        k.ov.querySelectorAll('[data-ncp]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            if (b.disabled) return;
+            b.disabled = true;
+            P.buy(b.getAttribute('data-ncp')).then(function (got) { b.disabled = false; bought(b, got); }, function () { b.disabled = false; });
+          });
+        });
+        var ob = doc.getElementById('gk-nc-offer');
+        if (ob) ob.addEventListener('click', function () {
+          if (ob.disabled) return;
+          ob.disabled = true;
+          P.buyOffer(oo.key).then(function (got) { if (!got) { ob.disabled = false; return; } ob.closest('.gk-nc-offer').classList.add('done'); bought(ob, got); }, function () { ob.disabled = false; });
+        });
+      });
+      return true;
     };
 
     // ---------- coin counter badge + result tag ----------
@@ -5224,7 +5706,7 @@
 // tools/gen_levels.js runs it once at build time and freezes the result in src/data/levels.js, so a word-list
 // update never changes levels players already know. generateOne() also works at runtime (endless levels).
 //
-// Difficulty (psych pass, 2026-10-27): a Candy Crush style sawtooth over the long-term growth (4 -> 7 letters,
+// Difficulty (psych pass 2026-10-27, schedule v3): an irregular sawtooth over the long-term growth (4 -> 7 letters,
 // 3 -> 10 words). Every level has a tier: facil | normal | dificil | superdificil (tierOf). There is no fail state,
 // so the honest "fail" proxy is a simulated player (simulate): fail = it gets stuck before the crossword is complete
 // and would need a hint. The generator builds several candidates per level and keeps the one whose simulated fail
@@ -5253,10 +5735,10 @@
   }
 
   // ---- tiers -----------------------------------------------------------------------------------------
-  // 1-9 facil onboarding (one new thing at a time: TEACH), 10 the first dificil. From 25 on, 15-level cycles:
-  // boss (superdificil) at 25, 40, 55... (10 + 15k), dificil at boss+5 and boss+10, facil right after every
-  // dificil and two facil after a boss, the rest normal (ramping inside the cycle). The first cycle (10-24) is
-  // gentler: 10 dificil, 11 facil, 20 dificil, 21 facil.
+  // Shared schedule v3 (gamekit/DIFFICULTY-RESEARCH.md): 1-9 facil onboarding (one new thing at a time: TEACH),
+  // then an irregular sawtooth: first dificil at 11-17, first boss (superdificil) at 26-39 and one every 12-18
+  // levels, never on a multiple of 5 nor on a pack's first level, facil relief after every spike (two after a
+  // boss), normals ramping up to the next spike with a mini-peak in long runs.
   const TIERS = ['facil', 'normal', 'dificil', 'superdificil'];
   const TIER_CODE = { facil: 'f', normal: 'n', dificil: 'd', superdificil: 's' };
   const CODE_TIER = { f: 'facil', n: 'normal', d: 'dificil', s: 'superdificil' };
@@ -5264,24 +5746,110 @@
   const BANDS = { facil: [0, 0.10], normal: [0.15, 0.30], dificil: [0.45, 0.60], superdificil: [0.65, 0.80] };
   const TEACH = { 1: 'word', 2: 'cross', 3: 'bonus', 4: 'shuffle', 5: 'hint' };
 
-  function tierOf(n) {
-    if (n <= 9) return 'facil';
-    const c = (n - 10) % 15;
-    if (n < 25) return n === 10 || n === 20 ? 'dificil' : n === 11 || n === 21 ? 'facil' : 'normal';
-    if (c === 0) return 'superdificil';
-    if (c === 1 || c === 2 || c === 6 || c === 11) return 'facil';
-    if (c === 5 || c === 10) return 'dificil';
-    return 'normal';
+  // >>> difficulty-schedule v3 (canonical copy: gamekit/tools/difficulty-schedule.js; keep identical)
+  // Sawtooth with an upward trend, deterministic per level number (the same for every player) but irregular:
+  //  - 1-9 facil (onboarding). 10 up to the first spike: easy normals.
+  //  - first dificil at 11-17; first boss (superdificil) at 26-39; then a boss every 12-18 levels (11-16 past 100).
+  //  - dificil 4-7 levels after the previous dificil (4-6 past 100; never the same gap twice in a row), 5-8 after a
+  //    boss, never within 3 levels before a boss.
+  //  - a hard level never sits on a multiple of 5 nor on a pack's first level (it moves by one, either way).
+  //  - facil relief right after every dificil, and twice after a boss.
+  //  - normals between spikes ramp up (sawtooth) to a 'build' level right before the spike; runs of 5+ normals get
+  //    an unlabelled mini-peak followed by a breather.
+  // targetOf(n): first-try fail target (bands: facil <10%, normal 15-30%, dificil 45-60%, superdificil 65-80%);
+  // hard targets creep up over the first 300 levels. helpAfter(tier): consecutive fails before the silent help
+  // (2 on facil/normal; 5 on labelled hard levels, a late safety net against "black hole" levels).
+  function difficultySchedule(SALT, PACK) {
+    var tiers = [], roles = [], built = 0;
+    function u(k, n) {
+      var s = SALT + ':' + k + ':' + n, h = 2166136261;
+      for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+      h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
+      return (h >>> 0) / 4294967296;
+    }
+    function pick(k, n, a, b) { return a + Math.floor(u(k, n) * (b - a + 1)); }
+    function bad(x) { return x % 5 === 0 || (x - 1) % PACK === 0; }
+    // nearest good position to x that is >= lo (one step down or up first, chosen by the hash)
+    function fix(x, lo, k) {
+      if (!bad(x)) return x;
+      var d = u('fix' + k, x) < 0.5 ? -1 : 1, c = [x + d, x - d, x + 2, x + 3, x + 4];
+      for (var i = 0; i < c.length; i++) if (c[i] >= lo && !bad(c[i])) return c[i];
+      return x + 5 + (bad(x + 5) ? 1 : 0);
+    }
+    function build(N) {
+      var n, b, d, i;
+      tiers = []; roles = [];
+      for (n = 1; n <= N + 40; n++) { tiers[n] = 'normal'; roles[n] = 'ramp'; }
+      for (n = 1; n <= 9; n++) { tiers[n] = 'facil'; roles[n] = 'onboard'; }
+      var bosses = [];
+      for (b = fix(pick('boss', 0, 26, 39), 26, 'b'); b <= N + 40; ) {
+        bosses.push(b);
+        b = fix(b + (b > 100 ? pick('gap', b, 11, 16) : pick('gap', b, 12, 18)), b + 11, 'b');
+      }
+      var mark = function (x, t) {
+        tiers[x] = t; roles[x] = t === 'superdificil' ? 'boss' : 'spike';
+        for (var r = 1; r <= (t === 'superdificil' ? 2 : 1); r++) { tiers[x + r] = 'facil'; roles[x + r] = 'relief'; }
+      };
+      var prev = 0, last = 0, nd;
+      for (i = 0; i < bosses.length; i++) {
+        b = bosses[i];
+        d = prev ? fix(prev + pick('d0', prev, 5, 8), prev + 5, 'd') : fix(pick('first', 0, 11, 17), 11, 'd');
+        while (d <= b - 3) {
+          mark(d, 'dificil');
+          nd = fix(d + pick('dgap', d, 4, d > 100 ? 6 : 7), d + 4, 'd');
+          // never the same gap twice in a row (12, 17, 22 would read as a pattern again)
+          if (nd - d === last) nd = fix(nd + 1, d + 4, 'd2');
+          last = nd - d; d = nd;
+        }
+        mark(b, 'superdificil');
+        prev = b;
+      }
+      // normal runs: sawtooth ramp, 'build' right before the spike, mini-peak + breather in long runs
+      for (n = 10; n <= N + 40; ) {
+        if (tiers[n] !== 'normal') { n++; continue; }
+        var s = n; while (tiers[n] === 'normal') n++;
+        var e = n - 1, L = e - s + 1;
+        if (L >= 2) roles[e] = 'build';
+        if (L >= 5) { var m = s + Math.floor((L - 1) / 2); roles[m] = 'peak'; roles[m + 1] = 'breather'; }
+      }
+      built = N;
+    }
+    function ensure(n) { if (n > built) build(Math.max(n, built * 2, 300)); }
+    function tierOf(n) { n = Math.max(1, Math.floor(n)); ensure(n); return tiers[n]; }
+    function roleOf(n) { n = Math.max(1, Math.floor(n)); ensure(n); return roles[n]; }
+    // position of n inside its run of normals: 0 at the first normal after the relief, 1 at the build level
+    function rampOf(n) {
+      var s = n, e = n;
+      while (s > 10 && tierOf(s - 1) === 'normal') s--;
+      while (tierOf(e + 1) === 'normal') e++;
+      return e > s ? (n - s) / (e - s) : 1;
+    }
+    function targetOf(n) {
+      var t = tierOf(n), r = roleOf(n), g = Math.min(1, Math.max(0, (n - 10) / 290));
+      if (t === 'facil') return r === 'onboard' ? 0.02 : 0.04;
+      if (t === 'dificil') return 0.46 + 0.10 * g;
+      if (t === 'superdificil') return 0.66 + 0.10 * g;
+      var lo = 0.16 + 0.02 * g, hi = 0.25 + 0.03 * g;
+      if (n < 20 && n < firstHard()) hi = 0.2;          // the early ramp stays gentle
+      if (r === 'peak') return Math.min(0.29, hi + 0.02);
+      if (r === 'breather') return lo;
+      if (r === 'build') return hi;
+      return lo + (hi - lo) * rampOf(n);
+    }
+    function firstHard() { for (var n = 10; ; n++) if (tierOf(n) === 'dificil' || tierOf(n) === 'superdificil') return n; }
+    function helpAfter(t) { return t === 'dificil' || t === 'superdificil' ? 5 : 2; }
+    function hardList(from, to) {
+      var out = [];
+      for (var n = from; n <= to; n++) { var t = tierOf(n); if (t === 'dificil' || t === 'superdificil') out.push(n); }
+      return out;
+    }
+    return { tierOf: tierOf, roleOf: roleOf, targetOf: targetOf, helpAfter: helpAfter, hardList: hardList, version: 3 };
   }
-  // the fail rate the generator aims at: band centre; normal ramps from 17% to 28% inside the cycle
-  function targetOf(n) {
-    const t = tierOf(n);
-    if (t === 'facil') return n <= 9 ? 0.02 : 0.05;
-    if (t === 'dificil') return 0.525;
-    if (t === 'superdificil') return 0.725;
-    const c = n < 25 ? (n - 10) : (n - 10) % 15;
-    return 0.17 + 0.11 * (c / 14);
-  }
+  // <<< difficulty-schedule v3
+  const SCHED = difficultySchedule('hilvana', PACK_SIZE);
+  const tierOf = SCHED.tierOf;
+  // the fail rate the generator aims at: tier band; normals ramp up to the next spike (sawtooth)
+  const targetOf = SCHED.targetOf;
 
   // ---- size and word rarity per level ----------------------------------------------------------------
   // long-term growth: letters 4 -> 7, words 3 -> 10, rarer words later. The tier adds or removes words, letters
@@ -5495,7 +6063,7 @@
   }
 
   PAL.levels = {
-    LEVEL_COUNT, PACK_SIZE, PACKS, TIERS, BANDS, TEACH, packOf, tierOf, targetOf, params, playerFor, simulate,
+    LEVEL_COUNT, PACK_SIZE, PACKS, TIERS, BANDS, TEACH, packOf, tierOf, targetOf, helpAfter: SCHED.helpAfter, roleOf: SCHED.roleOf, hardList: SCHED.hardList, params, playerFor, simulate,
     generateOne, generateAll, encode, decode,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = PAL;
@@ -5695,8 +6263,18 @@
     this.svg = document.createElementNS(SVGNS, 'svg');
     this.svg.setAttribute('class', 'wheel-line');
     this.svg.setAttribute('aria-hidden', 'true');
-    this.line = document.createElementNS(SVGNS, 'polyline');
-    this.svg.appendChild(this.line);
+    // the selection thread: a soft halo, the core stroke and a thin highlight, plus a bead at the finger
+    this.lines = ['halo', 'core', 'shine'].map((cls) => {
+      const pl = document.createElementNS(SVGNS, 'polyline');
+      pl.setAttribute('class', cls);
+      this.svg.appendChild(pl);
+      return pl;
+    });
+    this.line = this.lines[1];
+    this.tip = document.createElementNS(SVGNS, 'circle');
+    this.tip.setAttribute('class', 'tip');
+    this.tip.setAttribute('r', '0');
+    this.svg.appendChild(this.tip);
     el.appendChild(this.svg);
     this.ring = document.createElement('div');
     this.ring.className = 'wheel-ring';
@@ -5816,7 +6394,11 @@
     this.nodes.forEach((n, i) => n.classList.toggle('on', this.path.indexOf(i) >= 0));
     const pts = this.path.map((i) => this.centers[i]).filter(Boolean);
     if (this.pointer && pts.length) pts.push(this.pointer);
-    this.line.setAttribute('points', pts.map((p) => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' '));
+    const str = pts.map((p) => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+    this.lines.forEach((pl) => pl.setAttribute('points', str));
+    const end = this.pointer && pts.length > 1 ? pts[pts.length - 1] : null;
+    this.tip.setAttribute('r', end ? '9' : '0');
+    if (end) { this.tip.setAttribute('cx', end.x.toFixed(1)); this.tip.setAttribute('cy', end.y.toFixed(1)); }
     this.onChange(this.word());
   };
 
@@ -6185,8 +6767,9 @@
   let lvl = null;      // current level state
   let wheel = null;
   let stuckTimer = null;
-  const SOFT_HELP_STUCKS = 3;   // stuck spells on one level (all attempts) before the free soft help
-  const SOFT_HELP_STARTS = 4;   // or the 4th start of a level left unfinished 3 times
+  // stuck spells on one level (all attempts) before the free soft help: helpAfter(tier) = 2 on facil/normal, 5 on
+  // the labelled hard levels (a late safety net); or the start after that many unfinished starts
+  const softHelpStucks = (spec) => PAL.levels.helpAfter((spec && spec.difficulty) || 'normal');
 
   function levelSpec(n) {
     let s;
@@ -6250,7 +6833,7 @@
     const g = $('#grid'), wrap = $('#grid-wrap');
     g.innerHTML = '';
     const s = lvl.spec;
-    const W = wrap.clientWidth - 8, H = wrap.clientHeight - 8;
+    const W = wrap.clientWidth - 30, H = wrap.clientHeight - 30;   // room for the board card around the grid (style.css #grid::before)
     const size = Math.floor(Math.min(56, W / s.w, H / s.h));
     g.style.width = size * s.w + 'px';
     g.style.height = size * s.h + 'px';
@@ -6339,15 +6922,16 @@
     lvl.stuckSent = true;
     const remaining = lvl.spec.words.length - lvl.found.size;
     try { hooks.onStuck && hooks.onStuck({ levelId: lvl.spec.id, reason, remaining, idleMs: Date.now() - lvl.started }); } catch (e) { console.error(e); }
-    // soft help: 3+ stuck spells on this level (any attempt) or its 4th unfinished start -> once per level, the
-    // first letter of the hardest remaining word fades in, free and silent. One letter: boosters still matter.
+    // soft help: helpAfter(tier) stuck spells on this level (any attempt) or the start after that many unfinished
+    // starts -> once per level, the first letter of the hardest remaining word fades in, free and silent. One
+    // letter: boosters still matter.
     if (typeof lvl.spec.id !== 'number') return;
-    const m = memoGet(lvl.spec.id);
+    const m = memoGet(lvl.spec.id), need = softHelpStucks(lvl.spec);
     m.stucks = (m.stucks || 0) + 1;
-    const give = !m.given && (m.stucks >= SOFT_HELP_STUCKS || (m.starts || 0) >= SOFT_HELP_STARTS);
+    const give = !m.given && (m.stucks >= need || (m.starts || 0) >= need + 1);
     if (give) m.given = 1;
     memoSet(lvl.spec.id, m);
-    if (give) softHelp(m.stucks >= SOFT_HELP_STUCKS ? 'stuck' : 'restarts');
+    if (give) softHelp(m.stucks >= need ? 'stuck' : 'restarts');
   }
   // the hardest remaining word: the rarest (highest frequency rank), then the longest
   function softHelpTarget() {
