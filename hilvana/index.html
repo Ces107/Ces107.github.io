@@ -12,7 +12,6 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="#e0a400"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#a86a00" stroke-width="2"/></symbol>
   <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2.2-4.8.2 1.6 1 2.6 2 2.8C10.6 8.6 11 5.6 12 3z"/></symbol>
-  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></symbol>
   <symbol id="i-quest" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 9 1.5 1.5L13 7.5M8.5 15h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 9h16l-1.2 10.2a1 1 0 0 1-1 .8H6.2a1 1 0 0 1-1-.8zM8.5 9V7.5a3.5 3.5 0 0 1 7 0V9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
   <!-- boosters, drawn by gamekit as #i-<id> in the shop, chests and rewards -->
@@ -26,6 +25,7 @@
     <div class="h-top">
       <button class="h-chip flame" id="h-streak" aria-label="Racha"><svg><use href="#i-flame"/></svg><b id="h-streak-v">0</b></button>
       <span class="h-sp"></span>
+      <button id="go-credits" class="link-btn" aria-label="Créditos">ⓘ</button>
       <button class="h-chip" id="h-coins-chip" aria-label="Monedas"><svg><use href="#i-coin"/></svg><b id="h-coins-v">0</b></button>
     </div>
     <div class="brand">
@@ -46,11 +46,9 @@
     </button>
     <div class="h-dock gk-tok" id="h-dock"></div>
     <div class="h-dock gk-tok">
-      <button class="h-ic" id="h-levels" aria-label="Niveles"><svg><use href="#i-grid"/></svg></button>
       <button class="h-ic" id="h-quests" aria-label="Misiones"><svg><use href="#i-quest"/></svg><b class="badge" id="h-quests-badge"></b></button>
       <button class="h-ic" id="h-shop" aria-label="Tienda"><svg><use href="#i-shop"/></svg></button>
     </div>
-    <button id="go-credits" class="link-btn" aria-label="Créditos">ⓘ</button>
   </section>
 
   <section id="play" class="screen" aria-label="Nivel">

@@ -1,0 +1,41 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.ces107.teselo",
+      "sha256_cert_fingerprints": [
+        "14:2F:8C:CA:B9:5D:F6:2E:59:9F:B9:3E:00:6A:D5:22:13:44:82:3D:5A:00:59:05:0E:CC:16:0C:8F:3D:FC:D5",
+        "2E:8E:68:39:BF:1F:D1:B3:56:AC:19:E0:AF:CB:C2:73:C2:6A:1D:F1:38:CC:23:43:BF:2A:87:7C:84:19:12:41"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.ces107.atascazo",
+      "sha256_cert_fingerprints": [
+        "F1:3A:A1:11:9B:35:8D:25:C9:53:43:8B:C8:CC:36:D0:0F:BD:82:49:78:34:47:17:3D:90:17:EC:95:DF:AB:35",
+        "D6:53:5C:FF:DC:8B:2A:D6:D8:1E:77:16:8B:69:49:F9:73:7D:34:3B:45:E6:AB:61:FD:DE:C7:27:34:E6:5D:0C"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.ces107.hilvana",
+      "sha256_cert_fingerprints": [
+        "E5:C8:3B:FE:DF:9A:BF:93:05:06:CB:66:70:BA:E7:E2:34:87:57:52:11:50:61:C2:68:47:D2:28:2F:AA:BD:98",
+        "D7:02:35:55:B5:C8:8B:80:2E:FF:5A:FA:EF:B7:20:AE:15:DB:25:EF:A6:6A:1C:45:AD:70:85:32:CE:54:47:55"
+      ]
+    }
+  }
+]
