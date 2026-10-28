@@ -1,4 +1,4 @@
-Hilvana 0.6.0
+Hilvana 0.7.0
 (c) Cesar Pereiro. All rights reserved, except the files listed below.
 
 data/words.js, data/levels.js, data/daily.js
