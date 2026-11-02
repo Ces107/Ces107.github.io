@@ -17,7 +17,7 @@ h2 { font-size: 20px; margin: 32px 0 8px; }
 h3 { font-size: 16px; margin: 20px 0 4px; }
 p, li { color: var(--ink); }
 .mute { color: var(--mute); font-size: 14px; }
-nav { display: flex; gap: 12px; margin: 16px 0 24px; }
+nav { display: flex; gap: 12px; margin: 16px 0 24px; flex-wrap: wrap; }
 nav a { color: var(--acc); font-weight: 600; }
 section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 4px 20px 16px; margin-bottom: 24px; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -28,18 +28,56 @@ a { color: var(--acc); }
 <body>
 <main>
 <h1>Teselo</h1>
-<p class="mute">Última actualización / Last updated: 26-10-2026</p>
-<nav><a href="#es">Español</a><a href="#en">English</a></nav>
+<p class="mute">Última actualización / Last updated: 02-11-2026 (versión 0.10.3 / version 0.10.3)</p>
+<nav><a href="#es">Español</a><a href="#en">English</a><a href="terms.html">Condiciones / Terms</a><a href="./">Jugar / Play</a></nav>
 
 <section id="es" lang="es">
 <h2>Política de privacidad (app de Android)</h2>
-<p>Teselo es un juego de puzle de bloques publicado por César Pereiro (desarrollador particular, España), en adelante «nosotros». Contacto: <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a>.</p>
+<p>Teselo es un juego de puzle de bloques publicado por César Pereiro (desarrollador particular, España), en adelante «nosotros» y responsable del tratamiento. Contacto, también para pedir el borrado de tus datos: <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a>.</p>
 
-<h3>Lo que guarda el juego</h3>
-<p>Tu progreso (niveles, puntuaciones, monedas, racha, ajustes y compras hechas) se guarda <strong>en tu dispositivo</strong>. No hay cuentas de usuario. Lo único que sale del dispositivo es lo necesario para el ranking y las ligas (ver <a href="#es-ranking">Ranking y ligas</a>). Si desinstalas la app, se borran (salvo la copia de seguridad de Android, si la tienes activada).</p>
+<h3>Resumen</h3>
+<ul>
+<li>No hay cuenta con email ni contraseña, y no te pedimos nombre real, email, contactos, ubicación precisa, micrófono ni cámara.</li>
+<li>Tu partida vive en tu móvil. Cuando hay conexión, el juego habla con nuestro servidor para el ranking, las ligas, los equipos, las compras y guardar tu progreso.</li>
+<li>Los anuncios (Google AdMob) y las estadísticas (Google Analytics para Firebase) usan servicios de Google. En el Espacio Económico Europeo, el Reino Unido y Suiza te pedimos permiso antes.</li>
+<li>No vendemos datos.</li>
+</ul>
+
+<h3 id="es-servidor">Lo que guarda nuestro servidor, para qué y cuánto tiempo</h3>
+<p>Nuestro servidor (<code>gamekit-api</code>) está alojado por Render en la región de Fráncfort (UE), con los datos en un disco persistente. Se accede con HTTPS. Cuando hay conexión, el juego envía y guarda lo siguiente:</p>
+<table>
+<tr><th>Qué</th><th>Para qué</th><th>Cuánto tiempo</th></tr>
+<tr><td>Un identificador anónimo aleatorio creado en tu móvil y una clave para firmar los envíos (no son tu ID de Google ni tu ID de publicidad)</td><td>Reconocer tu partida en el ranking, las ligas, los equipos y las compras</td><td>Mientras exista el servicio o hasta que pidas el borrado</td></tr>
+<tr><td>Apodo (se genera solo y puedes cambiarlo; no uses tu nombre real) y bandera del país, deducida del idioma del móvil, que puedes quitar</td><td>Mostrarte a otros jugadores en las tablas</td><td>Igual</td></tr>
+<tr><td>Puntuaciones del reto diario con la lista de movimientos de esa partida, puntuaciones de Infinito, puntos de liga y copas</td><td>Ranking y ligas; el servidor repite la partida para comprobar que la puntuación es válida</td><td>Igual</td></tr>
+<tr><td>Comunidad autónoma o país, solo si tú lo eliges</td><td>Ranking regional (no usamos geolocalización)</td><td>Hasta que lo quites o pidas el borrado</td></tr>
+<tr><td>Equipo: a cuál perteneces, tus victorias de la semana, tus peticiones de ayuda y de vidas, las ayudas que envías y recibes y las frases o emojis predefinidos que eliges</td><td>Equipos, cofre del equipo y avisos entre compañeros. No hay texto libre ni chat</td><td>Igual</td></tr>
+<tr><td>Amigos y retos (si los usas): un código anónimo de 5 caracteres, la lista de amigos y tu nivel y estrellas, que ven tus amigos</td><td>Retos entre amigos y su tabla</td><td>Igual</td></tr>
+<tr><td>Compras: producto, número de pedido, precio y moneda mostrados, país de la tienda, estado y el token de compra de Google Play</td><td>Comprobar la compra con Google Play, entregártela, restaurarla y detectar reembolsos y fraude. No vemos tus datos de pago</td><td>Mientras exista el servicio (por obligaciones contables y de reclamación)</td></tr>
+<tr><td>Copia de tu progreso: una copia completa de tu partida, asociada a tu identificador</td><td>Llevar tu progreso a otro móvil (ver «Conservar tu progreso»)</td><td>Se sustituye en cada copia. Una copia sin usar durante 400 días se da por perdida</td></tr>
+<tr><td>Si inicias sesión con Google Play Juegos: una huella irreversible (SHA-256) de tu ID de jugador de Play Juegos, ligada a tu identificador</td><td>Reconocer tu cuenta de Google en otro móvil. No guardamos tu ID de Play Juegos ni el permiso temporal de Google</td><td>Hasta que pidas el borrado</td></tr>
+<tr><td>Códigos de traspaso (solo su huella SHA-256 y una copia de tu partida)</td><td>Pasar tu partida a otro móvil</td><td>El código caduca a los 30 minutos y la copia se borra al usarlo</td></tr>
+<tr><td>Avisos: el token de notificaciones de Firebase Cloud Messaging, tu zona horaria, tu idioma y los tipos de aviso que apagas. Solo si aceptas «Avisos» en el permiso de Android</td><td>Enviarte avisos (liga, equipo, reto diario…) como máximo uno al día y no entre las 22:00 y las 09:00</td><td>Hasta que los desactives, desinstales (el token inválido se borra) o pidas el borrado</td></tr>
+<tr><td>Estadísticas anónimas: eventos con nombre, hora y un número (sesiones, niveles, anuncios vistos, ofertas, compras y su importe de catálogo), el origen de la instalación (Play Install Referrer) y un identificador aleatorio de la instalación que guardamos con hash. No guardamos la IP</td><td>Entender cómo se juega y mejorar el juego; las ofertas y anuncios se ajustan en tu móvil según cómo juegas</td><td>Recuentos agregados mientras exista el servicio</td></tr>
+<tr><td>Mensajes de nosotros y códigos regalo que canjeas</td><td>Entregarte recompensas</td><td>Mientras exista el servicio</td></tr>
+</table>
+<p>Los jugadores ven tu apodo, bandera, puntuaciones y puesto, y tus compañeros de equipo ven tus acciones en el equipo. Tu dirección IP solo se usa para limitar abusos y no la guardamos en nuestra base de datos; el proveedor de alojamiento puede registrarla en sus registros técnicos durante un tiempo limitado.</p>
+<p>El ranking, las ligas y los equipos <strong>incluyen rivales y compañeros CPU</strong>: jugadores simulados por el juego, marcados con un pequeño icono. No tienen datos personales.</p>
+
+<h3 id="es-ranking">Ranking y privacidad</h3>
+<p>Puedes dejar de aparecer en Ranking → Perfil → «No salir en el ranking»: dejamos de enviar puntuaciones y tu fila desaparece de las tablas públicas. Para borrar tus datos, escríbenos con tu apodo (ver «Tus derechos»).</p>
+
+<h3 id="es-progreso">Conservar tu progreso: Google Play Juegos y código de traspaso</h3>
+<p>Tu progreso (niveles, monedas, mascotas, cromos, ajustes y compras) se guarda en tu móvil. Para no perderlo si cambias de móvil, hay dos vías:</p>
+<ul>
+<li><strong>Inicio de sesión con Google Play Juegos.</strong> En Android el juego inicia sesión solo. Con tu permiso, Google nos da un permiso de un solo uso que el servidor cambia por tu ID de jugador de Play Juegos para comprobarlo; guardamos solo su huella SHA-256. Mientras estés vinculado, tu partida se guarda en nuestro servidor. En otro móvil con la misma cuenta, tu partida se <em>mueve</em> allí.</li>
+<li><strong>Código de traspaso</strong> (para quien no use Google): un código de un solo uso, válido 30 minutos, mueve tu partida a otro móvil.</li>
+</ul>
+<p>Es un traspaso, no una copia: solo un móvil juega cada partida. El móvil anterior deja de poder firmar y muestra «Partida movida». Existe además un código de copia permanente, que copia tu partida sin moverla.</p>
+<p>Android también puede restaurar los datos del juego al cambiar de móvil con su copia de seguridad del sistema, si la tienes activada. Si desinstalas la app, se borran los datos del móvil (salvo esa copia); los del servidor se conservan hasta que pidas su borrado.</p>
 
 <h3>Anuncios (Google AdMob)</h3>
-<p>La app muestra anuncios de Google AdMob: anuncios con recompensa, que tú eliges ver, y anuncios intersticiales entre partidas. Para servirlos, medirlos y prevenir el fraude, el SDK de Google puede recoger y compartir con Google:</p>
+<p>La app muestra anuncios de Google AdMob: anuncios con recompensa, que tú eliges ver, y anuncios intersticiales entre partidas (nunca a mitad de un nivel). Para servirlos, medirlos y prevenir el fraude, el SDK de Google puede recoger y compartir con Google:</p>
 <ul>
 <li>identificadores del dispositivo (ID de publicidad de Android y App Set ID);</li>
 <li>la dirección IP, de la que se deduce una ubicación aproximada;</li>
@@ -49,45 +87,85 @@ a { color: var(--acc); }
 <p>En el Espacio Económico Europeo, Reino Unido y Suiza te pedimos el consentimiento con la plataforma de gestión del consentimiento de Google (UMP, certificada para el marco TCF v2.2) <strong>antes</strong> de cargar ningún anuncio. Si no das el consentimiento, puedes recibir anuncios no personalizados o ninguno. Puedes cambiar tu elección cuando quieras en la Tienda del juego → «Privacidad». También puedes restablecer o eliminar tu ID de publicidad en Ajustes de Android → Privacidad → Anuncios.</p>
 <p>Cómo trata Google estos datos: <a href="https://policies.google.com/technologies/partner-sites">policies.google.com/technologies/partner-sites</a> y <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>.</p>
 
+<h3>Otros servicios de Google</h3>
+<ul>
+<li><strong>Google Play Billing</strong>: procesa las compras (ver abajo).</li>
+<li><strong>Google Play Juegos</strong>: inicio de sesión para conservar el progreso (ver arriba).</li>
+<li><strong>Firebase Cloud Messaging</strong>: entrega los avisos si los aceptas. Sin tu permiso no se pide ningún token.</li>
+<li><strong>Google Analytics para Firebase</strong> (solo en Android): estadísticas de uso. Está apagado hasta que se conoce tu consentimiento; en el EEE, Reino Unido y Suiza solo se activa si lo aceptas, y se puede cambiar en la Tienda → «Privacidad». Fuera de esas zonas se activa por defecto.</li>
+<li><strong>Play Install Referrer</strong>: dice de qué anuncio o enlace viene la instalación; se lee una vez.</li>
+</ul>
+
 <h3>Compras (Google Play)</h3>
-<p>Las compras dentro de la app (quitar anuncios, monedas, packs, pase de temporada) las procesa Google Play Billing. Google gestiona el pago y nos comunica solo qué producto se ha comprado, con un identificador del pedido, para entregártelo. No vemos tus datos de pago. Para los reembolsos usa Google Play → Historial de pedidos.</p>
+<p>Las compras dentro de la app (quitar anuncios, monedas, packs, aspectos, pase de temporada y la suscripción Club Teselo) las procesa Google Play Billing. Google gestiona el pago y nos comunica qué producto se ha comprado, con un identificador del pedido, para entregártelo. No vemos tus datos de pago. Los reembolsos y la cancelación de la suscripción se piden en Google Play → Historial de pedidos / Suscripciones.</p>
+
+<h3 id="es-bugs">Informes de error</h3>
+<p>Algunas versiones incluyen un botón de informe de error. Solo se envía si lo pulsas. Lleva el texto que escribas (hasta 1000 caracteres), las últimas líneas del registro del juego (con claves y tokens tachados) y un resumen técnico (versión, pantalla, nivel, monedas, vidas, tamaño de pantalla). Puede llevar una captura del tablero del juego (activada por defecto, la puedes quitar, no es una captura del sistema) y una imagen que elijas tú. Conservamos los 500 informes más recientes y borramos las imágenes a los 30 días.</p>
 
 <h3>Lo que no hacemos</h3>
 <ul>
-<li>No pedimos nombre, email, contactos, fotos, ubicación precisa, micrófono ni cámara.</li>
-<li>No vendemos datos. No usamos analítica propia ni otras redes de anuncios.</li>
+<li>No pedimos nombre real, email, contactos, ubicación precisa, micrófono ni cámara.</li>
+<li>No vendemos datos. No usamos otras redes de anuncios.</li>
 </ul>
 
-<h3>Base legal, conservación y derechos</h3>
-<p>Los anuncios personalizados se basan en tu consentimiento; los no personalizados, la prevención del fraude y las compras se basan en nuestro interés legítimo y en la ejecución del contrato de compra. Nosotros solo conservamos los datos del ranking descritos abajo; Google conserva los suyos según su política. Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo al email de contacto, y reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es">aepd.es</a>).</p>
+<h3>Base legal y tus derechos</h3>
+<p>Los anuncios personalizados y las estadísticas en la UE se basan en tu consentimiento; los anuncios no personalizados, la prevención del fraude y las compras, en nuestro interés legítimo y en la ejecución del contrato de compra; el ranking, los equipos y guardar tu progreso, en prestarte el servicio que usas al jugar. Google conserva sus datos según su política.</p>
+<p>Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad, y retirar tu consentimiento, escribiendo a <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a> con tu apodo (lo ves en Ranking → Perfil). Respondemos en un mes como máximo. Puedes reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es">aepd.es</a>) o tu autoridad local. Google puede tratar datos fuera de la UE bajo sus propias garantías.</p>
 
 <h3>Edad</h3>
-<p>Teselo está dirigido a personas adultas (18+). No está diseñado para niños y no recogemos a sabiendas datos de menores.</p>
+<p>Teselo es un juego de contenido apto para todos los públicos (PEGI 3), pero incluye compras de objetos aleatorios y anuncios, y está pensado para personas adultas (18+). No está dirigido a menores de 13 años y no recogemos a sabiendas datos suyos; si sabes de algún caso, escríbenos y borraremos esos datos.</p>
 
 <h3>Cambios</h3>
 <p>Si esta política cambia, publicaremos la nueva versión en esta misma página con su fecha.</p>
-
-<h3 id="es-ranking">Ranking y ligas (añadido el 26-10-2026)</h3>
-<p>Cuando hay conexión, el juego (web y Android) envía a nuestro servidor de rankings, alojado en la UE (Render, Frankfurt):</p>
-<ul>
-<li>un identificador anónimo aleatorio creado en tu dispositivo y una clave para firmar los envíos;</li>
-<li>tu apodo (se genera solo y puedes cambiarlo; no uses tu nombre real) y, si no la desactivas, la bandera de tu país deducida del idioma del dispositivo;</li>
-<li>tus puntuaciones del reto diario con la lista de movimientos de esa partida (el servidor la repite para comprobar que la puntuación es válida) y tus puntos semanales de liga.</li>
-</ul>
-<p>Otros jugadores ven tu apodo, tu bandera y tus puntuaciones. Tu dirección IP solo se usa para limitar abusos y no la guardamos (el proveedor de alojamiento puede registrarla en sus registros técnicos durante un tiempo limitado). No pedimos email ni ningún otro dato.</p>
-<p>Puedes dejar de aparecer en Ranking → Perfil → «No salir en el ranking»: dejamos de enviar puntuaciones y tu fila desaparece de las tablas públicas. Para borrar tus datos, escríbenos con tu apodo. Base legal: la prestación del ranking que usas al jugar. Conservación: mientras exista el servicio o hasta que pidas el borrado.</p>
-<p>El ranking y las ligas <strong>incluyen rivales CPU</strong>: jugadores simulados por el juego para que siempre haya competición. Van marcados con un pequeño icono. Condiciones completas: <a href="terms.html">terms.html</a>.</p>
 </section>
 
 <section id="en" lang="en">
 <h2>Privacy policy (Android app)</h2>
-<p>Teselo is a block puzzle game published by César Pereiro (individual developer, Spain), "we" below. Contact: <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a>.</p>
+<p>Teselo is a block puzzle game published by César Pereiro (individual developer, Spain), "we" below, the data controller. Contact, including to request deletion of your data: <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a>.</p>
 
-<h3>What the game stores</h3>
-<p>Your progress (levels, scores, coins, streak, settings and purchases) is stored <strong>on your device</strong>. There are no user accounts. The only data that leaves the device is what the ranking and leagues need (see <a href="#en-ranking">Ranking and leagues</a>). Uninstalling the app deletes it (except an Android backup, if you have backups turned on).</p>
+<h3>Summary</h3>
+<ul>
+<li>There is no account with email or password, and we do not ask for your real name, email, contacts, precise location, microphone or camera.</li>
+<li>Your game lives on your phone. When online, the game talks to our server for the ranking, leagues, teams, purchases and keeping your progress.</li>
+<li>Ads (Google AdMob) and statistics (Google Analytics for Firebase) use Google services. In the European Economic Area, the UK and Switzerland we ask for your permission first.</li>
+<li>We do not sell data.</li>
+</ul>
+
+<h3 id="en-server">What our server stores, why and for how long</h3>
+<p>Our server (<code>gamekit-api</code>) is hosted by Render in the Frankfurt (EU) region, with the data on a persistent disk. It is reached over HTTPS. When online, the game sends and we store:</p>
+<table>
+<tr><th>What</th><th>Why</th><th>How long</th></tr>
+<tr><td>A random anonymous identifier created on your phone and a key used to sign what it sends (neither is your Google ID or your advertising ID)</td><td>Recognise your game in the ranking, leagues, teams and purchases</td><td>While the service runs or until you ask for deletion</td></tr>
+<tr><td>Nickname (generated for you and editable; do not use your real name) and country flag, derived from the phone language, which you can turn off</td><td>Show you to other players in the tables</td><td>Same</td></tr>
+<tr><td>Daily-challenge scores with the move list of that game, Endless scores, league points and cups</td><td>Ranking and leagues; the server replays the game to check the score is valid</td><td>Same</td></tr>
+<tr><td>Region or country, only if you choose one</td><td>Regional ranking (we use no geolocation)</td><td>Until you remove it or ask for deletion</td></tr>
+<tr><td>Team: which one you belong to, your wins this week, your requests for help and lives, the help you send and receive and the preset phrases or emojis you pick</td><td>Teams, the team chest and notices between teammates. There is no free text and no chat</td><td>Same</td></tr>
+<tr><td>Friends and challenges (if you use them): an anonymous 5-character code, your friend list, and your level and stars, which your friends see</td><td>Challenges between friends and their table</td><td>Same</td></tr>
+<tr><td>Purchases: product, order number, the price and currency shown, store country, status and the Google Play purchase token</td><td>Verify the purchase with Google Play, deliver it, restore it and detect refunds and fraud. We never see your payment details</td><td>While the service runs (accounting and claims)</td></tr>
+<tr><td>Backup of your progress: a full copy of your save, tied to your identifier</td><td>Carry your progress to another phone (see "Keeping your progress")</td><td>Replaced at each backup. A backup unused for 400 days is treated as gone</td></tr>
+<tr><td>If you sign in with Google Play Games: an irreversible hash (SHA-256) of your Play Games player ID, linked to your identifier</td><td>Recognise your Google account on another phone. We do not store your Play Games ID or Google's temporary permission</td><td>Until you ask for deletion</td></tr>
+<tr><td>Transfer codes (only their SHA-256 hash, and a copy of your save)</td><td>Move your game to another phone</td><td>The code expires after 30 minutes and the copy is deleted once used</td></tr>
+<tr><td>Notifications: the Firebase Cloud Messaging token, your time zone, your language and the notice types you turn off. Only if you accept "Notifications" in the Android permission</td><td>Send you notices (league, team, daily challenge...), at most one a day and never between 22:00 and 09:00</td><td>Until you turn them off, uninstall (an invalid token is deleted) or ask for deletion</td></tr>
+<tr><td>Anonymous statistics: named events with a time and a number (sessions, levels, ads watched, offers, purchases and their catalogue price), the install source (Play Install Referrer) and a random install identifier that we store hashed. We do not store the IP</td><td>Understand how the game is played and improve it; offers and ads adapt on your phone to how you play</td><td>Aggregate counts while the service runs</td></tr>
+<tr><td>Messages from us and gift codes you redeem</td><td>Deliver rewards to you</td><td>While the service runs</td></tr>
+</table>
+<p>Other players see your nickname, flag, scores and rank, and your teammates see your actions in the team. Your IP address is only used to limit abuse and we do not store it in our database; the hosting provider may keep it in technical logs for a limited time.</p>
+<p>The ranking, the leagues and the teams <strong>include CPU rivals and teammates</strong>: players simulated by the game, marked with a small icon. They have no personal data.</p>
+
+<h3 id="en-ranking">Ranking and privacy</h3>
+<p>You can leave the tables in Ranking → Profile → "Hide me from the ranking": scores stop being sent and your row disappears from the public tables. To delete your data, email us with your nickname (see "Your rights").</p>
+
+<h3 id="en-progress">Keeping your progress: Google Play Games and the transfer code</h3>
+<p>Your progress (levels, coins, pets, cards, settings and purchases) is stored on your phone. To avoid losing it when you change phone, there are two ways:</p>
+<ul>
+<li><strong>Google Play Games sign-in.</strong> On Android the game signs in by itself. With your permission, Google gives us a one-time permission that the server exchanges for your Play Games player ID to check it; we store only its SHA-256 hash. While you are linked, your save is kept on our server. On another phone with the same account, your game is <em>moved</em> there.</li>
+<li><strong>Transfer code</strong> (for anyone who does not use Google): a one-time code, valid for 30 minutes, moves your game to another phone.</li>
+</ul>
+<p>It is a move, not a copy: only one phone plays a save. The previous phone can no longer sign requests and shows "Game moved". There is also a permanent backup code, which copies your save without moving it.</p>
+<p>Android can also restore the game's data when you change phone through its own system backup, if you have it turned on. If you uninstall the app, the data on the phone is deleted (except that backup); the server data is kept until you ask for its deletion.</p>
 
 <h3>Ads (Google AdMob)</h3>
-<p>The app shows Google AdMob ads: rewarded ads, which you choose to watch, and interstitial ads between games. To serve and measure ads and to prevent fraud, Google's SDK may collect and share with Google:</p>
+<p>The app shows Google AdMob ads: rewarded ads, which you choose to watch, and interstitial ads between games (never in the middle of a level). To serve and measure ads and to prevent fraud, Google's SDK may collect and share with Google:</p>
 <ul>
 <li>device identifiers (Android advertising ID and App Set ID);</li>
 <li>IP address, from which an approximate location is derived;</li>
@@ -97,34 +175,36 @@ a { color: var(--acc); }
 <p>In the European Economic Area, the UK and Switzerland we ask for your consent with Google's consent management platform (UMP, certified for IAB TCF v2.2) <strong>before</strong> any ad is loaded. Without consent you may get non-personalized ads or none. You can change your choice at any time in the game's Shop → "Privacy options". You can also reset or delete your advertising ID in Android Settings → Privacy → Ads.</p>
 <p>How Google uses this data: <a href="https://policies.google.com/technologies/partner-sites">policies.google.com/technologies/partner-sites</a> and <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>.</p>
 
+<h3>Other Google services</h3>
+<ul>
+<li><strong>Google Play Billing</strong>: processes purchases (see below).</li>
+<li><strong>Google Play Games</strong>: sign-in to keep your progress (see above).</li>
+<li><strong>Firebase Cloud Messaging</strong>: delivers notifications if you accept them. Without your permission no token is requested.</li>
+<li><strong>Google Analytics for Firebase</strong> (Android only): usage statistics. It is off until your consent is known; in the EEA, the UK and Switzerland it is turned on only if you accept, and you can change it in Shop → "Privacy options". Outside those areas it is on by default.</li>
+<li><strong>Play Install Referrer</strong>: tells which ad or link the install came from; it is read once.</li>
+</ul>
+
 <h3>Purchases (Google Play)</h3>
-<p>In-app purchases (remove ads, coins, packs, season pass) are processed by Google Play Billing. Google handles the payment and tells us only which product was bought, with an order identifier, so we can deliver it. We never see your payment details. For refunds use Google Play → Order history.</p>
+<p>In-app purchases (remove ads, coins, packs, skins, the season pass and the Teselo Club subscription) are processed by Google Play Billing. Google handles the payment and tells us which product was bought, with an order identifier, so we can deliver it. We never see your payment details. Refunds and cancelling the subscription are requested in Google Play → Order history / Subscriptions.</p>
+
+<h3 id="en-bugs">Bug reports</h3>
+<p>Some versions include a bug-report button. Nothing is sent unless you tap it. It carries the text you write (up to 1,000 characters), the last lines of the game's log (keys and tokens blanked out) and a technical summary (version, screen, level, coins, lives, screen size). It may carry a capture of the game board (on by default, you can remove it, it is not a system screenshot) and an image you pick yourself. We keep the newest 500 reports and delete the images after 30 days.</p>
 
 <h3>What we do not do</h3>
 <ul>
-<li>We do not ask for your name, email, contacts, photos, precise location, microphone or camera.</li>
-<li>We do not sell data. We use no analytics of our own and no other ad networks.</li>
+<li>We do not ask for your real name, email, contacts, precise location, microphone or camera.</li>
+<li>We do not sell data. We use no other ad networks.</li>
 </ul>
 
-<h3>Legal basis, retention and your rights</h3>
-<p>Personalized ads rely on your consent; non-personalized ads, fraud prevention and purchases rely on our legitimate interest and on performing the purchase contract. We keep only the ranking data described below; Google keeps its data under its own policy. You can exercise your rights of access, rectification, erasure, objection, restriction and portability by writing to the contact email, and you can complain to the Spanish Data Protection Agency (<a href="https://www.aepd.es">aepd.es</a>) or your local authority.</p>
+<h3>Legal basis and your rights</h3>
+<p>Personalized ads and the statistics in the EU rely on your consent; non-personalized ads, fraud prevention and purchases rely on our legitimate interest and on performing the purchase contract; the ranking, teams and keeping your progress rely on providing the service you use by playing. Google keeps its data under its own policy.</p>
+<p>You can exercise your rights of access, rectification, erasure, objection, restriction and portability, and withdraw your consent, by writing to <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a> with your nickname (shown in Ranking → Profile). We answer within one month at most. You can complain to the Spanish Data Protection Agency (<a href="https://www.aepd.es">aepd.es</a>) or your local authority. Google may process data outside the EU under its own safeguards.</p>
 
 <h3>Age</h3>
-<p>Teselo is meant for adults (18+). It is not designed for children and we do not knowingly collect data from minors.</p>
+<p>Teselo has content suitable for all audiences (PEGI 3), but it includes purchases of random items and ads, and it is meant for adults (18+). It is not directed at children under 13 and we do not knowingly collect their data; if you know of a case, write to us and we will delete that data.</p>
 
 <h3>Changes</h3>
 <p>If this policy changes, the new version will be posted on this page with its date.</p>
-
-<h3 id="en-ranking">Ranking and leagues (added 26-10-2026)</h3>
-<p>When online, the game (web and Android) sends to our ranking server, hosted in the EU (Render, Frankfurt):</p>
-<ul>
-<li>a random anonymous identifier created on your device and a key used to sign what it sends;</li>
-<li>your nickname (generated for you and editable; do not use your real name) and, unless you turn it off, your country flag derived from the device language;</li>
-<li>your daily-challenge scores with the move list of that game (the server replays it to check the score) and your weekly league points.</li>
-</ul>
-<p>Other players see your nickname, flag and scores. Your IP address is only used to limit abuse and we do not store it (the hosting provider may keep it in technical logs for a limited time). We ask for no email or other data.</p>
-<p>You can leave the tables in Ranking → Profile → "Hide me from the ranking": scores stop being sent and your row disappears from the public tables. To delete your data, email us with your nickname. Legal basis: providing the ranking you use by playing. Retention: while the service runs or until you ask for deletion.</p>
-<p>The ranking and the leagues <strong>include CPU rivals</strong>: players simulated by the game so there is always someone to compete with. They are marked with a small icon. Full terms: <a href="terms.html">terms.html</a>.</p>
 </section>
 </main>
 </body>
