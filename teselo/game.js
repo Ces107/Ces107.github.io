@@ -1,5 +1,5 @@
-/* Teselo 0.10.5 | (c) Cesar Pereiro | code and sounds original; third-party art credited in gamekit/CREDITS.md */
-window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
+/* Teselo 0.10.6 | (c) Cesar Pereiro | code and sounds original; third-party art credited in gamekit/CREDITS.md */
+window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.6";
 
 /* ---- gamekit/meta/util.js ---- */
 /* gamekit util: seeded RNG, string hash, calendar days, deep merge. Platform layer: no game code. */
@@ -954,7 +954,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     // ---- cosmetics: provided by the game (price: coins | iap: product id | passOnly | starterOnly) ----
     skins: [],
 
-    // ---- chests: EARNED by play only, never sold (0.10.5 Golpe de Suerte: meta/drops.js, the block below) ----
+    // ---- chests: earned by play (0.10.5 Golpe de Suerte: meta/drops.js, the block below); 0.10.6: chests.shop sells some ----
     chests: {
       slots: 3,              // slot chests (Plata+ from long-cycle sources), then chests.queue, then the Botín (RND-PLAN §3.14)
       // rarity tiers: common / rare / epic / legendary (colours in shell/fun.css)
@@ -979,8 +979,9 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       //      The keys above that it replaces (types, order, lucky) go with the last UI reader of the old
       //      slot code (RND-PLAN §10.1). Any change to step, petOdds, contents, fallback, escaparate or pass
       //      bumps oddsVersion and adds an oddsLog row: test/drops.test.js pins them. oddsDate = the release day (lead).
-      oddsVersion: 5, oddsDate: '',
-      oddsLog: [{ v: 5, date: '', es: 'Cada cofre sube: 20 % / 8 % / 5 % por toque', en: 'Every chest climbs: 20 % / 8 % / 5 % a tap' }],
+      oddsVersion: 6, oddsDate: '',
+      oddsLog: [{ v: 5, date: '', es: 'Cada cofre sube: 20 % / 8 % / 5 % por toque', en: 'Every chest climbs: 20 % / 8 % / 5 % a tap' },
+        { v: 6, date: '', es: 'Vuelven los cofres de la tienda: cofres, sobres, carta de mascota y oferta sorpresa por monedas', en: 'Shop chests are back: chests, packs, a pet card and a surprise offer for coins' }],
       step: [0.20, 0.08, 0.05],                      // chance a tap climbs from Madera / Plata / Oro (one step per tap, only up)
       taps: { base: 3, day: 4, quests: 4, cap: 5, dayCap: 6 },   // caps before the ad tap; quests = the all-daily-quests drop
       // the daily road: wins 1-3 (a won level or a finished game of a mode in `modes`; replays count) drop a Madera (lucky
@@ -1005,7 +1006,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       // a chest never shows a locked item: what it pays instead (per unit). livesMin: a game without lives (live.lives.on
       // false: Atascazo, Hilvana) gets 1 coin a minute (Oro 15, Cristal 60: the size of a Madera coin roll; the 5 coins-eq
       // of RND-PLAN §3.6 added ~50 coins a day to those games' free income, pass.test economy bound)
-      fallback: { cromo: { coins: 10 }, sobre_bronce: { basic: 1 }, sobre_plata: { coins: 40 }, pet: { coins: 25 }, power: { basic: 1 }, prelevel: { basic: 1 },
+      fallback: { cromo: { coins: 10 }, sobre_bronce: { basic: 1 }, sobre_plata: { coins: 40 }, sobre_oro: { coins: 100 }, pet: { coins: 25 }, power: { basic: 1 }, prelevel: { basic: 1 },
         livesMin: { coins: 1 } },
       slotCoins: 2, timers: { 1: 60, 2: 180, 3: 360 }, queue: 6, botinMax: 20,   // slot chests: coins x2, timer (min) by final tier
       clock: { on: true, hours: 8, bank: 1, fromDay: 2 },          // Botín del reloj
@@ -1021,25 +1022,39 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       // pass previews: rolled at season start, shown face up (premium Oro / Cristal rows, free Plata rows)
       pass: {
         premium: { 2: { coins: 180, power: 1, basic: 1, pet: 1 }, 3: { coins: 450, power: 2, prelevel: 1, pet: 2, petFloor: 2, livesMin: 60, cromo: 3 } },
-        free: { 1: { coins: 90, basic: 1, pet: 1 } } }
+        free: { 1: { coins: 90, basic: 1, pet: 1 } } },
+      // ---- 0.10.6 LOOT BOXES (César, 3 Nov: "random offers, random items, the pets, the cromos"): the Tienda's "Cofres"
+      //      block sells random items for COINS (coins can be bought, so each one is a paid random item: PEGI 16). Logic:
+      //      meta/drops.js P.drops.shop / shopOdds / buyShop; UI: shell/lootshop-ui.js. Everything is drawn AT PURCHASE with
+      //      exactly the published odds (shopOdds = the odds sheet before the buy = Info = terms.html) and granted at once;
+      //      the opener only plays it. Bought chests climb with chests.step, outside the climb pity, with no ad / extra tap
+      //      and no gacha pull. Prices divide the coin packs (CPC P3: no leftover trap) and cost ~0.5-4 days of free income
+      //      (economy.test). Any change here bumps oddsVersion (drops.test pins the shop too).
+      //   off: device regions (the locale's region) with paid randomness switched off (RND-legal §7: Brazil); on false = off
+      //   pity: a bought chest with no Épica+ pet card and no 4★+ cromo counts; the `every`-th in a row gets an Épica+ pet
+      //         card (before pets unlock: a 4★+ cromo). Any hit resets it
+      shop: { on: true, unlock: 'cromos', off: ['BR'], pity: { every: 10 },
+        chests: [
+          { id: 'plata', start: 1, taps: 4, price: 500 },
+          { id: 'oro', start: 2, taps: 4, price: 1000 },
+          { id: 'cristal', start: 3, taps: 0, price: 2000 },
+          { id: 'mascotas', start: 1, taps: 5, price: 800, unlock: 'pets', table: 'pets' }],
+        // contents by FINAL tier (the shape of chests.contents; pet rarity = chests.petOdds of the tier)
+        contents: {
+          1: { coins: 100, basic: 1, pet: 1, roll: [{ w: 40, cromo: 2 }, { w: 35, sobre: 'bronce' }, { w: 25, power: 1 }] },
+          2: { coins: 350, basic: 1, power: 1, pet: 2, petFloor: 1, roll: [{ w: 35, sobre: 'plata' }, { w: 30, cromo: 4 }, { w: 20, livesMin: 30 }, { w: 15, prelevel: 1 }] },
+          3: { coins: 800, basic: 2, power: 3, pet: 3, petFloor: 2, prelevel: 'each', sobre: 'oro' } },
+        pets: { 1: { coins: 50, pet: 2 }, 2: { coins: 100, pet: 3, petFloor: 1 }, 3: { coins: 200, pet: 5, petFloor: 2 } },
+        // cromo sobres: drawn at purchase by the album (cfg.live.album packs, star odds, 4★ / 5★ protection, 5★ pity)
+        sobres: [{ id: 'bronce', price: 200 }, { id: 'plata', price: 400 }, { id: 'oro', price: 1000 }],
+        // the mystery pet card: one card, rarity common / rare / epic / legendary (%)
+        card: { price: 250, unlock: 'pets', odds: [70, 22, 7, 1] },
+        // the Oferta sorpresa: `perDay` a day, `price` coins roll one bundle (w = chance weight); the card shows each
+        // bundle's real discount vs the cheapest booster of its class (Teselo 240 / 320: -10 / -25 / -50 / -75 %; mean value
+        // 1.46x the price: a treat, not a cheaper booster shop)
+        sorpresa: { price: 1000, perDay: 1, bundles: [
+          { w: 50, basic: 2, power: 2 }, { w: 30, basic: 3, power: 2 }, { w: 15, basic: 4, power: 3, coins: 100 }, { w: 5, basic: 6, power: 6, coins: 700 }] } }
     },
-
-    // ---- chest shop: chests bought with COINS (soft currency; never with real money directly). Coins can be bought,
-    //      so each tier is a randomized item: its drop table is shown before buying (Play "loot box" odds disclosure),
-    //      contents are in-game items only (coins, boosters), the reveal shows the real outcome (no near-miss).
-    //      Expected value (boosters at their coin price) rises slightly with the tier; MONETIZATION.md addendum E.
-    //      A free player (~350 coins/day) affords the small one every 1-2 days; the big ones take weeks or bought coins.
-    chestShop: [
-      { id: 'small', art: 'wood', price: 450, drops: [
-        { w: 60, coins: 120, boosters: 1 }, { w: 25, coins: 100, boosters: 2 }, { w: 15, coins: 450, boosters: 0 }] },
-      { id: 'big', art: 'silver', price: 1500, drops: [
-        { w: 60, coins: 280, boosters: 4 }, { w: 25, coins: 150, boosters: 6 }, { w: 15, coins: 900, boosters: 2 }] },
-      // epic 4500 (liveops v6: free income rose ~+45 coins/day; drops scaled with the price so the coin value holds)
-      { id: 'epic', art: 'gold', price: 4500, drops: [
-        { w: 60, coins: 620, boosters: 13 }, { w: 28, coins: 450, boosters: 18 }, { w: 12, coins: 2250, boosters: 9 }] },
-      { id: 'legendary', art: 'crystal', price: 9000, drops: [
-        { w: 60, coins: 1200, boosters: 28 }, { w: 30, coins: 1000, boosters: 36 }, { w: 10, coins: 6000, boosters: 14 }] }
-    ],
 
     // ---- streak (Duolingo-style flame) ----
     streak: {
@@ -2797,7 +2812,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     client_error: function (p, o) { return [1, verKey(o, p.kind === 'unhandledrejection' ? 'r' : 'e')]; },
     game_error: function (p, o) { return [1, verKey(o, 'g')]; },
     first_open: function () { return [0, '']; },
-    session_start: function (p) { return [p.gap | 0, '']; },
+    session_start: function (p) { return [int(p.gap), '']; },
     level_complete: function (p) { return [p.level | 0, String(p.stars | 0)]; },
     level_fail: function (p) { return [p.level | 0, '']; },
     ad_shown: function (p) { return [0, p.type === 'rewarded' ? 'r' : 'i']; },
@@ -2819,6 +2834,9 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     chest_skip: function (p) { return [int(p.coins), String(int(p.final))]; },                 // n = coins (0 = ad), k = final tier
     clock_claim: function (p) { return [int(p.hours), p.how === 'ad' ? 'ad' : 'free']; },     // n = hours since ready
     escaparate: function (p) { return [int(p.price), String(p.what || '').slice(0, 12)]; },   // k = climb:<final> | buy:<final>
+    // 0.10.6 LOOTBOX (meta/drops.js buyShop): n = the coin price, k = item:outcome (chest final tier, sobre best star, carta
+    // rarity 0-3, sorpresa bundle index), so HQ can hold the outcome shares against the published odds
+    loot_buy: function (p) { return [int(p.price), String(p.what || '').slice(0, 16)]; },
     pet_card: function (p) { return [int(p.rarity) * 10 + (p.isNew ? 1 : 0), String(p.src || '').slice(0, 12)]; },
     album_set: function (p) { return [int(p.set), String(int(p.season))]; },
     shop_open: function () { return [0, '']; },
@@ -3392,7 +3410,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  *     its fixed preview bundle). o { src, taps }. -> { id, kind } | null
  *   meta.canDailyGift/claimDailyGift(booster), meta.canShopCoins/claimShopCoins(), meta.canRepairStreak/repairStreak()
  *   meta.unlocked(feature, {level, games}), meta.starterOpen(level, games), meta.passProductId()
- * The 0.10.4 slot readers below (chestState ... buyChest) see an empty `chests` array (drops.js moved it, RND-PLAN §10.1);
+ * The 0.10.4 slot readers below (chestState ... coinSkip) see an empty `chests` array (drops.js moved it, RND-PLAN §10.1);
  * they go with their last UI caller (wave 2 BLACKBOARD, DROPS-CORE).
  */
 (function (root) {
@@ -3638,7 +3656,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       // tiers bought with coins (0.9.0 L, Fortnite style): a flat price, one tier per buy, only the pass moves (its XP grows
       // by one tier, the progress inside the tier is kept); the player level and the weekly league never see it. Online
       // only (like every pass reward), never past the last tier
-      tierPrice: function () { return Math.max(0, cfg.pass.tierCoins | 0); },
+      tierPrice: function () { return Math.max(0, Math.trunc(+cfg.pass.tierCoins || 0)); },
       canBuyTier: function () { meta.refresh(); return meta.tierPrice() > 0 && meta.passTier() < cfg.pass.tiers && rok(); },
       buyTier: function () {
         if (!meta.canBuyTier()) return null;
@@ -3713,32 +3731,11 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
         track('chest_skip', { type: c.type, coins: cost });
         return true;
       },
-      // chest shop (bought with coins): the drop table of a tier, as shown in its odds sheet
-      shopChest: function (id) { return (cfg.chestShop || []).find(function (t) { return t.id === id; }) || null; },
-      shopOdds: function (id) {
-        const t = meta.shopChest(id);
-        if (!t) return [];
-        const sum = t.drops.reduce(function (a, d) { return a + d.w; }, 0);
-        return t.drops.map(function (d) { return { p: d.w / sum, coins: d.coins || 0, boosters: meta.boosterSplit(d.boosters || 0, 0) }; });
-      },
-      // n boosters spread over the game's booster order, starting at `from` (fixed rule, shown in the odds sheet)
+      // n boosters spread over the game's booster order, starting at `from` (fixed rule: league prizes)
       boosterSplit: function (n, from) {
         const order = cfg.chests.boosterOrder, b = {};
         for (let k = 0; k < n && order.length; k++) { const id = order[(k + (from || 0)) % order.length]; b[id] = (b[id] || 0) + 1; }
         return b;
-      },
-      // buy a shop chest with coins and open it at once. r: random number in [0, 1) (tests pass it). The outcome is
-      // drawn here, before any animation, with exactly the odds of shopOdds(id)
-      buyChest: function (id, r) {
-        const t = meta.shopChest(id);
-        if (!t || !eco.spend(t.price, 'chest_shop_' + id)) return null;
-        const odds = meta.shopOdds(id), x = r == null ? Math.random() : r; let k = 0;
-        for (let acc = 0; k < odds.length - 1; k++) { acc += odds[k].p; if (x < acc) break; }
-        const o = odds[k], got = eco.grant({ coins: o.coins, boosters: o.boosters }, 'chest_shop_' + id);
-        track('chest_buy', { tier: id, price: t.price, outcome: k, coins: o.coins });
-        got.chestType = t.art; got.from = t.art; got.lucky = false; got.shop = id; got.outcome = k;
-        if (deps.onChest) deps.onChest(got, { kind: 'shop', id: id, type: t.art });   // 0.9.0 B: pet cards ride in got.pets
-        return got;
       },
       // fixed contents: exactly what the chest card shows (no randomness anywhere)
       chestContents: function (type) {
@@ -7749,6 +7746,8 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  *   perSeason, left, can } | null). Face-up sobres (the essence shop, RND-PLAN §8.1): A.face(sobre, key) -> [{ id, stars }]
  *   drawn on seed key without booking (A.face(null, key, n): n loose cards, the Escaparate / pass cromos); A.faceInSet(set, minStars, key) -> { id, stars } one card of a set the same way (the
  *   essence-shop banner item); A.grantFixed(ids, source) books exactly those -> [card] (best last)
+ *   A.drawNow(spec, source)    0.10.6: a BOUGHT sobre / cromos (the Tienda, meta/drops.js buyShop): spec { sobre } | { cards, min }
+ *                              drawn and booked at the purchase with the draws of open() -> { sobre, source, cards } | null
  *   A.claimable()              -> { sets: [s...], album: bool }
  *   A.claimSet(set), A.claimAlbum() -> got (through the director; the album prize goes in the jackpot lane) or null
  *   A.badges()                 -> season numbers whose album was completed (kept across seasons)
@@ -7761,8 +7760,9 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  *          simDay              opens every pack, claims prizes, trades repes (plata at 70, oro at 180)
  *
  * Honesty: every draw follows A.odds() exactly (rarity by the published %, then a uniform card of that rarity; a pack's
- * guaranteed slot draws from the same odds restricted to its minimum rarity). Cards come only from earned rewards (the
- * director) and the repes exchange: never from money, never from the coin chest shop.
+ * guaranteed slot draws from the same odds restricted to its minimum rarity). Cards come from earned rewards (the
+ * director), the repes exchange and, from 0.10.6, the Tienda's coin sobres and shop chests (drawNow); never for real money
+ * directly.
  */
 (function (root) {
   'use strict';
@@ -7776,6 +7776,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
 
   // ---------- cards ----------
   function cid(s, c) { return s + '-' + c; }
+  function bestLast(a, b) { return a.stars - b.stars || (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0); }   // a pack's reveal order
   function parse(id) { const p = String(id).split('-'); return { set: +p[0], idx: +p[1] }; }
   function create(ctx) {
     const P = ctx.P;
@@ -7933,7 +7934,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     function mins(item) {
       const out = [], pack = item.sobre && C.packs && C.packs[item.sobre];
       if (pack) { out.push(pack.minStars || 1); for (let k = 1; k < (pack.cards || 1); k++) out.push(1); }
-      for (let j = 0; j < (item.loose || 0); j++) out.push(1);
+      for (let j = 0; j < (item.loose || 0); j++) out.push(j === 0 && item.min > 1 ? item.min : 1);   // min: the first loose card's floor
       return out;
     }
     function valid(id) { const p = parse(id); return p.set >= 0 && p.set < SETS && p.idx >= 0 && p.idx < PER && cid(p.set, p.idx) === String(id); }
@@ -8011,6 +8012,21 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       for (let k = 0; k < item.n; k++) out.push({ sealed: true, pack: item.id });
       return out;
     }
+    // 0.10.6 (the Tienda's bought sobres and shop-chest cromos, meta/drops.js buyShop): drawn and booked NOW, at the
+    // purchase, with the very draws of a pack the player opens (star odds, guaranteed slot, 4★ / 5★ protection, 5★ pity).
+    // spec { sobre } | { cards: n, min? (the first card's floor) } -> { sobre, source, cards (best last) } | null
+    function drawNow(spec, source) {
+      if (!unlocked()) return null;
+      ensure();
+      const s0 = spec || {}, sobre = s0.sobre && C.packs && C.packs[s0.sobre] ? s0.sobre : null;
+      const out = mins({ sobre: sobre, loose: Math.max(0, Math.floor(+s0.cards || 0)), min: Math.floor(+s0.min || 0) }).map(function (min) { return book(drawOne(min)); });
+      if (!out.length) return null;
+      out.sort(bestLast);
+      ctx.track('album_cards', { source: source || '', sobre: sobre || '', n: out.length, fresh: out.filter(function (c) { return c.isNew; }).length, best: out[out.length - 1].stars });
+      ctx.emit('cards', out);
+      ctx.commit();
+      return { sobre: sobre, source: source || '', cards: out };
+    }
     // EXACTLY ONCE: the item leaves the inventory in the same synchronous step that books its cards (one commit).
     // batch (openAll): the event and the save write happen once, after the last pack
     function open(id, batch) {
@@ -8023,8 +8039,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       if (item.drawn) out = item.drawn;   // a 0.10.2 pack: drawn and booked back then, only its reveal was left
       else {
         out = mins(item).map(function (min) { return book(drawOne(min)); });
-        // reveal order: the best card last
-        out.sort(function (a, b) { return a.stars - b.stars || (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0); });
+        out.sort(bestLast);   // reveal order: the best card last
       }
       ctx.track('album_cards', { source: item.source, sobre: item.sobre || '', n: out.length, fresh: out.filter(function (c) { return c.isNew; }).length,
         best: out.length ? out[out.length - 1].stars : 0 });
@@ -8130,6 +8145,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       face: face,
       faceInSet: faceInSet,
       grantFixed: grantFixed,
+      drawNow: drawNow,
       comodin: comodin,
       comodinInfo: wildInfo,
       packs: function () {
@@ -12538,7 +12554,9 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       if (f.coins) out.push({ k: 'coins', n: f.coins, text: Lang.fmt(L.coins, { n: f.coins }) });
       if (!boss) {
         HOOKS.forEach(function (k) { if (f[k]) out.push({ k: k, n: k === 'hand' ? f[k] : f[k].p, v: f[k], text: hookText(L, k, f[k]) }); });
-        if (f.find) out.push({ k: 'find', n: f.find, text: Lang.fmt(L.find, { k: f.find }) });
+        // levelFx carries find as { every, have } (fxOf as the number): the picker showed "1/[object Object]" (0.10.6 UX)
+        const fk = f.find && typeof f.find === 'object' ? f.find.every : f.find;
+        if (fk) out.push({ k: 'find', n: fk, text: Lang.fmt(L.find, { k: fk }) });
       }
       for (const l of out) l.short = shortOf(l);
       return out;
@@ -13359,31 +13377,45 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  *                              kind a fallback replaces; each = one of every item of the kind. k coins | cromo | sobre (sub
  *                              bronce | plata) | basic | power | prelevel | livesMin | pet (odds = chests.petOdds[tier], floor
  *                              1 = at least one Rara+, 2 = Épica+)
+ *   0.10.6 LOOT BOXES (César, 3 Nov; cfg.chests.shop): the Tienda's random items for coins, each drawn AND granted at the
+ *   purchase with exactly the odds shopOdds() publishes (the opener only plays the result). The gate: shop.on, the shop
+ *   unlock, shop.off (the device region, P.region() when the host sets it).
+ *   P.drops.shop()             -> { pity: { every, dry, left } | null, items: [odds view] } | null (gate closed)
+ *   P.drops.shopOdds(id)       -> the odds view of one item on sale | null. kind 'chest' { id, start, taps, pets, price, tiers:
+ *                              [M, P, O, C], contents: { tier: contents() shape }, pity } (ids plata / oro / cristal / mascotas) |
+ *                              'sobre' { id: 'sobre_<pack>', sobre, price, pack, stars, protect, pity5 } (album.odds()) | 'card'
+ *                              { id: 'carta', price, item, pets: P.pets.oddsItem(item) } | 'sorpresa' { price, left, bundles:
+ *                              [{ w, p, items, value, off }] } (value: coins + boosters at their class's cheapest price; off %)
+ *   P.drops.buyShop(id)        coins -> the draw, granted now: { kind, id, k, got, ... } (chest + start, final, path, forced (the
+ *                              shop pity gave its Épica+); sobre + entry (album.drawNow); sorpresa + off, items) | null (short
+ *                              of coins, not on sale, no Oferta sorpresa left today). Shop pity: a chest without an Épica+ pet
+ *                              card or a 4★+ cromo counts, the shop.pity.every-th in a row gets one (forceTop); a hit resets it
  *   P.on('drops', fn(kind, data))   'award' { id, kind, start, taps, src } | 'open' { id, start, final, src, auto, got } (auto =
  *                              a Botín past botinMax opened its oldest: the UI toasts got's chips) | 'adtap' { id,
  *                              up, final } | 'reveal' { i, id, final } | 'collect' { i, id } | 'clock' { how, id } | 'esc'
- *                              { what: 'climb' | 'buy', final }
+ *                              { what: 'climb' | 'buy', final } | 'shop' { id, kind, k }
  *   P.on('chest', fn(got, o))  every reveal that can carry the gacha pull (drop, slot): o { kind, tier, type, src }. Not for
- *                              the Escaparate nor pass previews (bought, so nothing random may ride them)
+ *                              the Escaparate, pass previews nor the shop's bought items (only their published odds ride them)
  *   live hooks: onFinished = the daily road (a won level or a finished daily: wins 1-3 drop Madera (lucky start Plata / Oro),
  *                              win 4 is the Cofre del día; hard / super-hard wins add taps, banked by a win without a drop)
  *                              -> out.live.drops = { wins, pip: { id, start, taps, extra } | null, banked }; tick = the clock
  *                              and the slot timers (online only); init = the 0.10.4 migration, once.
  *
  * Save: P.data.live.drops (defaults() below). Honesty: no table here reads spend, segment, pets or ad value (RND-PLAN §3.2,
- * PETS-DESIGN §5.4); a pass preview and the Escaparate bundle are fixed before anything is bought (RND-PLAN §8.1).
+ * PETS-DESIGN §5.4); a pass preview and the Escaparate bundle are fixed before anything is bought (RND-PLAN §8.1); a shop
+ * item rolls at its purchase on the published table only (test/drops.test.js, 0.10.6).
  */
 (function (root) {
   'use strict';
   const TIERS = ['wood', 'silver', 'gold', 'crystal'];
   const TOP = 3, MAXU = 6;
-  const OUTSIDE = { esc: 1, pass: 1, gordo: 1 };   // no climb pity, no ad tap, no extras (RND-PLAN §3.11, §5.3)
+  const OUTSIDE = { esc: 1, pass: 1, gordo: 1, shop: 1 };   // no climb pity, no ad tap, no extras (RND-PLAN §3.11, §5.3; 0.10.6 bought chests)
   const FEEDERS = ['streaks', 'deals', 'ftue'];   // live modules with a dropSpec(spec) hook (FEEDERS, wave 2 BLACKBOARD)
   const LUCKY_0104 = { wood: 0.05, silver: 0.06, gold: 0.03 };   // the 0.10.4 chests.lucky, frozen for the migration
   const RARITY = ['common', 'rare', 'epic', 'legendary'];   // pet card rarity -> 0-3 (pet_card analytics)
   const KEYS = ['coins', 'cromo', 'sobre', 'basic', 'power', 'prelevel', 'livesMin', 'pet'];   // item order in a reveal
   const API = ['award', 'drop', 'state', 'path', 'open', 'adTap', 'declineAd', 'revealSlot', 'slot', 'skipSlot', 'collectSlot',
-    'claimClock', 'esc', 'climbEsc', 'buyEsc', 'passBundle', 'moment', 'odds', 'contents'];
+    'claimClock', 'esc', 'climbEsc', 'buyEsc', 'passBundle', 'moment', 'odds', 'contents', 'shop', 'shopOdds', 'buyShop'];
 
   function defaults() {
     return {
@@ -13398,9 +13430,28 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       adTap: { day: '', views: 0, offers: 0, declines: 0, firstFree: true },
       skips: { day: '', n: 0 },                // slot "Abrir ya" by ad today
       esc: { day: '', u: [], final: null, bundle: null, bought: false },
-      pass: { season: -1, b: {} }              // pass previews of this season, fixed when first shown ('row:tier:at' -> items)
+      pass: { season: -1, b: {} },             // pass previews of this season, fixed when first shown ('row:tier:at' -> items)
+      shop: shopDefaults()                     // 0.10.6 the Tienda's random items: purchases, the shop pity, the Oferta sorpresa today
     };
   }
+  function shopDefaults() { return { seq: 0, dry: 0, n: 0, sorpresa: { day: '', n: 0 } }; }
+  // the device's region (the locale's region subtag: 'pt-BR' -> 'BR'), '' when unknown: the paid-random gate (shop.off)
+  function regionOf(nav) {
+    if (!nav) return '';
+    const first = Array.isArray(nav.languages) ? nav.languages[0] : '';
+    const m = /[-_]([A-Za-z]{2})(?:$|[-_])/.exec(String(nav.language || first || ''));
+    return m ? m[1].toUpperCase() : '';
+  }
+  function isCard(it) { return it.k === 'cromo' || it.k === 'sobre'; }
+  // a bought chest's hit for the shop pity: an Épica+ pet card or a 4★+ cromo
+  function hitOf(got) {
+    return (got.pets || []).some(function (c) { return c.rarity === 'epic' || c.rarity === 'legendary'; }) ||
+      (got.cromos || []).some(function (c) { return c.stars >= 4; });
+  }
+  function cardSpec(it) { return it.k === 'sobre' ? { sobre: it.sub } : { cards: it.n, min: it.min }; }
+  // what one bundle of the Oferta sorpresa is worth in coins (boosters at the cheapest shop price of their class: the
+  // discount it shows only ever understates) and that discount, floored to 5 % steps
+  function offOf(value, price) { return value > price ? Math.floor((1 - price / value) * 20) * 5 : 0; }
 
   function num(x, d) { const v = +x; return Number.isFinite(v) ? v : d; }
   function copy(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
@@ -13562,8 +13613,8 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     if (o && o.slot) out.forEach(function (it) { if (it.k === 'coins') it.n *= num(C.slotCoins, 1); });
     return out;
   }
-  function contentsOf(P, C, tier, o) {
-    const t = tierOf(tier), row = (C.contents || {})[t] || {};
+  // a content row (fixed keys + one `roll` pick) of tier t, resolved
+  function rowOf(P, C, row, t, o) {
     const roll = Array.isArray(row.roll) ? row.roll : [], sum = roll.reduce(function (a, r) { return a + num(r.w, 0); }, 0) || 1;
     return {
       tier: t,
@@ -13571,6 +13622,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       roll: roll.map(function (r) { return { w: num(r.w, 0), p: num(r.w, 0) / sum, items: resolveItems(P, C, rawItems(r, t, C), o) }; })
     };
   }
+  function contentsOf(P, C, tier, o) { const t = tierOf(tier); return rowOf(P, C, (C.contents || {})[t] || {}, t, o); }
   // a face-up bundle's cromos (Escaparate, pass): exactly the cards it showed, booked now (nothing drawn at the buy)
   function fixedCards(A, it, src) {
     return it.k === 'cromo' && Array.isArray(it.ids) && A && typeof A.grantFixed === 'function' ? A.grantFixed(it.ids, 'chest_' + src) : null;
@@ -13739,7 +13791,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       if (Object.keys(plan).length) reward.boosters = plan;
       Object.keys(pre).forEach(function (id) { P.prelevel.add(id, pre[id], 'chest_' + info.src); });
       if (Object.keys(pre).length) got.prelevel = pre;
-      return { ...got, ...P.eco.grant(reward, 'chest_' + TIERS[info.tier]) };
+      return { ...got, ...P.eco.grant(reward, info.gsrc || 'chest_' + TIERS[info.tier]) };   // gsrc: a bought item's own source
     }
     function payPets(items, info) {
       const out = [];
@@ -13848,6 +13900,116 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     }
     // a 0.10.4 pass / paid chest (migration): the premium preview of its tier, the bundle a 0.10.5 paid source gets
     function paidBundle(tier) { return fixedBundle('premium', tier, 0).items; }
+
+    // ---------- 0.10.6 the Tienda's random items (cfg.chests.shop; RND-legal §3 / §4 / §7) ----------
+    // Each one is drawn AND granted at the purchase with exactly the odds shopOdds() publishes (the odds sheet before the
+    // buy, Info, terms.html); the opener only plays the result. Chests climb with chests.step from their start (src 'shop':
+    // outside the climb pity, no ad tap, no extras, no gacha pull). The shop pity counts bought chests
+    function SH() { return C().shop || {}; }
+    function shopSave() {
+      const s = S();
+      if (!s.shop) s.shop = shopDefaults();
+      return s.shop;
+    }
+    function region() { return typeof P.region === 'function' ? String(P.region() || '').toUpperCase() : regionOf(root.navigator); }
+    function paidOk() { const H = SH(); return H.on !== false && P.unlocked(H.unlock || 'cromos') && !(H.off || []).includes(region()); }
+    function albumOn() { const A = ctx.get('album'); return A && A.unlocked && A.unlocked() && typeof A.drawNow === 'function' ? A : null; }
+    function petsOn() { return !!(P.pets && P.pets.on && P.pets.on() && typeof P.pets.drawItem === 'function'); }
+    function itemOk(o) { return !!o && (!o.unlock || (o.unlock === 'pets' ? petsOn() : P.unlocked(o.unlock))); }
+    function shopRow(ch, t) { const H = SH(); return ((ch.table === 'pets' ? H.pets : H.contents) || {})[t] || {}; }
+    function shopPity() {
+      const e = Math.max(0, Math.floor(num((SH().pity || {}).every, 0))), dry = shopSave().dry;
+      return e ? { every: e, dry: dry, left: Math.max(1, e - dry) } : null;
+    }
+    // the shop pity's guarantee on this purchase: the first pet card at Épica+; with no pet card open, one 4★+ cromo more
+    function forceTop(items) {
+      const pet = items.find(function (it) { return it.k === 'pet'; });
+      if (pet) { pet.floor = Math.max(num(pet.floor, 0), 2); return true; }
+      if (!albumOn()) return false;
+      items.push({ k: 'cromo', n: 1, min: 4 });
+      return true;
+    }
+    // a bought item's contents: everything but cromos as an earned reveal pays them (no 'chest' event, no gacha pull), the
+    // cromos and sobres drawn now by the album (A.drawNow: the pack draws, protection and 5★ pity)
+    function payShop(items, info) {
+      const rest = items.filter(function (it) { return !isCard(it); }), got = payRest(rest, info), pets = payPets(rest, info), A = albumOn();
+      if (pets.length) got.pets = pets;
+      items.filter(isCard).forEach(function (it) {
+        const r = A ? A.drawNow(cardSpec(it), info.gsrc) : null;
+        if (r) got.cromos = [...(got.cromos || []), ...r.cards];
+      });
+      return got;
+    }
+    function chestOdds(ch) {
+      const cf = C(), start = tierOf(ch.start), taps = start >= TOP ? 0 : Math.max(1, Math.floor(num(ch.taps, 1))), tiers = oddsOf(cf, start, taps, false), contents = {};
+      tiers.forEach(function (p, t) { if (p > 0) contents[t] = rowOf(P, cf, shopRow(ch, t), t, null); });
+      return { kind: 'chest', id: ch.id, start: start, taps: taps, pets: ch.table === 'pets', price: num(ch.price, 0), tiers: tiers, contents: contents, pity: shopPity() };
+    }
+    function sobreOdds(sb) {
+      const A = albumOn(), o = A && A.odds ? A.odds() : null, pack = o && o.packs ? o.packs[sb.id] : null;
+      return pack ? { kind: 'sobre', id: 'sobre_' + sb.id, sobre: sb.id, price: num(sb.price, 0), pack: pack, stars: o.stars, protect: o.protect, pity5: o.pity5 } : null;
+    }
+    function cardOdds(cd) {
+      const item = { k: 'pet', n: 1, odds: [...(cd.odds || [1, 0, 0, 0])], floor: 0 };
+      return { kind: 'card', id: 'carta', price: num(cd.price, 0), item: item, pets: P.pets.oddsItem ? P.pets.oddsItem(item) : null };
+    }
+    function minPrice(cls) {
+      const price = (P.cfg.boosters && P.cfg.boosters.price) || {}, cf = C();
+      let ids = classIds(P, cf, cls);
+      if (!ids.length) ids = classIds(P, cf, 'basic');
+      return ids.length ? Math.min(...ids.map(function (id) { return num(price[id], 0); })) : 0;
+    }
+    function valueOf(items) {
+      return items.reduce(function (a, it) {
+        if (it.k === 'coins') return a + it.n;
+        return a + (it.k === 'basic' || it.k === 'power' ? it.n * minPrice(it.k) : 0);
+      }, 0);
+    }
+    function sorpresaLeft(so) { const r = today0(shopSave().sorpresa, ctx.today()); return Math.max(0, Math.floor(num(so.perDay, 1)) - (r ? r.n : 0)); }
+    function sorpresaOdds(so) {
+      const cf = C(), price = num(so.price, 0), L = so.bundles || [], sum = L.reduce(function (a, b) { return a + Math.max(0, num(b.w, 0)); }, 0) || 1;
+      const bundles = L.map(function (b) {
+        const items = resolveItems(P, cf, rawItems(b, 0, cf), null), value = valueOf(items);
+        return { w: num(b.w, 0), p: num(b.w, 0) / sum, items: items, value: value, off: offOf(value, price) };
+      });
+      return { kind: 'sorpresa', id: 'sorpresa', price: price, left: sorpresaLeft(so), bundles: bundles };
+    }
+    // every item on sale now (unlocked, gate open), cheapest kind first per block -> [odds view]
+    function shopList() {
+      if (!paidOk()) return [];
+      const H = SH(), out = [];
+      (H.chests || []).forEach(function (ch) { if (itemOk(ch)) out.push(chestOdds(ch)); });
+      if (albumOn()) (H.sobres || []).forEach(function (sb) { const o = sobreOdds(sb); if (o) out.push(o); });
+      if (H.card && itemOk(H.card) && petsOn()) out.push(cardOdds(H.card));
+      if (H.sorpresa && num(H.sorpresa.perDay, 1) > 0) out.push(sorpresaOdds(H.sorpresa));
+      return out;
+    }
+    function shopFind(id) { return shopList().find(function (o) { return o.id === id; }) || null; }
+    function buyChest(o, st) {
+      const cf = C(), ch = (SH().chests || []).find(function (x) { return x.id === o.id; });
+      const c = chestOf(cf, { start: ch.start, taps: ch.taps, src: 'shop' }, 'shop' + st.seq, ctx.rng('shop:' + st.seq), ctx.now()), w = walk(cf, c, false);
+      const cont = o.contents[w.tier], pick = pickRoll(cont.roll, ctx.rng('shopopen:' + st.seq)()), items = copy([...cont.items, ...(pick ? pick.items : [])]);
+      const forced = st.dry + 1 >= num((o.pity || {}).every, Infinity) && forceTop(items);
+      const got = payShop(items, { src: 'shop', tier: w.tier, start: c.start, kind: 'shop', key: c.id, gsrc: 'shop_' + o.id });
+      st.dry = hitOf(got) ? 0 : st.dry + 1;
+      Object.assign(got, { id: c.id, start: c.start, final: w.tier, path: w.taps, forced: forced, contents: items, chestType: TIERS[w.tier], from: TIERS[c.start], lucky: w.tier > c.start });
+      return { kind: 'chest', id: o.id, start: c.start, final: w.tier, path: w.taps, forced: forced, got: got, k: w.tier };
+    }
+    function buySobre(o) {
+      const r = albumOn().drawNow({ sobre: o.sobre }, 'shop_' + o.id), cards = r ? r.cards : [];
+      return { kind: 'sobre', id: o.id, entry: r, got: { cromos: cards }, k: cards.length ? cards[cards.length - 1].stars : 0 };
+    }
+    function buyCard(o) {
+      const pets = payPets([copy(o.item)], { src: 'shop' });
+      return { kind: 'card', id: o.id, got: { pets: pets }, k: pets.length ? Math.max(0, RARITY.indexOf(pets[0].rarity)) : 0 };
+    }
+    function buySorpresa(o, st) {
+      const b = pickRoll(o.bundles, ctx.rng('sorpresa:' + st.seq)()), k = o.bundles.indexOf(b), items = copy(b.items);
+      dayRec(st.sorpresa, ctx.today(), { n: 0 }).n++;
+      const got = payShop(items, { src: 'shop', tier: 0, start: 0, kind: 'shop', key: 'sor' + st.seq, gsrc: 'shop_sorpresa' });
+      return { kind: 'sorpresa', id: o.id, k: k, off: b.off, items: items, got: got };
+    }
+    const BUY = { chest: buyChest, sobre: buySobre, card: buyCard, sorpresa: buySorpresa };
 
     const D = {
       award: function (spec) {
@@ -14047,6 +14209,19 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       },
       odds: function (start, taps, forcedFirst) { return oddsOf(C(), start, taps, forcedFirst); },
       contents: function (tier, o) { return contentsOf(P, C(), tier, o); },
+      shop: function () { return paidOk() ? { pity: shopPity(), items: shopList() } : null; },
+      shopOdds: function (id) { return shopFind(id); },
+      buyShop: function (id) {
+        const o = shopFind(id), st = shopSave();
+        if (!o || (o.kind === 'sorpresa' && o.left <= 0) || o.price <= 0 || !P.eco.spend(o.price, 'shop_' + id)) return null;
+        st.seq++;
+        const res = BUY[o.kind](o, st);
+        if (o.kind === 'chest') st.n++;
+        track('loot_buy', { price: o.price, what: id + ':' + res.k });
+        ctx.commit();
+        P.emit('drops', 'shop', { id: id, kind: o.kind, k: res.k });
+        return res;
+      },
 
       // ---- live hooks ----
       init: function () {
@@ -14076,7 +14251,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
   }
 
   const M = { id: 'drops', conf: 'drops', defaults: defaults, create: create, TIERS: TIERS, API: API, migrate: migrate,
-    odds: oddsOf, chest: chestOf, walk: walk };
+    odds: oddsOf, chest: chestOf, walk: walk, regionOf: regionOf, offOf: offOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = M;
   else if (root.GamekitLive) root.GamekitLive.register(M);
 })(this);
@@ -16745,9 +16920,9 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
   function mergeConfig(platform, game) { return copasCoins(U.merge(platform, game, ['products', 'skins'])); }
   // 0.10.0 C: levels pay copas, not coins. The games' quest pools and pass free-row coin tiers keep their base numbers;
   // the merged config pays them x cfg.copas.questMult / passMult (fresh objects: the game's own config is never mutated)
+  function scale(r, m) { return r && r.coins > 0 && m !== 1 ? ({ ...r, coins: Math.round(r.coins * m / 5) * 5 }) : r; }   // a reward's coins x m, to 5
   function copasCoins(c) {
     const k = c.copas || {}, qm = k.questMult || 1, pm = k.passMult || 1;
-    const scale = function (r, m) { return r && r.coins > 0 && m !== 1 ? ({ ...r, coins: Math.round(r.coins * m / 5) * 5 }) : r; };
     if (c.quests && qm !== 1) { ['daily', 'weekly'].forEach(function (p) {
       if (Array.isArray(c.quests[p])) c.quests[p] = c.quests[p].map(function (q) { return { ...q, reward: scale(q.reward, qm) }; });
     }); }
@@ -17197,12 +17372,6 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
         if (ok) { save.commit(); emit('wallet'); }
         cb(ok);
       },
-      // r optional (tests). -> what was granted (+ chestType, shop, outcome) or null (not enough coins)
-      buyChest: function (id, r) {
-        const got = meta.buyChest(id, r);
-        if (got) { save.commit(); emit('wallet'); }
-        return got;
-      },
 
       // ---- boosters: the platform owns counts; the game owns the effect ----
       // cb(true) when one is available (owned, bought with coins, or earned with a rewarded ad)
@@ -17370,6 +17539,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  */
 (function (root) {
   'use strict';
+  function noop() { /* a default sfx hook: no sound */ }
   const Lang = root.GamekitLang || (typeof require === 'function' ? require('../meta/lang.js') : null);
 
   const TEXTS = {
@@ -17437,7 +17607,6 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     const BOOST = (opts.boosters && opts.boosters.ids) || [];
     if (opts.levels && opts.levels.count && P.setLevelCount) P.setLevelCount(opts.levels.count);   // liveops: "map done" rules
     const boostCol = function (id) { const c = opts.boosters && opts.boosters.colors; return (c && c[id]) || BOOST_COL[Math.max(0, BOOST.indexOf(id)) % BOOST_COL.length]; };
-    function noop() {}
     function difficulty(n) {
       const L = opts.levels, d = L && L.difficulty ? L.difficulty(n) : null;
       return DIFF[d] ? d : 'normal';
@@ -18288,7 +18457,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       needCoins: null,     // set by shell/offers-ui.js: fn(coins, { reason, retry }) buy-coins popup (store builds)
       chestTap: null,      // set by fun-ui: a chest slot was tapped (menu or quests sheet)
       oddsInfo: null,      // set by info-ui: the "Información sobre recompensas" popup (the Cofres odds + every `odds` section)
-      chestShopOpen: null, // set by chest-ui (0.10.5: no caller in the Tienda any more, the chest shop is gone)
+      chestShopOpen: null, // set by lootshop-ui (0.10.6): fn(id) the odds sheet of a Tienda random item, its buy button last
       freeChestCard: null, // set by escaparate-ui (0.10.5): the Cofre gratis card (odds before the ad, then the rewarded ad)
       freeChestLeft: null, // idem: Cofre gratis views left today
       levelsRenderer: null, // set by shell/worlds-ui.js: fn(container, levelsOpts) -> true when it drew the world map
@@ -19170,9 +19339,14 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
 "gingerbread": "m256 25c-44 0-80 39-80 88 0 22 14 44 28 60l-44-6c1 4 1 8 0 12-2 6-8 10-12 11-5 1-9 1-12 2-13-1-6 3 0 8 3 3 6 7 9 11 3 4 5 11 3 17-2 6-8 10-12 12-5 1-9 2-13 2-8 1-12 0-9 8 2 3 4 7 7 11l65 18c-12 37-30 80-46 119 2-1 3-1 5-2 6-2 13-1 18 2 5 3 8 9 8 13 1 5 0 9 0 12-3 13 2 7 9 2 3-2 7-5 12-7 4-2 11-3 17 0 6 3 8 9 9 14 0 1 0 1 0 2 9-18 23-39 38-39 15 0 29 21 38 39 0-1 0-1 0-2 1-5 3-11 9-14 6-3 13-2 17 0 5 2 9 5 12 7 10 6 11 10 9-2 0-3-1-7 0-12 0-4 2-10 8-13 3-2 6-3 9-3 4 0 7 0 9 1 2 1 3 1 5 2-16-39-34-82-46-118l65-19c3-4 5-8 6-11 4-8-2-7-8-8-4 0-8-1-13-2-4-2-10-6-12-12-2-6 0-13 3-17 3-4 6-8 9-10 8-9 12-9 0-9-4-1-7-1-12-2-4-1-10-5-12-11-1-4-1-8 0-12l-44 6c14-16 28-38 28-60 0-49-36-88-80-88zm-32 66c9 0 16 7 16 16 0 9-7 16-16 16s-16-7-16-16c0-9 7-16 16-16zm64 0c9 0 16 7 16 16 0 9-7 16-16 16s-16-7-16-16c0-9 7-16 16-16zm-74 42c15 15 29 21 42 21s27-6 42-21l12 12c-17 17-35 27-54 27s-37-10-54-27zm-95 28c-80 0-80 74-32 90l10 3c-2-5-3-10-1-16 2-6 8-10 12-12 5-1 9-1 13-2 14-1 9-4 2-11-3-3-7-6-9-10-3-5-5-11-3-18 2-6 8-9 12-10 7-2 13-1 20-2-1-4-3-6-4-9zm274 0-20 3c-1 3-3 5-4 9 7 1 14 0 20 2 4 1 10 5 12 10 2 7 0 13-3 18-3 4-6 7-9 10-10 11-11 10 2 11 4 1 8 1 12 3 5 1 10 5 13 11 1 6 1 11-1 16l10-3c48-16 48-90-32-90zm-185 30 33 19c2-6 8-11 15-11 7 0 13 5 15 11l33-19v48l-35-15c-3 5-8 7-13 7-5 0-10-2-13-7l-35 15zm48 60c9 0 16 7 16 16s-7 16-16 16-16-7-16-16 7-16 16-16zm0 52c9 0 16 7 16 16s-7 16-16 16-16-7-16-16 7-16 16-16zm-104 110c0 0-2 0-3 1-3 0-7 2-11 4-5 3-8 4-10 9-31 61 41 79 76 38-2-3-3-6-4-9 0-4 0-9 0-12 0-4 1-7 0-10-2 0-7 4-10 6-4 2-7 5-12 7-5 2-12 3-18-1h0c-5-3-7-9-8-14 0-4 0-8 1-11 0-4 1-7 0-8zm206 0c0 1 1 4 1 8 1 3 1 7 1 12-1 4-3 10-8 13h0c-6 4-13 3-18 1-5-2-9-5-12-7-3-2-7-5-10-6-1 3 0 7 0 10 0 3 0 8 0 12-1 3-2 6-4 9 35 41 107 23 76-38-1-4-7-7-10-8-4-3-8-5-11-5-2-1-3-1-5-1z",
 "candy-cane": "m110 28c-1 0-2 0-3 0-14 0-27 4-39 10l19 38c4-3 8-4 13-4l21-44c-3 0-7 0-11 0zm292 0c-4 0-8 0-11 0l21 44c5 0 9 1 13 4l19-38c-12-6-25-10-39-10-1 0-2 0-3 0zm-248 13-23 40c2 2 4 4 6 6l53-1-5-10c-9-16-19-28-31-35zm204 0c-12 7-22 19-31 35l-5 10 53 1c2-2 4-4 6-6l-23-40zm-326 29c-3 5-6 10-8 15-8 19-8 42 5 68l37-32c-1-4-1-8-1-12l-33-39zm448 0-33 39c0 4 0 8-1 12l37 32c13-26 13-49 5-68-2-5-5-10-8-15zm-276 45-51 0 15 29 51-1-15-28zm104 0-15 28 52 1 14-29-51 0zm-229 36-36 31 1 2c9 17 23 19 33 13 10-5 17-16 8-34l-6-12zm354 0-6 12c-9 18-2 29 8 34 10 6 24 4 33-13l1-2-36-31zm-200 21-51 0 15 29 51-1-15-28zm46 0-13 24 2 4 47 1 15-29-51 0zm-16 57-52 0 15 29 51-1-14-28zm20 0 9 18 9-18-18 0zm9 57-52 0 15 29 51 0-14-29zm-72 1-14 28 28 0-14-28zm-29 56-14 29 51 0 15-29-52 0zm130 0-52 0 15 29 51 0-14-29zm-159 57-14 29 51 0 15-29-52 0zm188 0-52 0 15 29 51 0-14-29zm-215 57c-3 13 3 21 11 25 10 5 24 4 33-14l6-11-50 0zm242 0-50 0 6 11c9 18 23 19 33 14 8-4 14-12 11-25z",
 "steps": "m247 18c-12 0-24 9-30 23-6 17-1 35 13 41 14 5 31-4 38-21 6-17 1-36-13-41-3-1-6-2-8-2zm74 16c-11 0-22 6-30 17-13 17-12 38 2 48 13 10 34 5 47-11 12-17 11-39-3-49-4-3-10-5-16-5zm68 38c-11 0-22 4-31 13-16 15-18 38-6 51 13 13 36 11 52-4 16-16 18-39 6-52-6-5-13-8-21-8zm-157 32c-22 0-44 7-63 24-61 55-121 133-141 259-23 147 158 121 140 42-23-100 34-141 108-124 33 7 67-5 86-41 24-42-7-106-63-139-21-13-44-21-67-21zm217 30c-10 0-21 3-32 9-27 15-40 46-27 69 13 23 45 29 73 13 28-15 40-46 28-69-8-14-24-22-42-22z",
-"target": "m226 24-10 33c13-3 27-4 40-4 11 0 21 1 31 2l-9-31h-52zm30 49c-99 0-180 81-180 180 0 100 81 180 180 180 100 0 181-80 181-180 0-99-81-180-181-180zm0 42c77 0 139 62 139 138 0 77-62 139-139 139-76 0-138-62-138-139 0-76 62-138 138-138zm0 39c-55 0-99 44-99 99s44 100 99 100 100-45 100-100-45-99-100-99zm0 39c34 0 60 27 60 60 0 33-26 60-60 60-33 0-59-27-59-60 0-33 26-60 59-60zm0 31c-16 0-29 13-29 29 0 16 13 29 29 29 16 0 29-13 29-29 0-16-13-29-29-29zm-141 171-28 93h47l20-62c-14-9-27-19-39-31zm277 6c-12 11-25 20-40 28l20 59h47l-27-87zm-165 50v37h52v-36c-7 1-15 2-23 2-10 0-19-1-29-3z"
+"target": "m226 24-10 33c13-3 27-4 40-4 11 0 21 1 31 2l-9-31h-52zm30 49c-99 0-180 81-180 180 0 100 81 180 180 180 100 0 181-80 181-180 0-99-81-180-181-180zm0 42c77 0 139 62 139 138 0 77-62 139-139 139-76 0-138-62-138-139 0-76 62-138 138-138zm0 39c-55 0-99 44-99 99s44 100 99 100 100-45 100-100-45-99-100-99zm0 39c34 0 60 27 60 60 0 33-26 60-60 60-33 0-59-27-59-60 0-33 26-60 59-60zm0 31c-16 0-29 13-29 29 0 16 13 29 29 29 16 0 29-13 29-29 0-16-13-29-29-29zm-141 171-28 93h47l20-62c-14-9-27-19-39-31zm277 6c-12 11-25 20-40 28l20 59h47l-27-87zm-165 50v37h52v-36c-7 1-15 2-23 2-10 0-19-1-29-3z",
+"claws": "m182 23c153 20 255 176 229 258-34-90-143-190-300-196 145 19 244 161 232 245-10 1-21 1-33 0-41-85-146-173-292-179 142 19 241 157 232 241-16 0-33-3-53-8 18 8 35 15 51 20-11 44-55 69-145 46 147 66 217 33 226-30 56 1 86-25 93-63 164-20 36-323-240-334zm133 318c8 2 16 5 23 7-3 8-7 15-13 21-3-9-6-19-10-28z",
+"wingfoot": "m494 21-164 1c-16 28-34 53-54 76 6 2 12 3 18 5l13 3-8 11c-51 67-45 142-28 214l-18 4c-17-69-23-148 23-217-88-22-184-44-254-90-1 5-1 10 3 17 2 6 6 11 12 17 53 38 130 66 190 76l-3 18c-62-9-140-37-196-77 0 6 2 12 6 19 7 13 19 27 36 39 1 1 2 1 2 2 43 23 94 39 141 42l-1 19c-61-4-126-28-176-61 1 5 3 11 7 16 7 13 20 26 36 38 40 18 82 33 129 37l-1 18c-57-4-106-23-150-44 4 19 18 34 39 46 27 16 66 26 106 32l8 1 0 7c1 16 5 23 10 32l-16 9c-5-8-10-18-12-32-32-5-63-13-89-24-6 7-13 15-19 24 17 24 31 43 53 66l27-10 9-3 3 9c15 53 60 94 114 114 48 18 103 20 150 1-69-38-115-124-136-200l-1-4 2-4c44-65 121-119 189-144v-103z",
+"pawprint": "m259 17-8 10s-15 20-30 45c-7 12-15 25-20 38-6 13-10 24-10 35 0 37 30 68 68 68 37 0 67-31 67-68 0-11-4-22-10-35-5-13-13-26-20-38-15-25-30-45-30-45l-7-10zm0 33c4 6 10 14 21 32 7 11 14 24 19 36 6 11 9 22 9 27 0 14-6 27-16 36 2-5 3-9 3-14 0-20-36-70-36-70s-37 50-37 70c0 5 1 9 3 14-10-9-16-22-16-36 0-5 4-16 9-27 5-12 12-25 19-36 11-18 17-26 22-32zm-198 29-4 13s-6 24-11 52c-3 14-5 29-6 43 0 14 0 26 4 36 13 35 53 53 88 39 34-13 52-53 38-88-4-10-12-19-22-29-10-9-21-19-33-28-22-17-44-31-44-31l-10-7zm394 0-10 7s-22 14-44 31c-12 9-23 19-33 28-10 10-18 19-22 29-14 35 4 75 39 88 34 14 74-4 87-39 4-10 4-22 4-36-1-14-3-29-6-43-5-28-11-52-11-52l-4-13zm-11 31c2 8 4 17 8 37 2 14 4 29 5 41 1 13 0 24-2 29-5 13-15 22-27 27 3-3 5-7 7-11 8-19-8-79-8-79s-53 33-60 52c-2 5-3 9-2 14-6-12-7-26-2-39 2-5 9-13 18-22 9-9 20-18 31-27 16-12 25-17 32-22zm-371 0c7 5 15 10 31 22 11 9 22 18 31 27 9 9 16 17 18 22 5 13 4 27-2 39 1-5 0-9-2-14-7-19-60-52-60-52s-15 60-8 79c2 4 4 8 7 11-12-5-22-14-27-27-2-5-3-16-2-29 1-12 3-27 5-41 4-20 6-29 9-37zm184 122c-44 0-79 29-88 67-22 9-43 20-57 34-16 16-25 35-25 56 0 31 21 57 52 76 31 18 73 29 119 29s88-11 119-29c31-19 52-45 52-76 0-21-10-40-26-56-14-15-35-26-58-35-9-38-45-66-88-66zm0 19c37 0 66 24 71 55l1 6 5 1c24 8 43 20 56 33 13 13 20 28 20 43 0 15-7 29-19 42 3-8 5-16 5-24 0-25-31-65-89-80 0-1 0-3 0-5 0-25-22-46-49-46-27 0-50 21-50 46 0 2 1 4 1 5-59 15-90 55-90 80h0c0 8 2 16 6 24-13-13-20-27-20-42 0-15 7-29 20-43 13-13 32-24 55-32l5-2 1-6c5-30 34-55 71-55z",
+"clover": "m105 26c-38 0-62 27-31 73-68-1-83 90-12 119 55 23 82-6 143 15-64-7-119 22-154 67-38 50-24 120 41 100-9 67 62 100 104 47 36-45 15-103 42-182 7 61-6 108 11 166 22 72 103 76 119 6 56 52 96-9 75-76-18-60-90-98-167-119 73-3 109 45 168 30 72-18 64-108-11-129 46-55-20-110-87-93-58 14-91 72-102 143-6-65-29-120-81-150-20-11-40-17-58-17z",
+"jigsaw": "m235 27c-1 0-2 0-3 0-5 0-10 1-16 2-62 17-39 90-14 95 5 1 15 30 6 48l-106 28 28 105c-4 19-34 22-51 8-13-11-69 9-55 62 14 53 77 33 81 12 1-5 28-25 45-8l28 105 115-31c29-14 6-35-14-43-16-6-27-65 26-79 5-2 10-2 14-2 42-1 52 53 37 66-4 4-13 43 16 37l6-1c-1 0-2 0-3 1l118-32-30-113c-15-19-42-5-50 15-6 15-51 24-65-29-14-54 33-61 49-47 15 12 52 11 41-31l5 18-26-97-139 37c-19-9-26-32-10-45 28-23 14-81-33-81zm137 405-4 1 7-1c-1 0-2 0-3 0zm64-243c1 2 1 4 2 6l-2-6z"
 };
-  var BY = {"bomb":"lorc","rotate":"delapouite","undo":"delapouite","cycle":"lorc","roller":"delapouite","crane":"delapouite","bulb":"lorc","magnifier":"lorc","cone":"delapouite","piggy":"delapouite","trophy":"delapouite","crown":"lorc","padlock":"lorc","checklist":"delapouite","cart":"delapouite","stopwatch":"lorc","calendar":"delapouite","sparkles":"delapouite","popper":"delapouite","skull":"lorc","quill":"lorc","present":"delapouite","camera":"delapouite","coins":"delapouite","laurel":"lorc","map":"lorc","infinity":"lorc","pumpkin":"delapouite","ghost":"lorc","racha1":"lorc","racha2":"lorc","racha3":"lorc","racha4":"lorc","racha5":"lorc","pointing":"lorc","cog":"lorc","chest":"delapouite","house":"delapouite","shop":"delapouite","team":"delapouite","bell":"lorc","funnel":"delapouite","flag-race":"delapouite","handshake":"delapouite","swords":"lorc","podium":"delapouite","stamp":"delapouite","earth":"delapouite","ui-close":"tabler","ui-back":"tabler","ui-up":"tabler","ui-down":"tabler","ui-info":"tabler","ui-home":"tabler","ui-play":"tabler","ui-again":"tabler","ui-share":"tabler","ui-lock":"tabler","ui-sound":"tabler","ui-mute":"tabler","ui-music":"tabler","ui-music-off":"tabler","ui-cpu":"tabler","ui-edit":"tabler","ui-dice":"tabler","ui-cloud":"tabler","ui-cloud-off":"tabler","ui-clock":"tabler","ui-tap":"tabler","ui-hand":"tabler","ui-parking":"tabler","ui-ad":"tabler","ui-star":"tabler","ui-heart":"tabler","ui-bolt":"tabler","ui-shield":"tabler","ui-user":"tabler","ui-users":"tabler","ui-user-plus":"tabler","ui-leave":"tabler","ui-chat":"tabler","ui-check":"tabler","ui-ok":"tabler","ui-out":"tabler","ui-plus":"tabler","ui-flag":"tabler","ui-map":"tabler","ui-world":"tabler","ui-chart":"tabler","ui-tag":"tabler","ui-flame":"tabler","ui-gift":"tabler","ui-bell":"tabler","ui-sparkles":"tabler","ui-hourglass":"tabler","ui-swords":"tabler","ui-card":"tabler","ui-apple":"tabler","ui-wave":"tabler","cards":"faithtoken","wheel":"lorc","sun":"lorc","peak":"lorc","leaf":"delapouite","castle":"delapouite","windmill":"delapouite","grapes":"lorc","anchor":"lorc","shell":"lorc","ogre":"delapouite","cyclops":"lorc","golem":"delapouite","kraken":"delapouite","minotaur":"lorc","gargoyle":"delapouite","mummy":"delapouite","hydra":"lorc","ice-golem":"delapouite","dragon":"lorc","penguin":"delapouite","paw":"lorc","bat":"delapouite","moon":"lorc","palm":"delapouite","city":"delapouite","basket":"delapouite","pot":"delapouite","ball":"delapouite","notes":"delapouite","ice":"lorc","timebomb":"lorc","wall":"delapouite","hourglass":"lorc","vine":"lorc","bolt":"lorc","factory":"delapouite","blast":"lorc","colour":"lorc","chains":"lorc","fog":"delapouite","mo-sunflower":"delapouite","mo-flower":"delapouite","mo-dolphin":"delapouite","mo-teapot":"lorc","mo-door":"delapouite","mo-lighthouse":"delapouite","mo-panda":"delapouite","mo-camel":"delapouite","mo-planet":"lorc","xmas-tree":"lorc","snowflake":"lorc","snowman":"lorc","santa-hat":"delapouite","gingerbread":"delapouite","candy-cane":"delapouite","steps":"lorc","target":"lorc"};
+  var BY = {"bomb":"lorc","rotate":"delapouite","undo":"delapouite","cycle":"lorc","roller":"delapouite","crane":"delapouite","bulb":"lorc","magnifier":"lorc","cone":"delapouite","piggy":"delapouite","trophy":"delapouite","crown":"lorc","padlock":"lorc","checklist":"delapouite","cart":"delapouite","stopwatch":"lorc","calendar":"delapouite","sparkles":"delapouite","popper":"delapouite","skull":"lorc","quill":"lorc","present":"delapouite","camera":"delapouite","coins":"delapouite","laurel":"lorc","map":"lorc","infinity":"lorc","pumpkin":"delapouite","ghost":"lorc","racha1":"lorc","racha2":"lorc","racha3":"lorc","racha4":"lorc","racha5":"lorc","pointing":"lorc","cog":"lorc","chest":"delapouite","house":"delapouite","shop":"delapouite","team":"delapouite","bell":"lorc","funnel":"delapouite","flag-race":"delapouite","handshake":"delapouite","swords":"lorc","podium":"delapouite","stamp":"delapouite","earth":"delapouite","ui-close":"tabler","ui-back":"tabler","ui-up":"tabler","ui-down":"tabler","ui-info":"tabler","ui-home":"tabler","ui-play":"tabler","ui-again":"tabler","ui-share":"tabler","ui-lock":"tabler","ui-sound":"tabler","ui-mute":"tabler","ui-music":"tabler","ui-music-off":"tabler","ui-cpu":"tabler","ui-edit":"tabler","ui-dice":"tabler","ui-cloud":"tabler","ui-cloud-off":"tabler","ui-clock":"tabler","ui-tap":"tabler","ui-hand":"tabler","ui-parking":"tabler","ui-ad":"tabler","ui-star":"tabler","ui-heart":"tabler","ui-bolt":"tabler","ui-shield":"tabler","ui-user":"tabler","ui-users":"tabler","ui-user-plus":"tabler","ui-leave":"tabler","ui-chat":"tabler","ui-check":"tabler","ui-ok":"tabler","ui-out":"tabler","ui-plus":"tabler","ui-flag":"tabler","ui-map":"tabler","ui-world":"tabler","ui-chart":"tabler","ui-tag":"tabler","ui-flame":"tabler","ui-gift":"tabler","ui-bell":"tabler","ui-sparkles":"tabler","ui-hourglass":"tabler","ui-swords":"tabler","ui-card":"tabler","ui-apple":"tabler","ui-wave":"tabler","cards":"faithtoken","wheel":"lorc","sun":"lorc","peak":"lorc","leaf":"delapouite","castle":"delapouite","windmill":"delapouite","grapes":"lorc","anchor":"lorc","shell":"lorc","ogre":"delapouite","cyclops":"lorc","golem":"delapouite","kraken":"delapouite","minotaur":"lorc","gargoyle":"delapouite","mummy":"delapouite","hydra":"lorc","ice-golem":"delapouite","dragon":"lorc","penguin":"delapouite","paw":"lorc","bat":"delapouite","moon":"lorc","palm":"delapouite","city":"delapouite","basket":"delapouite","pot":"delapouite","ball":"delapouite","notes":"delapouite","ice":"lorc","timebomb":"lorc","wall":"delapouite","hourglass":"lorc","vine":"lorc","bolt":"lorc","factory":"delapouite","blast":"lorc","colour":"lorc","chains":"lorc","fog":"delapouite","mo-sunflower":"delapouite","mo-flower":"delapouite","mo-dolphin":"delapouite","mo-teapot":"lorc","mo-door":"delapouite","mo-lighthouse":"delapouite","mo-panda":"delapouite","mo-camel":"delapouite","mo-planet":"lorc","xmas-tree":"lorc","snowflake":"lorc","snowman":"lorc","santa-hat":"delapouite","gingerbread":"delapouite","candy-cane":"delapouite","steps":"lorc","target":"lorc","claws":"lorc","wingfoot":"lorc","pawprint":"lorc","clover":"lorc","jigsaw":"lorc"};
   var GRID = {"ui-close":24,"ui-back":24,"ui-up":24,"ui-down":24,"ui-info":24,"ui-home":24,"ui-play":24,"ui-again":24,"ui-share":24,"ui-lock":24,"ui-sound":24,"ui-mute":24,"ui-music":24,"ui-music-off":24,"ui-cpu":24,"ui-edit":24,"ui-dice":24,"ui-cloud":24,"ui-cloud-off":24,"ui-clock":24,"ui-tap":24,"ui-hand":24,"ui-parking":24,"ui-ad":24,"ui-star":24,"ui-heart":24,"ui-bolt":24,"ui-shield":24,"ui-user":24,"ui-users":24,"ui-user-plus":24,"ui-leave":24,"ui-chat":24,"ui-check":24,"ui-ok":24,"ui-out":24,"ui-plus":24,"ui-flag":24,"ui-map":24,"ui-world":24,"ui-chart":24,"ui-tag":24,"ui-flame":24,"ui-gift":24,"ui-bell":24,"ui-sparkles":24,"ui-hourglass":24,"ui-swords":24,"ui-card":24,"ui-apple":24,"ui-wave":24};
   var LINE = {"ui-close":1,"ui-back":1,"ui-up":1,"ui-down":1,"ui-again":1,"ui-share":1,"ui-sound":1,"ui-mute":1,"ui-music":1,"ui-music-off":1,"ui-cpu":1,"ui-cloud-off":1,"ui-tap":1,"ui-hand":1,"ui-parking":1,"ui-users":1,"ui-user-plus":1,"ui-leave":1,"ui-check":1,"ui-plus":1,"ui-map":1,"ui-world":1,"ui-chart":1,"ui-swords":1,"ui-card":1,"ui-wave":1};
   var WHO = {"delapouite":["Delapouite","delapouite.com","CC BY 3.0"],"faithtoken":["Faithtoken","fungustoken.deviantart.com","CC BY 3.0"],"lorc":["Lorc","lorcblog.blogspot.com","CC BY 3.0"],"tabler":["Paweł Kuna (Tabler Icons)","tabler.io/icons","MIT"]};
@@ -20631,15 +20805,23 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       escaparate: 'Escaparate: cada día un cofre de Plata de {t} {t:toque|toques} sube gratis (sin garantía ni toque extra) y elige el lote del día, que se ve antes de comprar. Una compra al día; precio en monedas:',
       passPrev: 'Pase: los cofres del pase se fijan al empezar la temporada y se ven antes de recogerlos.',
       revive: 'Segunda oportunidad gratis: {p} de las veces que pierdes (nunca dos seguidas, una al día).',
-      sobre: 'sobre', sobreSub: { bronce: 'bronce', plata: 'plata' }, each: 'uno de cada',
+      sobre: 'sobre', sobreSub: { bronce: 'bronce', plata: 'plata', oro: 'oro' }, each: 'uno de cada',
       floor: ['', 'al menos una rara', 'al menos una épica'],
+      // 0.10.6 LOOTBOX: the Tienda part of "Cofres" (every number from P.drops.shop / shopOdds)
+      shopH: 'Tienda: objetos aleatorios por monedas',
+      shopNote: 'Las monedas también se compran con dinero real. Cada objeto se sortea al comprarlo, con estas probabilidades, y se entrega en ese momento; antes de cada compra ves todo lo que puede salir.',
+      shopPity: 'Garantía: una mascota Épica o mejor (antes de desbloquear las mascotas, un cromo de 4★ o más) como mucho cada {e} {e:cofre comprado|cofres comprados}. Un acierto la reinicia. Se guarda en tu partida y en la copia en la nube.',
+      shopSobre: '{n} {n:cromo|cromos}, uno de {m}★ o más, con las probabilidades de Cromos (protección de repetidos y garantía de 5★ incluidas).',
+      shopCard: '1 carta de mascota (la garantía de Mascotas también cuenta):', shopSorp: 'Un lote al azar, una vez al día; descuento frente al precio de las ayudas:',
+      shopName: { plata: 'Cofre raro', oro: 'Cofre épico', cristal: 'Cofre legendario', mascotas: 'Cofre de mascotas', sobre_bronce: 'Sobre bronce', sobre_plata: 'Sobre plata',
+        sobre_oro: 'Sobre oro', carta: 'Carta misteriosa', sorpresa: 'Oferta sorpresa' },
       kinds: { cromo: ['cromo', 'cromos'], basic: ['ayuda', 'ayudas'], power: ['ayuda potente', 'ayudas potentes'], prelevel: ['objeto previo', 'objetos previos'],
         livesMin: ['min de vidas infinitas', 'min de vidas infinitas'], pet: ['carta de mascota', 'cartas de mascota'] },
       cpuHead: 'Incluye rivales CPU',
       cpuText: 'La liga semanal, el ranking diario cuando hay poca gente y los eventos (carreras, torneos, equipo y compañeros) incluyen rivales controlados por el juego, marcados con este icono. No son personas reales y no se presentan como tales.',
       leagueRules: 'Puntos = copas de la semana (ganas copas al superar niveles: más estrellas y más difíciles, más copas; y en los eventos). {u:El primero sube|Los {u} primeros suben} y {d:el último baja|los {d} últimos bajan}. Cuanto más alta la liga, mejores premios.',
       rankRules: 'Premios del diario, al día siguiente: top 3 · top 10 % · por participar.',
-      legal: 'Precios con IVA, cobrados por Google Play. Cada artículo de pago da exactamente lo que indica su tarjeta; nada aleatorio se vende con dinero real. Derecho de desistimiento UE: 14 días, que se pierde al entregar el contenido digital con tu consentimiento. Reembolsos: Google Play, Historial de pedidos.',
+      legal: 'Precios con IVA, cobrados por Google Play. Cada artículo de pago da exactamente lo que indica su tarjeta; nada aleatorio se vende directamente con dinero real, pero con monedas (que también se compran) se compran objetos aleatorios en la Tienda, con sus probabilidades antes de comprar (Cofres). Derecho de desistimiento UE: 14 días, que se pierde al entregar el contenido digital con tu consentimiento. Reembolsos: Google Play, Historial de pedidos.',
       coinsNote: 'Las monedas, ayudas, cofres y cromos solo valen dentro del juego: no tienen valor real ni se pueden cambiar por dinero.',
       claimsHead: 'Valor de las ofertas',
       claimsNote: 'El valor se calcula con el contenido (monedas y ayudas a su precio en monedas) frente al mejor pack normal de monedas, redondeado hacia abajo.',
@@ -20664,15 +20846,22 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       escaparate: 'Shop window: every day a Silver chest with {t} {t:tap|taps} climbs for free (no guarantee, no extra tap) and picks the day’s bundle, shown before you buy. One buy a day; price in coins:',
       passPrev: 'Pass: the pass chests are fixed at season start and shown before you collect them.',
       revive: 'Free second chance: {p} of your losses (never two in a row, once a day).',
-      sobre: 'pack', sobreSub: { bronce: 'bronze', plata: 'silver' }, each: 'one of each',
+      sobre: 'pack', sobreSub: { bronce: 'bronze', plata: 'silver', oro: 'gold' }, each: 'one of each',
       floor: ['', 'at least one rare', 'at least one epic'],
+      shopH: 'Shop: random items for coins',
+      shopNote: 'Coins can also be bought with real money. Each item is drawn when you buy it, with these odds, and delivered at once; before every purchase you see everything it can give.',
+      shopPity: 'Guarantee: an Epic or better pet (before pets unlock, a 4★+ card) at least every {e} {e:chest|chests} bought. A hit resets it. Kept in your save and in the cloud copy.',
+      shopSobre: '{n} {n:card|cards}, one of {m}★ or more, with the Cards odds (duplicate protection and the 5★ guarantee included).',
+      shopCard: '1 pet card (the Pets guarantee counts too):', shopSorp: 'One random bundle, once a day; discount vs the booster prices:',
+      shopName: { plata: 'Rare chest', oro: 'Epic chest', cristal: 'Legendary chest', mascotas: 'Pet chest', sobre_bronce: 'Bronze pack', sobre_plata: 'Silver pack',
+        sobre_oro: 'Gold pack', carta: 'Mystery card', sorpresa: 'Surprise offer' },
       kinds: { cromo: ['card', 'cards'], basic: ['booster', 'boosters'], power: ['power booster', 'power boosters'], prelevel: ['pre-level item', 'pre-level items'],
         livesMin: ['min of infinite lives', 'min of infinite lives'], pet: ['pet card', 'pet cards'] },
       cpuHead: 'Includes CPU rivals',
       cpuText: 'The weekly league, the daily ranking when few people play and the events (races, cups, team and partners) include rivals run by the game, marked with this icon. They are not real people and are never presented as such.',
       leagueRules: 'Points = cups this week (won levels pay cups: more stars and harder levels, more cups; events too). {u:The top one moves up|Top {u} move up}, {d:the bottom one moves down|bottom {d} move down}. Higher leagues pay better prizes.',
       rankRules: 'Daily rewards, the next day: top 3 · top 10% · for taking part.',
-      legal: 'Prices include VAT and are charged by Google Play. Every paid item gives exactly what its card shows; nothing random is sold for real money. EU right of withdrawal: 14 days, which ends once a digital item is delivered with your consent. Refund requests: Google Play, Order history.',
+      legal: 'Prices include VAT and are charged by Google Play. Every paid item gives exactly what its card shows; nothing random is sold directly for real money, but coins (which can also be bought) buy random items in the Shop, with their odds shown before you buy (Chests). EU right of withdrawal: 14 days, which ends once a digital item is delivered with your consent. Refund requests: Google Play, Order history.',
       coinsNote: 'Coins, boosters, chests and cards only work inside the game: they have no real value and cannot be exchanged for money.',
       claimsHead: 'Offer value',
       claimsNote: 'Value = contents (coins and boosters at their coin price) against the best regular coin pack, rounded down.',
@@ -20696,7 +20885,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
   let list = [];
   function add(s) { if (s && s.id) { list = list.filter(function (x) { return x.id !== s.id; }); list.push(s); } }
   function sorted() { return [...list].sort(function (a, b) { return (a.order || 0) - (b.order || 0); }); }
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.codePointAt(0) + ';'; }); }
 
   function attach(P, shell, ctx) {
     ctx = ctx || {};
@@ -20758,10 +20947,32 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       const w = k.indexOf('sobre_') === 0 ? T.sobre + ' ' + (T.sobreSub[k.slice(6)] || '') : (T.kinds[k] || [k])[0];
       return w + ' → ' + items(Object.keys(o).map(function (kk) { return { k: kk, n: o[kk] }; }));
     }
-    function tierRow(D, t) {
-      const c = D.contents(t), roll = c.roll.map(function (r) { return items(r.items) + ' <b>' + pct2(r.p) + '</b>'; }).join('<br>');
-      return '<div class="gk-irow r-' + RARS[t] + '"><span class="gk-iart">' + chestArt(TIER[t]) + '</span><div class="gk-imid"><b>' + T.rarity[RARS[t]] + '</b>' +
+    // one final tier's contents c (P.drops.contents shape); p = that tier's chance (a bought chest's row) or null
+    function contRow(c, t, p) {
+      const roll = c.roll.map(function (r) { return items(r.items) + ' <b>' + pct2(r.p) + '</b>'; }).join('<br>');
+      return '<div class="gk-irow r-' + RARS[t] + '"><span class="gk-iart">' + chestArt(TIER[t]) + '</span><div class="gk-imid"><b>' + T.rarity[RARS[t]] + (p != null ? ' · ' + pct2(p) : '') + '</b>' +
         (c.items.length ? '<span class="gk-ichips">' + items(c.items) + '</span>' : '') + (roll ? '<small>' + T.oneOf + '<br>' + roll + '</small>' : '') + '</div></div>';
+    }
+    function tierRow(D, t) { return contRow(D.contents(t), t, null); }
+
+    // 0.10.6 LOOTBOX: the Tienda's random items (P.drops.shop: what is on sale for this player, the odds its sheets show)
+    function shopHead(o) { return '<p class="gk-itier"><b>' + esc(T.shopName[o.id] || o.id) + '</b> · ' + ico('coin') + fmt(o.price) + '</p>'; }
+    const SHOP_PART = {
+      chest: function (o) { return shopHead(o) + '<div class="gk-irows">' + o.tiers.map(function (p, t) { return p > 0 ? contRow(o.contents[t], t, p) : ''; }).join('') + '</div>'; },
+      sobre: function (o) { return shopHead(o) + kit.note(Lang.fmt(T.shopSobre, { n: o.pack.cards, m: o.pack.minStars })); },
+      card: function (o) {
+        const r = (o.pets && o.pets.rarity) || [];
+        return shopHead(o) + kit.note(T.shopCard) + kit.table(r.map(function (x) { return { dot: RAR_COL[x.id], label: T.rarity[x.id], p: x.p }; }));
+      },
+      sorpresa: function (o) {
+        return shopHead(o) + kit.note(T.shopSorp) + kit.table(o.bundles.map(function (b) { return { label: items(b.items) + (b.off > 0 ? ' <b>−' + b.off + ' %</b>' : ''), value: pct2(b.p) }; }));
+      }
+    };
+    function shopPart(D) {
+      const s = D.shop ? D.shop() : null;
+      if (!s || !s.items.length) return '';
+      return '<h5>' + T.shopH + '</h5>' + kit.note(T.shopNote) + (s.pity ? kit.note(Lang.fmt(T.shopPity, { e: s.pity.every })) : '') +
+        s.items.map(function (o) { return SHOP_PART[o.kind](o); }).join('');
     }
     function cofresNotes(C) {
       const Tp = C.taps || {}, R = C.road || {}, X = C.extra || {}, St = C.star || {}, Ra = C.racha || {}, A = C.adTap || {}, K = C.clock || {}, E = C.escaparate || {};
@@ -20789,7 +21000,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
         kit.table((C.step || []).map(function (p, t) { return { dot: RAR_COL[RARS[t + 1]], label: T.rarity[RARS[t]] + ' → ' + T.rarity[RARS[t + 1]], p: p }; })) + kit.note(T.stepNote) +
         oddsTbl(D, plain, false) + kit.note(T.pityH) + oddsTbl(D, [[0, b], [0, b + 1], [1, b], [1, b + 1]], true) +
         '<h5>' + T.contH + '</h5><div class="gk-irows">' + [0, 1, 2, 3].map(function (t) { return tierRow(D, t); }).join('') + '</div>' +
-        kit.note(Lang.fmt(T.slotX, { n: C.slotCoins || 1 })) + kit.note(T.fbH + ' ' + fb) + kit.note(T.petsH + ': ' + pets) + cofresNotes(C) +
+        kit.note(Lang.fmt(T.slotX, { n: C.slotCoins || 1 })) + kit.note(T.fbH + ' ' + fb) + kit.note(T.petsH + ': ' + pets) + cofresNotes(C) + shopPart(D) +
         (log.length ? '<h5>' + T.log + '</h5>' + kit.table(log, 'items') : '');
     }
 
@@ -24688,12 +24899,13 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  */
 (function (root) {
   'use strict';
+  function starsHtml(n) { return '★'.repeat(Math.max(0, Math.floor(+n || 0))); }
   const Lang = root.GamekitLang || (typeof require === 'function' ? require('../meta/lang.js') : null);
   const TX = {
     es: { name: 'Cromos', go: '¡Vamos!', open: '¡Abrir!', all: 'Todos', ok: '¡Genial!', collect: '¡Recoger!', claim: '¡Recoger!', done: '¡Completa!', album: '¡Álbum completo!',
       fresh: 'NUEVO', next: 'Siguiente', odds: 'Probabilidades: cromos', stars: 'Estrellas', p: 'Probabilidad', n: 'Cromos', pack: 'Sobre', cards: 'cromos', min: 'uno de',
       orMore: 'o más', guar: 'Hueco garantizado', repe: 'Repe', points: 'puntos', point: 'punto', exch: 'Cambio de repes', cost: 'Precio', three: 'Primeras 3 estrellas en un nivel',
-      threeTx: 'probabilidad de 1 cromo', src: 'Los cromos solo se ganan jugando: Cofre Pleno, Sellos, eventos, premios de colección, primeras 3 estrellas y el cambio de repes. Nunca se venden por dinero ni salen de los cofres de la tienda. Los sobres se guardan sin abrir hasta que tú los abras.',
+      threeTx: 'probabilidad de 1 cromo', src: 'Los cromos se ganan jugando (cofres, Cofre Pleno, Sellos, eventos, premios de colección, primeras 3 estrellas, cambio de repes) y se compran con monedas en la Tienda (sobres y cofres de la tienda: se abren al comprarlos, con estas mismas probabilidades). Nunca se venden directamente por dinero real. Los sobres ganados se guardan sin abrir hasta que tú los abras.',
       draw: 'Cada cromo: primero su rareza con estas probabilidades, después uno al azar entre los de esa rareza. Temporada de 8 semanas: al acabar, los cromos vuelven a cero; premios, insignias y repes se quedan. Los sobres sin abrir pasan a la temporada nueva.',
       bronce: 'Bronce', plata: 'Plata', oro: 'Oro', ess: 'esencia', wild: 'Comodín',
       // the first-time guide: one short line per step (title + line)
@@ -24701,7 +24913,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     en: { name: 'Cards', go: "Let's go!", open: 'Open!', all: 'All', ok: 'Great!', collect: 'Collect!', claim: 'Collect!', done: 'Complete!', album: 'Album complete!',
       fresh: 'NEW', next: 'Next', odds: 'Odds: cards', stars: 'Stars', p: 'Chance', n: 'Cards', pack: 'Pack', cards: 'cards', min: 'one of',
       orMore: 'or more', guar: 'Guaranteed slot', repe: 'Duplicate', points: 'points', point: 'point', exch: 'Duplicates exchange', cost: 'Price', three: 'First 3 stars on a level',
-      threeTx: 'chance of 1 card', src: 'Cards are only earned by playing: streak chest, stamps, events, collection prizes, first 3 stars and the duplicates exchange. Never sold for money, never from the shop chests. Packs are kept sealed until you open them.',
+      threeTx: 'chance of 1 card', src: 'Cards are earned by playing (chests, streak chest, stamps, events, collection prizes, first 3 stars, duplicates exchange) and bought with coins in the Shop (packs and shop chests: opened when bought, with these same odds). Never sold directly for real money. Earned packs are kept sealed until you open them.',
       draw: 'Each card: first its rarity with these odds, then a random card of that rarity. 8-week seasons: at the end cards reset; prizes, badges and duplicates stay. Unopened packs move to the new season.',
       bronce: 'Bronze', plata: 'Silver', oro: 'Gold', ess: 'essence', wild: 'Wildcard',
       tour: [['Cards', 'Fill each page: 9 cards'], ['Packs', 'Won by playing, kept here'], ['Prizes', 'Full page = prize'], ['Your first pack!', 'Open it whenever you like']] }
@@ -24729,7 +24941,6 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     function setName(s) { return Art.theme(th()).sets[s][lang]; }
     function cardName(c) { return Art.theme(th()).sets[c.set].cards[c.idx][lang]; }
     function face(c) { return Art.card(c, { theme: th() }); }
-    function starsHtml(n) { let s = ''; for (let i = 0; i < n; i++) { s += '★'; } return s; }
     function center(el) { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
     function sparks(el, col, n) { if (!el || !fx.sparks) { return; } const c = center(el); fx.sparks(c.x, c.y, col, n); }
     function tap(el, fn) { if (el) el.addEventListener('click', function (e) { sfx('pop'); fn(e); }); }
@@ -25499,7 +25710,9 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     }
     hub.album = { open: function (s) { if (s != null) { cur = s; } shell.show('gk-album'); }, openOne: openOne, openAll: openAllPacks, render: render, zoom: zoom,
       exchange: openExchange, celebrateSet: celebrateSet, celebrateAlbum: celebrateAlbum, flipTo: flipTo, essChip: essChip,
-      tour: function () { hub.enqueue(tourFn()); }, popup: function () { const f = menuPopup(); if (f) { hub.enqueue(f); } return !!f; } };
+      tour: function () { hub.enqueue(tourFn()); }, popup: function () { const f = menuPopup(); if (f) { hub.enqueue(f); } return !!f; },
+      // 0.10.6: a sobre bought in the Tienda (A.drawNow: drawn and booked at the purchase) torn open like a stored one
+      reveal: function (entry) { if (entry && entry.cards && entry.cards.length) hub.enqueue(function (close) { reveal(entry, close); }); } };
   }
 
   const M = { id: 'album', attach: attach, TEXTS: TX };
@@ -31174,7 +31387,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  *   ability  shell.petInfo(id): the ability popup, a layer of its own above any overlay (sheet, level card, chest reveal,
  *            boss prize): big portrait, name, rarity, level, what it gives on a normal and on a boss level, what the
  *            next step gives, esencia + "Mejorar", "Elegir". Any element with data-petinfo="<id>" opens it on tap
- *   chests   shell.chestShopExtra(id) (pet cards line on the chest shop sheet), shell.revealExtra(got) (pet cards in the
+ *   chests   shell.petOddsBar(oddsItem) (the pet cards line of a Tienda odds sheet), shell.revealExtra(got) (pet cards in the
  *            chest reveal), shell.petCards(cards) (pet cards in any prize moment, e.g. a boss kill)
  *   guide    pets unlocked (0.10.3 ECON): the 4-step first-time guide, not skippable, ending on the free starter pet
  *            (hub.onMenu, priority 1). The boss card shows shell.petRow's strength meter (bossMeter) above the picker
@@ -31271,7 +31484,6 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       if (!PT) return;
       var doc = root.document, lang = shell.lang === 'es' ? 'es' : 'en', T = TX[lang] || TX.es, ico = shell.ico, fx = hub.fx || { sfx: {}, haptic: function () {} };
       var sfx = function (k) { if (fx.sfx && fx.sfx[k]) fx.sfx[k](); };
-      const boostCol = shell.boostCol || function () { return '#ff8a3d'; };
       var C = P.cfg.live.pets || {};
       const gic = shell.gic || function (k) { return '<svg viewBox="0 0 512 512"><use href="#gk-ic-' + k + '"/></svg>'; };
       var Art = root.GamekitArt;
@@ -31295,10 +31507,12 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       // "+2 [coin]" - number + icon only (0.10.1 rule), the words live in aria-label / title and in the ability popup, whose
       // rows and next-step box (full) keep the whole sentence
       // 0.10.3 ECON: + the Rayo head start (Teselo's pre-level line icon) and coins on a win
+      // 0.10.6 UX G2 (César: "all the pet abilities have the same logo"): one family, the same round pet-orange badge with a
+      // white glyph, a different glyph per effect (game-icons.net, CREDITS.md); the booster effect carries its booster's glyph
+      const FXG = { moves: 'steps', strike: 'claws', coins: 'coins', imp: 'wingfoot', paw: 'pawprint', hand: 'clover', fav: 'jigsaw', find: 'magnifier' };
       function fxIcon(l) {
-        if (l.k === 'boost') return '<i class="gk-bt" style="--bc:' + boostCol(l.id) + '">' + ico(l.id) + '</i>';
-        if (l.k === 'coins') return ico('coin');
-        return l.k === 'moves' ? gic('steps') : l.k === 'strike' ? gic('ogre') : l.k === 'rayo' ? ico('lines') : paw();   // 0.10.5: the board effects + Hallazgo
+        const g = l.k === 'boost' ? ico(l.id) : l.k === 'rayo' ? ico('lines') : gic(FXG[l.k] || 'paw');
+        return '<i class="gk-pfi k-' + l.k + '" aria-hidden="true">' + g + '</i>';
       }
       function fxRows(f, boss, full) {
         return PT.fxLines(f, boss, lang).map(function (l) {
@@ -31567,9 +31781,9 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
           return '<span class="gk-pcard-w r-' + c.rarity + '" data-petinfo="' + c.id + '" style="--rc:' + RING[c.rarity] + '">' + portrait(p, 'sm') + cardCap(c, p) + '</span>';
         });
       };
-      shell.chestShopExtra = function (id) {
-        var o = PT.on() ? PT.odds('shop', id) : null;
-        if (!o) return '';
+      // 0.10.6 LOOTBOX: the rarity bar of a pet item's odds (o = P.pets.oddsItem(item)) on a Tienda odds sheet (lootshop-ui)
+      shell.petOddsBar = function (o) {
+        if (!o || !o.rarity || !PT.on()) return '';
         return '<div class="gk-pshopx">' + paw() + '<b>+' + o.cards + ' ' + Lang.pl(o.cards, T.card, T.cards) + '</b><span class="gk-prbar">' + o.rarity.map(function (r) {
           return '<i class="r-' + r.id + '" style="flex:' + Math.max(0.04, r.p) + ';--rc:' + RING[r.id] + '" title="' + esc(T.rar[r.id]) + ' ' + pct(r.p) + '"><small>' + Math.round(r.p * 100) + '%</small></i>';
         }).join('') + '</span></div>';
@@ -31704,7 +31918,6 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  *   home       0.10.1: the same countdown as a pill on the home chest slots ("Épica en X cofres", banner pet face)
  *   Info       0.10.1: the 'odds-gacha' section opens with the essence shop entry (balance + "Tienda de esencia")
  *   reveal     shell.revealExtra(got): + banner cromos and the essence gained (chips), a star on the guaranteed card
- *   shop sheet shell.chestShopExtra(id): pity line under the pet cards
  *   Tienda     GamekitPages.section('shop', 'gacha'): the weekly banner (featured pet / cromo set, days left, boosted odds),
  *              the essence balance and its shop (weekly limits)
  *   Info       section 'odds-gacha' (also in the "Información sobre recompensas" popup): pity, banner share, cromo chances by
@@ -31713,6 +31926,10 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  */
 (function (root) {
   'use strict';
+  function lum(hex) {   // rough relative luminance 0..1 of '#rrggbb'
+    const n = Number.parseInt(String(hex).slice(1), 16) || 0;
+    return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
+  }
   const Lang = root.GamekitLang || (typeof require === 'function' ? require('../meta/lang.js') : null);
   const TX = {
     es: { pity: 'Cromo o mascota épica garantizada en {n} {n:intento|intentos}', pity1: 'Cromo o mascota épica garantizada en este intento', banner: 'Banner de la semana',
@@ -31829,9 +32046,8 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
         const b = e.target && e.target.closest && e.target.closest('#gk-info [data-gshop]');
         if (b && G.on()) { sfx('pop'); openShop(); }
       });
-      const chestExtra0 = shell.chestExtra, shopExtra0 = shell.chestShopExtra, reveal0 = shell.revealExtra;
+      const chestExtra0 = shell.chestExtra, reveal0 = shell.revealExtra;
       shell.chestExtra = function (type) { return (chestExtra0 ? chestExtra0(type) : '') + pityHtml(); };
-      shell.chestShopExtra = function (id) { return (shopExtra0 ? shopExtra0(id) : '') + pityHtml(); };
       shell.revealExtra = function (got) {
         const out = reveal0 ? reveal0(got) : [], g = got && got.gacha, np = (got && got.pets || []).length;
         (got && got.cromos || []).forEach(function (c) {
@@ -31848,10 +32064,6 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       };
 
       // ---------- Tienda: the weekly banner + the essence shop ----------
-      function lum(hex) {   // rough relative luminance 0..1 of '#rrggbb'
-        const n = Number.parseInt(String(hex).slice(1), 16) || 0;
-        return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
-      }
       function bannerArt(b) {
         if (b.kind === 'pet') return portrait(b.pet, 'md');
         const A = album(); if (!A) return '';
@@ -32114,6 +32326,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
   const RAR = ['common', 'rare', 'epic', 'legendary'];
 
   function pos(x) { return Number.isFinite(x) && x > 0; }
+  function pctOf(x, loc) { return (Math.round(x * 10000) / 100).toLocaleString(loc) + ' %'; }   // 0.4445 -> '44,45 %'
   // ≈ € of a coin price at the coins_s rate (store micros, else its catalogue price); '' without a store
   function eur(P, coins) {
     const IAP = P.iap, p = P.product ? P.product('coins_s') : null;
@@ -32249,11 +32462,15 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     }
 
     // ---------- the Cofre gratis card: every outcome and its chance before the ad ----------
+    // 0.10.6 UX G4 (César: "4 chests and some percentages, I don't know what that is"): the card is the chest and one
+    // action. The chance of a better chest rides on the ad button ("▲ 48,8 %", on screen before the ad: AdMob rewarded
+    // policy, RND-PLAN §8.2); every final tier and its chance sit behind the (i), a small bubble over the card
     function freeHtml() {
       const C0 = C(), n = (C0.taps || {}).base || 3, p = D.odds(0, n, false);
-      const strip = p.map(function (x, t) { return '<span class="gk-chip r-' + RAR[t] + '">' + chestArt(t, 'gk-chestmini') + '<b>' + (Math.round(x * 10000) / 100).toLocaleString(loc) + ' %</b></span>'; }).join('');
-      return '<div class="gk-card gk-esc-free"><span class="gk-art">' + chestArt(0, 'gk-esc-chest gk-esc-big') + '</span><small>' + '●'.repeat(n) + '</small>' +
-        '<div class="gk-esc-items">' + strip + '</div><button type="button" class="btn cta" data-free="ad">' + ico('ad') + T.free + '</button>' +
+      const strip = p.map(function (x, t) { return '<span class="gk-esc-orow r-' + RAR[t] + '">' + chestArt(t, 'gk-esc-orart') + '<b>' + pctOf(x, loc) + '</b></span>'; }).join('');
+      return '<div class="gk-card gk-esc-free"><button type="button" class="gk-oi gk-esc-fi" data-free="i" aria-label="i" aria-expanded="false"><svg viewBox="0 0 24 24"><use href="#gk-i-info"/></svg></button>' +
+        '<div class="gk-esc-odds" hidden>' + strip + '</div><span class="gk-art">' + chestArt(0, 'gk-esc-chest gk-esc-big') + '</span>' +
+        '<button type="button" class="btn cta" data-free="ad">' + ico('ad') + T.free + '<small class="gk-esc-up">▲' + chestArt(1, 'gk-esc-upart') + pctOf(1 - p[0], loc) + '</small></button>' +
         '<button type="button" class="btn ghost" data-free="x" data-esc="1">' + gic('ui-close') + '</button></div>';
     }
     // 0 while chests are locked: claimClock refuses then, so the row and the card never offer an ad that pays nothing
@@ -32265,7 +32482,9 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       refresh();
     }
     function freeTap(close, e) {
-      const b = e.target.closest && e.target.closest('[data-free]');
+      const b = e.target.closest && e.target.closest('[data-free]'), box = e.currentTarget.querySelector('.gk-esc-odds');
+      if (box && b && b.dataset.free === 'i') { box.hidden = !box.hidden; b.setAttribute('aria-expanded', box.hidden ? 'false' : 'true'); return; }
+      if (box && !box.hidden) { box.hidden = true; if (!b) return; }
       if (!b) return;
       close();
       if (b.dataset.free === 'ad') D.claimClock('ad', claimed);
@@ -32295,6 +32514,260 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
   if (typeof module !== 'undefined' && module.exports) module.exports = { ...API, attach: attach };
   else {
     root.GamekitEscaparate = API;
+    if (root.GamekitHubUI && root.GamekitHubUI.register) root.GamekitHubUI.register(M);
+  }
+})(this);
+
+/* ---- gamekit/shell/lootshop-ui.js ---- */
+/* gamekit Tienda "Cofres" block (0.10.6 LOOTBOX, César 3 Nov: "random offers, random items, the pets, the cromos"). Hub
+ * module, platform layer, no game code. Logic: meta/drops.js (P.drops.shop / shopOdds / buyShop), config cfg.chests.shop.
+ *
+ * The block sits in the Tienda's `offers` slot (GamekitPages.section('shop', { id: 'cofres', after: 'offers' })): right
+ * after the offers, above the coin packs. Three rows, no explanatory text (position, art and numbers say it):
+ *   the Oferta sorpresa   a wide card: gift art, the 4 discounts it may roll, the price, a plain "00:00" end (never a
+ *                         countdown); ✓ once today's is bought
+ *   the chests            Plata / Oro / Cristal / Mascotas start arts, each with its price and the shop pity counter (◆ N)
+ *   sobres + carta        the 3 album sobres and the mystery pet card
+ * Every tap opens the ODDS SHEET first (shell.chestShopOpen(id)): every outcome with its %, the pity rule and its live
+ * counter, the coin price with a small grey "≈ 0,50 €" (coins_s rate, GamekitEscaparate.eur), the Info link, and the buy
+ * button last (RND-legal §4 A). The buy is P.drops.buyShop(id): drawn and granted at that moment; then the reveal plays
+ * the result: a chest climbs in the chest opener (shell.openBought), a sobre tears open (hub.album.reveal), the carta
+ * flips, the Oferta sorpresa bursts (hub.celebrate). Short of coins: shell.needCoins(price, { reason: 'loot' }).
+ *   GamekitLootShop.pct(p, lang) -> '71,64 %'   GamekitLootShop.TEXTS   (pure; tests)
+ */
+(function (root) {
+  'use strict';
+  const TX = {
+    es: { title: 'Cofres', possible: 'Contenido posible', buy: 'Comprar', oneOf: 'uno de', first: '1.ª',
+      name: { plata: 'Cofre raro', oro: 'Cofre épico', cristal: 'Cofre legendario', mascotas: 'Cofre de mascotas', sobre_bronce: 'Sobre bronce',
+        sobre_plata: 'Sobre plata', sobre_oro: 'Sobre oro', carta: 'Carta misteriosa', sorpresa: 'Oferta sorpresa' },
+      pity: 'Garantía: una mascota Épica o mejor (o un cromo de 4★ o más) como mucho cada {e} {e:cofre comprado|cofres comprados}. {l:Falta|Faltan} {l}.',
+      pity1: 'Garantía: el próximo cofre comprado trae una mascota Épica o mejor (o un cromo de 4★ o más).',
+      cards: '{n} {n:cromo|cromos}, uno de {m}★ o más', protect: 'Los cromos de 4★ y 5★ que te faltan salen antes que los repetidos.',
+      p5: 'Garantía: un 5★ como mucho cada {n} {n:cromo|cromos} ({l:falta|faltan} {l}).',
+      petPity: 'Garantía: Rara o mejor cada {r} {r:carta|cartas}, Épica o mejor cada {e}, Legendaria cada {l} ({lr} / {le} / {ll}).',
+      sorp: 'Un lote al azar, una vez al día. Descuento frente al precio de las ayudas en la Tienda.', ok: '¡Genial!',
+      rar: ['Común', 'Rara', 'Épica', 'Legendaria'] },
+    en: { title: 'Chests', possible: 'Possible contents', buy: 'Buy', oneOf: 'one of', first: '1st',
+      name: { plata: 'Rare chest', oro: 'Epic chest', cristal: 'Legendary chest', mascotas: 'Pet chest', sobre_bronce: 'Bronze pack',
+        sobre_plata: 'Silver pack', sobre_oro: 'Gold pack', carta: 'Mystery card', sorpresa: 'Surprise offer' },
+      pity: 'Guarantee: an Epic or better pet (or a 4★+ card) at least every {e} {e:chest|chests} bought. {l} to go.',
+      pity1: 'Guarantee: the next chest bought holds an Epic or better pet (or a 4★+ card).',
+      cards: '{n} {n:card|cards}, one of {m}★ or more', protect: 'Missing 4★ and 5★ cards come before duplicates.',
+      p5: 'Guarantee: a 5★ at least every {n} {n:card|cards} ({l} to go).',
+      petPity: 'Guarantee: Rare or better every {r} {r:card|cards}, Epic or better every {e}, Legendary every {l} ({lr} / {le} / {ll}).',
+      sorp: 'One random bundle, once a day. Discount vs the Shop\'s booster prices.', ok: 'Great!',
+      rar: ['Common', 'Rare', 'Epic', 'Legendary'] }
+  };
+  const TIER = ['wood', 'silver', 'gold', 'crystal'];
+  const RAR = ['common', 'rare', 'epic', 'legendary'];
+
+  function pct(p, lang) { return (Math.round(p * 10000) / 100).toLocaleString(lang === 'en' ? 'en-US' : 'es-ES') + ' %'; }
+  function find(list, id) { return list.find(function (o) { return o.id === id; }) || null; }
+  function pityChip(pity) { return pity ? '<em class="gk-ls-pity" aria-hidden="true">◆<b>' + pity.left + '</b></em>' : ''; }
+  function stars(n) { return '<span class="gk-ls-st">' + '★'.repeat(n) + '</span>'; }
+  function petOf(c) {
+    const all = [...c.items];
+    c.roll.forEach(function (r) { all.push(...r.items); });
+    return all.find(function (x) { return x.k === 'pet'; }) || null;
+  }
+  function closest(e, sel) { return e.target && e.target.closest ? e.target.closest(sel) : null; }
+
+  function attach(P, shell, hub) {
+    const D = P.drops, Pages = root.GamekitPages, Esc = root.GamekitEscaparate, Art = root.GamekitArt, AArt = root.GamekitAlbumArt;
+    if (!D || !D.shop || !Pages || !Pages.section) return;
+    const L = shell.lang === 'en' ? 'en' : 'es', T = TX[L], Lang = root.GamekitLang, esc = hub.esc, ico = shell.ico, gic = shell.gic, fx = hub.fx || {};
+    const loc = L === 'en' ? 'en-US' : 'es-ES';
+    const fmt = function (s, o) { return Lang && Lang.fmt ? Lang.fmt(s, o) : s; };
+    const p100 = function (p) { return pct(p, L); };
+    function sfx(n) { if (fx.sfx && fx.sfx[n]) fx.sfx[n](); }
+    function coins(n) { return (+n || 0).toLocaleString(loc) + ' ' + ico('coin'); }
+    function chestArt(t, cls) { return Art ? Art.chest(TIER[t] || 'silver', { cls: cls }) : ico('chest'); }
+    function mini(t) { return chestArt(t, 'gk-chestmini gk-ls-mini'); }
+    function packArt(id, cls) { return '<span class="' + cls + '">' + (AArt && AArt.pack ? AArt.pack(id) : gic('cards')) + '</span>'; }
+    function cartaArt(cls) { return '<span class="gk-ls-carta ' + cls + '">' + gic('paw') + '<b>?</b></span>'; }
+    function giftArt(cls) { return '<span class="' + cls + '">' + (Art && Art.gift ? Art.gift('#ff5a7a') : gic('gift')) + '</span>'; }
+    // an item as a chip: a sobre shows its own pack art, lives a compact heart chip; the rest as the Escaparate's chips
+    function chip(it) {
+      if (it.k === 'sobre') return '<span class="gk-chip">' + packArt(it.sub, 'gk-ls-packmini') + '</span>';
+      if (it.k === 'livesMin') return '<span class="gk-chip">' + gic('ui-heart') + '<b>' + it.n + ' min</b></span>';
+      return Esc && Esc.chips ? Esc.chips(P, shell, [it]) : '';
+    }
+    function chips(items) { return items.map(chip).join(''); }
+
+    // ---------- the Tienda block ----------
+    function priceTag(o, done) {
+      if (done) return '<span class="mini on">✓</span>';
+      return '<span class="mini buy">' + coins(o.price) + '</span>';
+    }
+    function tileArt(o) {
+      if (o.kind === 'chest') return chestArt(o.start, 'gk-ls-chest') + (o.pets ? '<i class="gk-ls-paw">' + gic('paw') + '</i>' : '');
+      if (o.kind === 'sobre') return packArt(o.sobre, 'gk-ls-pack');
+      return cartaArt('gk-ls-cartam');
+    }
+    function tile(o, pity) {
+      return '<button type="button" class="item gk-ls-it" data-ls="' + o.id + '"' + (o.kind === 'chest' ? ' style="--rc:var(--r-' + RAR[o.start] + ')"' : '') + '>' +
+        (o.kind === 'chest' ? pityChip(pity) : '') + '<span class="gk-art gk-ls-art">' + tileArt(o) + '</span>' + priceTag(o, false) + '</button>';
+    }
+    function row(list, pity) { return list.length ? '<div class="srow gk-ls-row" style="--n:' + list.length + '">' + list.map(function (o) { return tile(o, pity); }).join('') + '</div>' : ''; }
+    function sorpresaCard(o) {
+      const offs = o.bundles.filter(function (b) { return b.off > 0; }).map(function (b) { return '<i>−' + b.off + '%</i>'; }).join('');
+      return '<button type="button" class="gk-wide gk-ls-sorp" data-ls="sorpresa"><span class="gk-art gk-ls-sart">' + giftArt('gk-ls-gift') + '<b class="gk-ls-q">?</b></span>' +
+        '<div><span class="gk-ls-offs">' + offs + '</span></div><span class="gk-esc-end">' + priceTag(o, o.left <= 0) + '<small>' + gic('stopwatch') + '00:00</small></span></button>';
+    }
+    function blockHtml() {
+      const s = D.shop();
+      if (!s) return '';
+      const it = s.items, so = find(it, 'sorpresa');
+      return (so ? sorpresaCard(so) : '') + row(it.filter(function (o) { return o.kind === 'chest'; }), s.pity) +
+        row(it.filter(function (o) { return o.kind === 'sobre' || o.kind === 'card'; }), null);
+    }
+    function visible() { const s = D.shop(); return !!(s && s.items.length); }
+    // eslint-disable-next-line no-unsanitized/property -- the block's own markup: numbers, icons, art
+    function paint(el) { el.innerHTML = blockHtml(); }
+    Pages.section('shop', { id: 'cofres', after: 'offers', order: 1, title: T.title, visible: visible,
+      render: function (el) {
+        if (!el.gkLs) { el.gkLs = 1; el.addEventListener('click', onBlock); }
+        paint(el);
+      } });
+    function onBlock(e) {
+      const b = closest(e, '[data-ls]');
+      if (!b) return;
+      sfx('pop');
+      open(b.dataset.ls);
+    }
+
+    // ---------- the odds sheet (before every buy) ----------
+    function rarLine(item) {
+      const o = P.pets && P.pets.oddsItem ? P.pets.oddsItem(item) : null;
+      if (!o || !o.rarity) return '';
+      const fl = item.floor > 0 ? '<span class="gk-ls-1st">' + T.first + ' ≥ <i style="--rc:var(--r-' + RAR[item.floor] + ')"></i></span>' : '';
+      return '<span class="gk-ls-rar">' + gic('paw') + o.rarity.map(function (r) { return '<i style="--rc:var(--r-' + r.id + ')"></i>' + p100(r.p); }).join(' ') + fl + '</span>';
+    }
+    function tierLi(t, p, c) {
+      const pet = petOf(c);
+      const or = c.roll.length ? '<span class="gk-ls-or"><small>' + T.oneOf + '</small>' + c.roll.map(function (r) { return '<span>' + chips(r.items) + '<small>' + p100(r.p) + '</small></span>'; }).join('') + '</span>' : '';
+      return '<li class="r-' + RAR[t] + '"><span class="gk-dr gk-ls-dr">' + mini(t) + chips(c.items) + or + (pet ? rarLine(pet) : '') + '</span><b>' + p100(p) + '</b></li>';
+    }
+    function pityNote(pity) {
+      if (!pity) return '';
+      return '<p class="gk-note gk-ls-pnote">◆ ' + esc(pity.left <= 1 ? T.pity1 : fmt(T.pity, { e: pity.every, l: pity.left })) + '</p>';
+    }
+    function chestBody(o) {
+      const lis = o.tiers.map(function (p, t) { return p > 0 ? tierLi(t, p, o.contents[t]) : ''; }).join('');
+      return '<div class="gk-chc-art gk-ls-hero"><span class="gk-chestglow"></span>' + chestArt(o.start, 'gk-chcart gk-ls-heroimg') + '</div>' +
+        '<h4 class="gk-poss"><span>' + T.possible + '</span></h4><ul class="gk-odds gk-drops" id="gk-drops">' + lis + '</ul>' + pityNote(o.pity);
+    }
+    function sobreBody(o) {
+      const st = Object.keys(o.stars || {}).map(function (k) { return '<li><span class="gk-dr gk-ls-dr">' + stars(+k) + '</span><b>' + p100(o.stars[k]) + '</b></li>'; }).join('');
+      const p5 = o.pity5 ? '<p class="gk-note">' + esc(fmt(T.p5, { n: o.pity5.every, l: o.pity5.left })) + '</p>' : '';
+      return '<div class="gk-chc-art gk-ls-hero">' + packArt(o.sobre, 'gk-ls-packbig') + '</div><p class="gk-note">' + esc(fmt(T.cards, { n: o.pack.cards, m: o.pack.minStars })) + '</p>' +
+        '<ul class="gk-odds gk-drops">' + st + '</ul>' + ((o.protect || []).length ? '<p class="gk-note">' + esc(T.protect) + '</p>' : '') + p5;
+    }
+    function cardBody(o) {
+      const lis = (o.pets && o.pets.rarity || []).map(function (r) { return '<li class="r-' + r.id + '"><span class="gk-dr gk-ls-dr"><i class="gk-ls-dot" style="--rc:var(--r-' + r.id + ')"></i>' + esc(T.rar[RAR.indexOf(r.id)] || r.id) + '</span><b>' + p100(r.p) + '</b></li>'; }).join('');
+      const pp = P.pets && P.pets.pity ? P.pets.pity() : null;
+      const pl = pp ? '<p class="gk-note">' + esc(fmt(T.petPity, { r: pp.rare.every, e: pp.epic.every, l: pp.legendary.every, lr: pp.rare.left, le: pp.epic.left, ll: pp.legendary.left })) + '</p>' : '';
+      const bar = shell.petOddsBar ? shell.petOddsBar(o.pets) : '';
+      return '<div class="gk-chc-art gk-ls-hero">' + cartaArt('gk-ls-cartabig') + '</div>' + bar + '<ul class="gk-odds gk-drops">' + lis + '</ul>' + pl;
+    }
+    function sorpBody(o) {
+      const lis = o.bundles.map(function (b) { return '<li><span class="gk-dr gk-ls-dr">' + chips(b.items) + (b.off > 0 ? '<i class="gk-ls-off">−' + b.off + '%</i>' : '') + '</span><b>' + p100(b.p) + '</b></li>'; }).join('');
+      return '<div class="gk-chc-art gk-ls-hero">' + giftArt('gk-ls-giftbig') + '</div><ul class="gk-odds gk-drops">' + lis + '</ul><p class="gk-note">' + esc(T.sorp) + '</p>';
+    }
+    const BODY = { chest: chestBody, sobre: sobreBody, card: cardBody, sorpresa: sorpBody };
+    function buyBtn(o) {
+      const approx = Esc && Esc.eur ? Esc.eur(P, o.price) : '', done = o.kind === 'sorpresa' && o.left <= 0;
+      return '<button class="gk-oddslink" type="button" data-lsx="info"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#gk-i-info"/></svg><span>' + esc(shell.TX.rewardsInfo || '') + '</span></button>' +
+        (done ? '<span class="mini on gk-ls-done">✓</span>' : '<button class="btn buy gk-buybtn" type="button" id="gk-cs-buy" data-lsx="buy"><span>' + T.buy + '</span><b>' + coins(o.price) + '</b></button>') +
+        (approx && !done ? '<small class="gk-esc-eur gk-ls-eur">' + esc(approx) + '</small>' : '');
+    }
+    function sheetHtml(o) {
+      const rar = o.kind === 'chest' ? RAR[o.start] : 'rare';
+      return '<div class="gk-card gk-chcard gk-shopcard gk-ls-sheet r-' + rar + '" style="--rc:var(--r-' + rar + ')"><h3>' + esc(T.name[o.id] || o.id) + '</h3>' +
+        '<button class="ic gk-x" type="button" data-lsx="x" data-esc="1" aria-label="×">' + (hub.sico ? hub.sico('close') : '×') + '</button>' + BODY[o.kind](o) + buyBtn(o) + '</div>';
+    }
+    function showSheet(o, close) {
+      const ov = hub.showOv('gk-chcardov gk-ls-ov', sheetHtml(o));
+      ov.querySelector('.gk-ls-sheet').addEventListener('click', onSheet.bind(null, o, close));
+    }
+    function open(id) {
+      const o = D.shopOdds(id);
+      if (!o || !hub.enqueue) return false;
+      hub.enqueue(showSheet.bind(null, o));
+      return true;
+    }
+    shell.chestShopOpen = open;
+    function oddsInfo() { if (shell.oddsInfo) shell.oddsInfo(); }
+    function onSheet(o, close, e) {
+      const b = closest(e, '[data-lsx]');
+      if (!b) return;
+      const k = b.dataset.lsx;
+      if (k === 'x') close();
+      else if (k === 'info') { close(); setTimeout(oddsInfo, 240); }
+      else buy(o, close, b);
+    }
+
+    // ---------- the buy, then the reveal of what it drew ----------
+    function askCoins(o) { shell.needCoins(o.price, { reason: 'loot', retry: open.bind(null, o.id) }); }
+    function short(o, close, b) {
+      if (shell.needCoins && P.iap && P.iap.available) { close(); setTimeout(askCoins.bind(null, o), 240); return; }
+      sfx('bad');
+      if (fx.shake) fx.shake(b, 6, 300);
+    }
+    function unhold(hold) { if (hold && !(shell.moment && shell.moment())) P.hold(false); }
+    function buy(o, close, b) {
+      if (P.eco.coins < o.price) { short(o, close, b); return; }
+      const hold = !!(o.kind === 'chest' && P.hold && shell.openBought);
+      if (hold) P.hold(true);   // the purchase's UI broadcasts wait for the chest's moment (it sends them once, under the overlay)
+      const res = D.buyShop(o.id);
+      if (!res) {
+        unhold(hold);
+        sfx('bad');
+        return;
+      }
+      P.commit();
+      if (shell.spendFx) shell.spendFx(b, o.price, true);
+      reveal(res, b);   // queued first, then the sheet closes: a hand-off, no blink
+      close();
+      if (!hold) P.emit('wallet');
+    }
+    function reveal(res, b) {
+      if (res.kind === 'chest' && shell.openBought && shell.openBought(res, refresh)) return;
+      if (res.kind === 'sobre' && hub.album && hub.album.reveal) { hub.album.reveal(res.entry); return; }
+      if (res.kind === 'card' && flip(res.got.pets)) return;
+      if (hub.celebrate) hub.celebrate(res.got, b, res.got.coins || 0);
+    }
+    function refresh() { if (shell.screen === 'shop' && Pages.refresh) Pages.refresh('shop'); }
+    // the carta: one card back that flips to the pet it drew (tap), then OK
+    function flipTap(f, e) {
+      const t = closest(e, '[data-lsf]');
+      if (!t) return;
+      if (t.dataset.lsf === 'ok') { f.close(); refresh(); return; }
+      if (f.card.classList.contains('open')) return;
+      f.card.classList.add('open'); f.ov.classList.add('burst', 'r-' + f.r);
+      sfx(f.r === 'epic' || f.r === 'legendary' ? 'win' : 'pop');
+      if (fx.haptic) fx.haptic(f.r === 'legendary' ? 'heavy' : 'medium');
+    }
+    function flipShow(cards, close) {
+      const ov = hub.showOv('gk-ls-flipov', '<div class="gk-rays"></div><div class="gk-ls-flip"><button type="button" class="gk-ls-fl" data-lsf="1">' +
+        '<span class="gk-ls-back">' + cartaArt('gk-ls-cartabig') + '</span><span class="gk-ls-face"><span class="gk-ls-big">' + shell.petCards(cards) + '</span></span></button>' +
+        '<button class="btn cta" type="button" data-lsf="ok" data-esc="1">' + esc(T.ok) + '</button></div>');
+      const f = { ov: ov, card: ov.querySelector('.gk-ls-fl'), r: cards[0].rarity, close: close };
+      ov.querySelector('.gk-ls-flip').addEventListener('click', flipTap.bind(null, f));
+    }
+    function flip(cards) {
+      if (!cards || !cards.length || !shell.petCards || !hub.enqueue) return false;
+      hub.enqueue(flipShow.bind(null, cards));
+      return true;
+    }
+  }
+
+  const API = { pct: pct, TEXTS: TX };
+  const M = { id: 'lootshop', attach: attach };
+  if (typeof module !== 'undefined' && module.exports) module.exports = { ...API, attach: attach };
+  else {
+    root.GamekitLootShop = API;
     if (root.GamekitHubUI && root.GamekitHubUI.register) root.GamekitHubUI.register(M);
   }
 })(this);
@@ -33642,15 +34115,16 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  *
  *   GamekitChestUI.attach(P, shell, ctx)   fun-ui.js calls it (ctx: fx, T, $, app, ov, esc, ico, sico, gic, Lang, enqueue,
  *                                          showOv, tap, refreshMenu, coinFly, spendFx, rarityOf, chestArt, boostCol, rarCol,
- *                                          MO, momentActive) -> { revealChest, chestTap, chestShopOpen, want, openDrop,
- *                                          openBotin, revealSlot, openEsc, reveal1, prepareDrop }
- *                                          and sets shell.chestOpener / chestTap / chestShopOpen and the surfaces' hooks:
+ *                                          MO, momentActive) -> { revealChest, chestTap, want, openDrop,
+ *                                          openBotin, revealSlot, openEsc, reveal1, prepareDrop, openBought }
+ *                                          and sets shell.chestOpener / chestTap and the surfaces' hooks:
  *     shell.openDrop(id)          a drop of the Botín (or the Cofre gratis drop): P.drops.path, then open (after the ad decision)
  *     shell.botinOpen()           every waiting drop as one chain
  *     shell.slotReveal(i, done)   a sealed slot: P.drops.revealSlot's climb, then its contents (nothing granted)
  *     shell.openEsc(res, done)    the Escaparate: plays what P.drops.climbEsc() drew, then the bundle face up
  *     shell.reveal1(tier, got)    1-tap mode (pass bundles, premio gordo): got granted already
  *     shell.dropPrepare(id)       idle-time build of a drop's opener (the result strip, Inicio), so its tap only shows it
+ *     shell.openBought(res, done) 0.10.6: a Tienda chest P.drops.buyShop drew and granted (shell/lootshop-ui.js): its climb
  *   Pure (node tests): GamekitChestUI.legacyPath / oneTapPath / pathFromTaps / chainOrder / dotSpec / chipPct / topTier / TIERS
  *
  * One engine plays a PATH (P.drops.path): a start tier, N taps, each one holding or climbing one tier (never down), the
@@ -33659,8 +34133,8 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  * the tap. The outcome is fixed before the first tap (uniforms saved at award): the opener only reveals it.
  * Modes: a drop (P.drops.open, the ad decision when offered), a Botín chain (lowest start first, the Cofre del día last,
  * ⏩ auto-play from 3 drops), a slot reveal and the Escaparate climb (contents shown, nothing granted), 1-tap (a path with
- * no taps: pass bundles, premio gordo) and the 0.10.4 slot / shop chests (revealChest: a 3-tap path, its lucky upgrade).
- * Nothing here sells anything but the 0.10.4 shop chest, whose odds sheet comes first (S6 deletes it with the Escaparate).
+ * no taps: pass bundles, premio gordo), a bought Tienda chest (openBought: granted already, its odds sheet came first in
+ * lootshop-ui) and the 0.10.4 slot chests (revealChest: a 3-tap path, its lucky upgrade). Nothing here sells anything.
  */
 (function (root) {
   'use strict';
@@ -33677,6 +34151,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
   const CX_SPLIT = /gk-cx-(wrap|mid|bob|shk)\b/;
   const BURST_WAIT = [120, 120, 220, 350];   // last tap -> burst, by the tier reached (Oro: a charge wiggle, Cristal: + edge glow)
   const GOLD = '#ffc23a';
+  const PRE_COL = '#7a5cff';   // a pre-level item's badge (the shell's booster badge colour for items without a booster id)
 
   // ---------- pure: paths, the chain order, dots, chips ----------
   function tapRow(n, p, up, tier) { return { n: n, p: p, up: up, forced: false, tier: tier, spark: false, extra: null, ad: false }; }
@@ -34173,7 +34648,15 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       if (got.coins) list.push(ico('coin') + '<b class="gk-count">+' + got.coins + '</b>');
       Object.keys(bo).forEach(function (k) { list.push('<i class="gk-bt big" style="--bc:' + boostCol(k) + '">' + ico(k) + '</i><b>+' + bo[k] + '</b>'); });
       if (got.livesMin) list.push(gic('ui-heart') + '<b>+' + got.livesMin + ' min</b>');
+      cxPreItems(got.prelevel, list);
       if (shell.revealExtra) shell.revealExtra(got).forEach(function (h) { list.push(h); });
+    }
+    // 0.10.6: the pre-level items a reveal paid ({ id: n }, a Cristal chest's 'each'), with the game's own icon
+    function cxPreItems(pre, list) {
+      const defs = (cfg.prelevel && cfg.prelevel.items) || {};
+      Object.keys(pre || {}).forEach(function (id) {
+        list.push('<i class="gk-bt big" style="--bc:' + PRE_COL + '">' + ico((defs[id] && defs[id].icon) || id) + '</i><b>+' + pre[id] + '</b>');
+      });
     }
     // an item of P.drops.contents / an Escaparate bundle: { k, n, id?, sub? } ({ k: 'pet', pets } = cards drawn face up)
     const KIND_ICO = { cromo: function () { return gic('cards'); }, sobre: function () { return gic('cards'); }, pet: function () { return gic('paw'); },
@@ -34559,58 +35042,19 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     }
     shell.chestTap = chestTap;
 
-    // ---------- chest shop: the odds sheet ("contenido posible") comes first, the purchase is a button on it ----------
-    function dropChips(o) {
-      const out = [];
-      if (o.coins) out.push('<span class="gk-chip coin">' + ico('coin') + '<b>' + o.coins + '</b></span>');
-      Object.keys(o.boosters || {}).forEach(function (k) { out.push('<span class="gk-chip"><i class="gk-bt" style="--bc:' + boostCol(k) + '">' + ico(k) + '</i><b>' + o.boosters[k] + '</b></span>'); });
-      return out.join('');
+    // ---------- 0.10.6 LOOTBOX: a chest bought in the Tienda (shell/lootshop-ui.js, its odds sheet came first) ----------
+    // P.drops.buyShop drew and granted it at the purchase (res = { start, path, final, got }): the opener plays that climb
+    // (outside the pity, no ad tap), then what it paid. done(): once the opener is gone
+    function openBought(res, done) {
+      if (!res || !res.got || cxOn) return false;
+      const path = pathFromTaps(res.start, res.path, res.final, cfg.chests.step);
+      return cxStart({ mode: 'drop', id: res.got.id, path: path, adOk: false, free: false, title: '', pity: null, chain: null, rest: [], big: false }, { got: res.got, done: done });
     }
-    function chestShopOpen(id) {
-      const t = meta.shopChest(id);
-      if (!t) return;
-      const name = (shell.TX.chestNames || {})[id] || id;
-      enqueue(function (close) { shopShow({ id: id, t: t, name: name, close: close }); });
-    }
-    function shopShow(s) {
-      const id = s.id, t = s.t, name = s.name, rar = rarityOf(t.art), odds = meta.shopOdds(id);
-      showOv('gk-chcardov', '<div class="gk-card gk-chcard gk-shopcard r-' + rar + '" style="' + rarityVars(t.art) + '"><h3>' + esc(name) + '</h3>' +
-        '<button class="ic gk-x" id="gk-cs-x" aria-label="×">' + sico('close') + '</button>' +
-        '<button class="gk-oi" id="gk-cs-i" aria-label="' + esc(shell.TX.rewardsInfo || '') + '"><svg viewBox="0 0 24 24"><use href="#gk-i-info"/></svg></button>' +
-        '<div class="gk-chc-art"><span class="gk-chestglow"></span>' + chestArt(t.art, 'gk-chcart') + '</div>' +
-        '<h4 class="gk-poss"><span>' + T.possible + '</span></h4>' +
-        '<ul class="gk-odds gk-drops" id="gk-drops">' + odds.map(function (o) {
-          return '<li><span class="gk-dr">' + dropChips(o) + '</span><b>' + (Math.round(o.p * 1000) / 10).toLocaleString(shell.lang) + ' %</b></li>';
-        }).join('') + '</ul>' + (shell.chestShopExtra ? shell.chestShopExtra(id) : '') +   // 0.9.0 B: + pet cards
-        '<button class="gk-oddslink" id="gk-cs-i2"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#gk-i-info"/></svg><span>' + esc(shell.TX.rewardsInfo || '') + '</span></button>' +
-        '<button class="btn buy gk-buybtn" id="gk-cs-buy"><span>' + T.buy + '</span><b>' + t.price.toLocaleString(shell.lang) + ico('coin') + '</b></button></div>');
-      tap('gk-cs-x', s.close);
-      tap('gk-cs-i', function () { shopInfo(s); });
-      tap('gk-cs-i2', function () { shopInfo(s); });
-      tap('gk-cs-buy', function () { shopBuy(s); });
-      ric(function () { cxPrepare(legacySpec(t.art, t.art, { title: name }, 1), false); });   // the opener is ready before the purchase
-    }
-    function shopInfo(s) { s.close(); setTimeout(function () { if (shell.oddsInfo) shell.oddsInfo(); }, 240); }
-    function shopBuy(s) {
-      const t = s.t, b = $('gk-cs-buy');
-      if (eco.coins < t.price) {
-        if (P.iap.available && shell.needCoins) { s.close(); setTimeout(function () { shell.needCoins(t.price, { reason: 'chest_shop' }); }, 240); }
-        else { fx.shake(b, 5, 300); shell.toast(Lang.fmt(T.short, { n: t.price - eco.coins }) + ' ' + ico('coin')); }
-        return;
-      }
-      // 0.10.3 CHEST: the purchase's UI broadcasts wait for the chest (its moment sends them once, under the overlay)
-      if (P.hold) P.hold(true);
-      const got = P.buyChest(s.id);
-      if (!got) { if (P.hold && !momentActive()) { P.hold(false); } return; }
-      spendFx(b, t.price, true);
-      if (shell.screen === 'shop') shell.renderShop();
-      setTimeout(function () { revealChest(t.art, got, { title: s.name }); s.close(); }, 500);   // queued first: a hand-off, no blink
-    }
-    shell.chestShopOpen = chestShopOpen;
-    Object.assign(shell, { openDrop: function (id) { return openDrop(id); }, botinOpen: openBotin, slotReveal: revealSlot, openEsc: openEsc, reveal1: reveal1, dropPrepare: prepareDrop });
+    Object.assign(shell, { openDrop: function (id) { return openDrop(id); }, botinOpen: openBotin, slotReveal: revealSlot, openEsc: openEsc, reveal1: reveal1, dropPrepare: prepareDrop,
+      openBought: openBought });
 
-    return { revealChest: revealChest, chestTap: chestTap, chestShopOpen: chestShopOpen, want: cxWant, openDrop: openDrop, openBotin: openBotin,
-      revealSlot: revealSlot, openEsc: openEsc, reveal1: reveal1, prepareDrop: prepareDrop };
+    return { revealChest: revealChest, chestTap: chestTap, want: cxWant, openDrop: openDrop, openBotin: openBotin,
+      revealSlot: revealSlot, openEsc: openEsc, reveal1: reveal1, prepareDrop: prepareDrop, openBought: openBought };
   }
 
   const ChestUI = { attach: attach, TIERS: TIERS, CX_RANK: CX_RANK, legacyPath: legacyPath, oneTapPath: oneTapPath, pathFromTaps: pathFromTaps, chainOrder: chainOrder,
@@ -34642,6 +35086,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
  */
 (function (root) {
   'use strict';
+  function sico(id, cls) { return '<svg' + (cls ? ' class="' + cls + '"' : '') + '><use href="#gk-i-' + id + '"/></svg>'; }   // a shell sprite icon
   // 0.10.5 S5: Inicio's chest row texts (pure)
   function hText(hc, c, k) {
     if (c.pct != null) { const rg = hc.querySelector('.gk-hring'); if (rg) rg.style.setProperty('--p', c.pct); }
@@ -34653,7 +35098,16 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     const m = Math.ceil(ms / 60000);
     return m >= 60 ? Math.ceil(m / 60) + 'h' : m + 'm';
   }
-  const Lang = root.GamekitLang || (typeof require === 'function' ? require('../meta/lang.js') : null);
+  // 0.10.6 UX G3: a road pip's state (go / op / nx / lk) and the tier its mini shows
+  function pipState(p, k, have) {
+    if (p) return p.opened ? 'op' : 'go';
+    return k === have ? 'nx' : 'lk';
+  }
+  function pipTier(p, day) {
+    if (!p) return day ? 1 : 0;
+    return p.opened ? p.final : p.start;
+  }
+  const Lang =root.GamekitLang || (typeof require === 'function' ? require('../meta/lang.js') : null);
   const TX = {
     es: { wheel: 'Ruleta', spin: 'Girar', free: 'Gratis', xp: 'XP', left: '{n:Falta|Faltan} {n}', wheelLine: '1 tirada gratis al día. Gana más tiradas jugando.', openIn: 'Abrir en',
       tomorrow: 'Mañana', booster: 'Ayuda', boosters: 'Ayudas', skin: 'Aspecto', coins: 'monedas', chest: 'Cofre', tap: 'Toca', lucky: '¡Suerte!', collect: 'Recoger',
@@ -34669,7 +35123,8 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       rarity: { common: 'Común', rare: 'Raro', epic: 'Épico', legendary: 'Legendario' }, cpuShort: 'CPU', pos: 'Puesto', of: 'de', week0: 'Semana', none: 'Juega para entrar',
       tiers: { bronze: 'Bronce', silver: 'Plata', gold: 'Oro', sapphire: 'Zafiro', ruby: 'Rubí', emerald: 'Esmeralda', amethyst: 'Amatista', diamond: 'Diamante' },
       giftDays: 'Regalos de la racha diaria', mult: 'Monedas extra', freeze: 'Protectores', credits: 'Créditos',
-      play: 'Jugar', upTo: 'Hasta', didIt: '¡Lo has conseguido!', assisted: '¡Lo lograste!', assisted2: 'gracias a la ayuda', zoneUp: 'Zona de ascenso', zoneDown: 'Zona de descenso' },
+      play: 'Jugar', upTo: 'Hasta', didIt: '¡Lo has conseguido!', assisted: '¡Lo lograste!', assisted2: 'gracias a la ayuda', zoneUp: 'Zona de ascenso', zoneDown: 'Zona de descenso',
+      rdOpen: 'Ya abierto', rdWin: '+{n} {n:victoria|victorias}' },
     en: { wheel: 'Wheel', spin: 'Spin', free: 'Free', xp: 'XP', left: '{n} to go', wheelLine: '1 free spin a day. Win more spins by playing.', openIn: 'Open in',
       tomorrow: 'Tomorrow', booster: 'Booster', boosters: 'Boosters', skin: 'Skin', coins: 'coins', chest: 'Chest', tap: 'Tap', lucky: 'Lucky!', collect: 'Collect',
       luckyUp: 'Upgrade', level: 'Level', newSkin: 'New skin', equip: 'Use', ok: 'OK', streak: 'Daily streak', day: 'day', days: 'days', gift: 'Gift', league: 'League', lgPre: '', ends: 'Ends in',
@@ -34684,7 +35139,8 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       rarity: { common: 'Common', rare: 'Rare', epic: 'Epic', legendary: 'Legendary' }, cpuShort: 'CPU', pos: 'Rank', of: 'of', week0: 'Week', none: 'Play to join',
       tiers: { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', sapphire: 'Sapphire', ruby: 'Ruby', emerald: 'Emerald', amethyst: 'Amethyst', diamond: 'Diamond' },
       giftDays: 'Daily streak gifts', mult: 'Bonus coins', freeze: 'Freezes', credits: 'Credits',
-      play: 'Play', upTo: 'Up to', didIt: 'You did it!', assisted: 'You made it!', assisted2: 'thanks to the booster', zoneUp: 'Promotion zone', zoneDown: 'Relegation zone' }
+      play: 'Play', upTo: 'Up to', didIt: 'You did it!', assisted: 'You made it!', assisted2: 'thanks to the booster', zoneUp: 'Promotion zone', zoneDown: 'Relegation zone',
+      rdOpen: 'Already opened', rdWin: '+{n} {n:win|wins}' }
   };
   const TIER_COL = { bronze: '#c9814a', silver: '#9fb0c2', gold: '#f0b62a', sapphire: '#3f7fe8', ruby: '#e0405e', emerald: '#2fb879', amethyst: '#9a5ee0', diamond: '#43c6e8' };
   const RAR_COL = { common: '#8fa6bc', rare: '#3f8cff', epic: '#a35cff', legendary: '#ffb21e' };
@@ -34702,7 +35158,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     const T = TX[shell.lang] || TX.en, cfg = P.cfg, eco = P.eco, meta = P.meta, fun = P.fun, lg = P.league, on = P.online;
     const Art = root.GamekitArt;
     const fx = root.GamekitFx.create({ muted: function () { return !!P.settings.muted; }, haptics: function () { return !P.settings || P.settings.haptics !== false; }, volume: function () { return P.settings && P.settings.sfx != null ? P.settings.sfx : 1; } });   // 0.10.0 J: "Vibración" setting
-    const ico = shell.ico, sico = function (id, cls) { return '<svg' + (cls ? ' class="' + cls + '"' : '') + '><use href="#gk-i-' + id + '"/></svg>'; };
+    const ico = shell.ico;
     const gic = shell.gic || function (k) { return '<svg viewBox="0 0 512 512"><use href="#gk-ic-' + k + '"/></svg>'; };
     const app = (opts.host && $(opts.host)) || $('app') || doc.body;
     const ME_COL = opts.meColor || '#5f9d8c';
@@ -35149,7 +35605,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
     function momentActive() { return !!(MO && MO.active()); }
     shell.moment = momentActive;   // gacha-ui's home pill and any other caller
     if (MO) MO.onStale(function () { if (menuStale) refreshMenu(); });
-    // -> shell.chestOpener / chestTap / chestShopOpen
+    // -> shell.chestOpener / chestTap / openBought (shell.chestShopOpen: lootshop-ui's odds sheet)
     chest = ChestUI.attach(P, shell, { fx: fx, T: T, $: $, app: app, ov: ov, esc: esc, ico: ico, sico: sico, gic: gic, Lang: Lang, enqueue: enqueue, showOv: showOv,
       tap: tap, refreshMenu: refreshMenu, coinFly: coinFly, spendFx: spendFx, rarityOf: rarityOf, chestArt: chestArt, boostCol: boostCol, rarCol: RAR_COL,
       MO: MO, momentActive: momentActive });
@@ -35512,10 +35968,39 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
         return h;
       }).join('');
     }
-    function roadPip(p, k, now) {
-      const day = k === 3, t = p ? (p.opened ? p.final : p.start) : (day ? 1 : 0), cls = 'gk-rd-p' + (day ? ' day' : '') + (p ? '' : ' off') + (p && p.opened ? ' op' : '') + (now ? ' now' : '');
+    // 0.10.6 UX G3 (César: "sometimes you can tap them, sometimes not"): every pip says its state by shape, no words:
+    // go = a drop to open (glow pulse + the tap hand), op = opened (✓, its tier's art), nx = the next win's (dashed ring +
+    // "+1"), lk = later (dim + lock). The segments between pips fill toward the Cofre del día (gold ring)
+    const RD_MARK = { go: function () { return gic('ui-tap'); }, op: function () { return '✓'; }, nx: function () { return '+1'; }, lk: function () { return gic('ui-lock'); } };
+    function roadPip(p, k, now, have) {
+      const day = k === 3, st = pipState(p, k, have);
+      let cls = 'gk-rd-p ' + st, seg = '', attr = ' data-k="' + k + '"';
+      if (day) cls += ' day';
+      if (!p) cls += ' off';
+      if (now) cls += ' now';
+      if (k) seg = '<i class="gk-rd-ln' + (p ? ' on' : '') + '"></i>';
+      if (st === 'go') attr += ' data-pid="' + esc(p.id) + '"';
       const dots = now ? '<span class="gk-rd-d">' + roadDots(now) + '</span>' : '';
-      return '<button class="' + cls + '"' + (p && !p.opened ? ' data-pid="' + esc(p.id) + '"' : '') + '>' + chestArt(HT[t], 'gk-rd-art') + dots + '</button>';
+      return seg + '<button type="button" class="' + cls + '"' + attr + '>' + chestArt(HT[pipTier(p, day)], 'gk-rd-art') + dots +
+        '<b class="gk-rd-m" aria-hidden="true">' + RD_MARK[st]() + '</b></button>';
+    }
+    // a tap on the strip: a drop to open opens (the pip turns ✓); any other pip says why in one toast line
+    function roadTap(e, have) {
+      const b = e.target.closest('.gk-rd-p');
+      if (!b) return;
+      fx.sfx.pop();
+      if (!b.dataset.pid || !shell.openDrop) { roadWhy(b, have); return; }
+      if (shell.openDrop(b.dataset.pid) === false) return;
+      b.removeAttribute('data-pid'); b.classList.remove('go'); b.classList.add('op');
+      const m = b.querySelector('.gk-rd-m');
+      if (m) m.textContent = RD_MARK.op();
+    }
+    // a tap on a pip that holds nothing to open: one toast line, a glyph and <= 4 words
+    function roadWhy(b, have) {
+      if (!shell.toast) return;
+      if (b.classList.contains('op')) { shell.toast('✓ ' + esc(T.rdOpen)); return; }
+      const n = Math.max(1, (+b.dataset.k || 0) + 1 - have);
+      shell.toast(gic('trophy') + ' ' + esc(Lang.fmt(T.rdWin, { n: n })));
     }
     function roadStrip(s) {
       const old = doc.getElementById('gk-hk-next');
@@ -35526,7 +36011,8 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       if (!oc || !oc.isConnected || oc.id === 'gk-none' || oc.parentNode === doc.body) return;   // the result sheet may still be fading in
       const pips = (D.state().road || {}).pips || [], pid = R.pip && R.pip.id;
       let h = '';
-      for (let k = 0; k < 4; k++) h += roadPip(pips[k] || null, k, pips[k] && pips[k].id === pid ? R.pip : null);
+      const have = Math.min(4, pips.length);
+      for (let k = 0; k < 4; k++) h += roadPip(pips[k] || null, k, pips[k] && pips[k].id === pid ? R.pip : null, have);
       if (pips.length >= 4) {
         const mid = new Date(); mid.setHours(24, 0, 0, 0);
         h += '<span class="gk-rd-moon">' + gic('moon') + '<b>' + hLeft(mid.getTime() - Date.now()) + '</b></span>';
@@ -35535,16 +36021,11 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
       const el = doc.createElement('div');
       el.id = 'gk-hk-next'; el.className = 'gk-hk-road gk-tok';
       el.innerHTML = h;
-      el.addEventListener('click', function (e) {
-        const b = e.target.closest('[data-pid]');
-        if (!b || !shell.openDrop) return;
-        fx.sfx.pop();
-        if (shell.openDrop(b.dataset.pid) !== false) { b.removeAttribute('data-pid'); b.classList.add('op'); }
-      });
+      el.addEventListener('click', function (e) { roadTap(e, have); });
       const par = oc.parentNode, host = par && par.children.length > 1 && !/panel|sheet|over|done/.test(par.className || '') && par.id !== 'over' ? par : oc;
       host.insertAdjacentElement('afterend', el);
       if (pid && shell.dropPrepare) shell.dropPrepare(pid);
-      setTimeout(function () { const n = el.querySelector('.now'); if (n) { n.classList.add('pop'); fx.sfx.pop(); fx.haptic('light'); } }, 700);
+      setTimeout(function () { const n = el.querySelector('.now'); if (n) { n.classList.add('gk-rd-in'); fx.sfx.pop(); fx.haptic('light'); } }, 700);
     }
     P.on('levelStart', function () { const o = doc.getElementById('gk-hk-next'); if (o) { o.remove(); } shell.onFail(null); });
 
@@ -35954,7 +36435,7 @@ window.GAMEKIT_VERSION = window.GAMEKIT_VERSION || "0.10.5";
 
     refreshMenu();
     var ui = { fx: fx, refresh: refreshMenu, info: info, renderLeague: renderLeague, renderRank: renderRank, spendFx: spendFx, coinFly: coinFly,
-      renderHome: renderHome, chestTap: chest.chestTap, chestShopOpen: chest.chestShopOpen, nickPopup: nickPopup, revealChest: chest.revealChest };
+      renderHome: renderHome, chestTap: chest.chestTap, nickPopup: nickPopup, revealChest: chest.revealChest };
     // limited-time offers (shell/offers-ui.js): popups share this overlay queue, so one big moment shows at a time
     if (root.GamekitOffersUI) {
       ui.offers = root.GamekitOffersUI.attach(P, shell, { fx: fx, enqueue: enqueue, showOv: showOv, ov: ov, tap: tap, sico: sico, center: center,
