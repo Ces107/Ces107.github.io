@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -11,68 +11,74 @@
 
 </head>
 <body>
+<!-- 0.10.3 ART: the loading screen (art-final.css, generated): the logo over loading.png until the first menu frame (game/ui.js) -->
+<div id="gk-splash" aria-hidden="true"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="#e5b567"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#c9963f" stroke-width="2"/></symbol>
-  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2.2-4.8.2 1.6 1 2.6 2 2.8C10.6 8.6 11 5.6 12 3z"/></symbol>
-  <symbol id="i-crown" viewBox="0 0 24 24"><path d="m4 8 4.5 3.5L12 5l3.5 6.5L20 8l-1.5 10h-13z"/></symbol>
-  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></symbol>
+  <!-- 0.9.0 A: i-coin, i-flame, i-star, i-play, i-home, i-lock, i-ad, i-share... are drawn by gamekit (shell/art.js GamekitArt.ALIAS: Tabler / game-icons public art) -->
   <symbol id="i-lines" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="3.4" rx="1.4"/><rect x="4" y="10.3" width="16" height="3.4" rx="1.4"/><rect x="4" y="15.6" width="16" height="3.4" rx="1.4"/></symbol>
   <symbol id="i-gem" viewBox="0 0 24 24"><path d="M7 4h10l4 5-9 11L3 9z" fill="#5fb3c8"/><path d="M7 4h10l4 5H3z" fill="#8fd3e2"/></symbol>
-  <symbol id="i-moves" viewBox="0 0 24 24"><path d="M6 12a6 6 0 1 0 1.8-4.3M6 4.5v3.7h3.7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-rotate" viewBox="0 0 512 512"><use href="#gk-ic-rotate"/></symbol>
   <symbol id="i-bomb" viewBox="0 0 512 512"><use href="#gk-ic-bomb"/></symbol>
   <symbol id="i-undo" viewBox="0 0 512 512"><use href="#gk-ic-undo"/></symbol>
   <symbol id="i-shuffle" viewBox="0 0 512 512"><use href="#gk-ic-cycle"/></symbol>
-  <symbol id="i-chest" viewBox="0 0 24 24"><path d="M3 10a5 5 0 0 1 5-5h8a5 5 0 0 1 5 5v1H3z"/><rect x="3" y="12" width="18" height="8" rx="1.5"/><rect x="10.5" y="10" width="3" height="5" rx="1" fill="#fff" opacity=".7"/></symbol>
-  <symbol id="i-quest" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 9 1.5 1.5L13 7.5M8.5 15h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 9h16l-1.2 10.2a1 1 0 0 1-1 .8H6.2a1 1 0 0 1-1-.8zM8.5 9V7.5a3.5 3.5 0 0 1 7 0V9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
-  <symbol id="i-ad" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z"/></symbol>
-  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></symbol>
-  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></symbol>
+  <symbol id="i-blast" viewBox="0 0 512 512"><use href="#gk-ic-blast"/></symbol>
+  <symbol id="i-colour" viewBox="0 0 512 512"><use href="#gk-ic-colour"/></symbol>
 </svg>
 <div id="app">
   <header id="hud">
     <div class="left">
-      <button class="ic" id="b-home" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg></button>
-      <button class="chip flame" id="streak" aria-label="Streak"><svg><use href="#i-flame"/></svg><span id="streak-v">0</span></button>
+      <button type="button" class="ic" id="b-home" aria-label="Home"><svg><use href="#i-home"/></svg></button>
+      <!-- 0.10.1 HUD: Aventura in-level bar (game/ui.js updateHud, #hud.lv-hud): exit X | goal capsule | moves pill -->
+      <button type="button" class="gk-topbtn gk-tok" id="b-exit" aria-label="Salir"><svg viewBox="0 0 24 24"><use href="#gk-ic-ui-close"/></svg></button>
+      <button type="button" class="chip flame" id="streak" aria-label="Racha diaria"><svg><use href="#i-flame"/></svg><span id="streak-v">0</span></button>
     </div>
     <div id="scorebox">
       <div id="score">0</div>
       <div id="best"><svg class="bi"><use href="#i-crown"/></svg><span id="best-v">0</span></div>
+      <div id="lvgoal" role="status"><span id="lv-gi"></span><span class="lv-gn"><b id="lv-have">0</b><small>/<span id="lv-target">0</span></small></span><span class="lv-bar"><i id="lv-fill"></i></span></div>
     </div>
     <div class="right">
-      <button class="chip" id="b-coins" aria-label="Coins"><svg><use href="#i-coin"/></svg><span id="coins">0</span></button>
-      <button class="ic" id="b-sound" aria-label="Sound"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none"/><path class="off" d="m16 9.5 5 5m0-5-5 5" fill="none"/></svg></button>
-      <button class="ic" id="b-theme" aria-label="Theme"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
+      <div id="lvmoves" role="status" aria-label="Movimientos"><svg viewBox="0 0 512 512"><use href="#gk-ic-steps"/></svg><b id="lv-mv">0</b></div>
+      <button type="button" class="chip" id="b-coins" aria-label="Coins"><svg><use href="#i-coin"/></svg><span id="coins">0</span></button>
+      <button type="button" class="ic" id="b-sound" aria-label="Sound"><svg class="on"><use href="#gk-ic-ui-sound"/></svg><svg class="off"><use href="#gk-ic-ui-mute"/></svg></button>
     </div>
   </header>
   <main id="stage">
     <canvas id="cv"></canvas>
     <div id="fx"></div>
     <div id="boosters"></div>
+    <!-- 0.9.1 T item 9: "Sin movimientos" grace banner (game/ui.js noMovesStart): countdown ring, hint, Abandonar -->
+    <div id="nomoves" hidden role="alert">
+      <div class="nm-row">
+        <span class="nm-clock"><svg viewBox="0 0 44 44" aria-hidden="true"><circle class="bg" cx="22" cy="22" r="19"/><circle class="fg" id="nm-ring" cx="22" cy="22" r="19"/></svg><b id="nm-n">5</b></span>
+        <span class="nm-txt"><b id="nm-t"></b><small id="nm-h"></small></span>
+      </div>
+      <button type="button" class="mini ghost" id="nm-x"></button>
+    </div>
   </main>
 
   <section id="menu" class="panel show">
-    <div class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-    <h1>Teselo</h1>
-    <div class="gk-xp" id="m-xp"></div>
-    <button class="card" id="m-adv">
-      <span class="k" data-t="adventure">Adventure</span>
+    <!-- 0.9.1 M: quick access band (money-ui.js): Pase + Hucha | XP bar | Ofertas. The wordmark stays on the splash / app icon -->
+    <div class="gk-hq" id="m-quick"><div class="gk-hq-l"></div><div class="gk-xp" id="m-xp"></div><div class="gk-hq-r"></div></div>
+    <button type="button" class="card" id="m-adv">
+      <span class="ttl"><svg class="mi" viewBox="0 0 512 512" aria-hidden="true"><use href="#gk-ic-map"/></svg><span class="k" data-t="adventure">Adventure</span></span>
       <span class="sub" id="m-adv-sub"></span>
       <span class="tag" id="m-adv-tag"></span>
     </button>
-    <button class="card alt" id="m-daily">
-      <span class="k" data-t="daily">Daily</span>
+    <div class="gk-mpair"><!-- 0.10.3 PAGES: Diario + Infinito share one row on short screens (gk-theme.css) -->
+    <button type="button" class="card alt" id="m-daily">
+      <span class="ttl"><svg class="mi" viewBox="0 0 512 512" aria-hidden="true"><use href="#gk-ic-calendar"/></svg><span class="k" data-t="daily">Daily</span></span>
       <span class="sub" id="m-daily-sub"></span>
       <span class="tag" id="m-daily-tag"></span>
     </button>
-    <button class="card alt" id="m-endless">
-      <span class="k" data-t="endless">Endless</span>
+    <button type="button" class="card alt" id="m-endless">
+      <span class="ttl"><svg class="mi" viewBox="0 0 512 512" aria-hidden="true"><use href="#gk-ic-infinity"/></svg><span class="k" data-t="endless">Endless</span></span>
       <span class="sub" id="m-endless-sub"></span>
     </button>
+    </div>
     <div class="dock" id="m-dock">
-      <button class="ic big" id="m-quests" aria-label="Quests"><svg><use href="#i-quest"/></svg><b class="badge" id="m-quests-badge"></b></button>
-      <button class="ic big" id="m-shop" aria-label="Shop"><svg><use href="#i-shop"/></svg></button>
+      <button type="button" class="ic big" id="m-quests" aria-label="Quests"><svg><use href="#i-quest"/></svg><b class="badge" id="m-quests-badge"></b></button>
+      <button type="button" class="ic big" id="m-shop" aria-label="Shop"><svg><use href="#i-shop"/></svg></button>
     </div>
   </section>
 
@@ -101,12 +107,13 @@
     <div class="grid" id="o-grid"></div>
     <div class="ov-streak" id="o-streak"></div>
     <div class="ov-coins" id="o-coins"></div>
+    <div class="ov-card" id="o-card" hidden></div>
     <div class="row">
-      <button class="btn pri" id="o-next"><svg><use href="#i-play"/></svg><span data-t="nextLv">Next</span></button>
-      <button class="btn pri" id="o-cont"></button>
-      <button class="btn pri" id="o-share"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 8.5 12 4l4.5 4.5M5 13v6h14v-6" fill="none"/></svg><span data-t="share">Share</span></button>
-      <button class="btn" id="o-again"><svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.2-5.1M5 4v4h4" fill="none"/></svg><span data-t="again">Again</span></button>
-      <button class="btn" id="o-double"><svg class="adi"><use href="#i-ad"/></svg><span>×2</span><svg><use href="#i-coin"/></svg></button>
+      <button type="button" class="btn pri" id="o-next"><svg><use href="#i-play"/></svg><span data-t="nextLv">Next</span></button>
+      <button type="button" class="btn pri" id="o-cont"></button>
+      <button type="button" class="btn pri" id="o-share"><svg><use href="#i-share"/></svg><span data-t="share">Share</span></button>
+      <button type="button" class="btn" id="o-again"><svg><use href="#i-again"/></svg><span data-t="again">Again</span></button>
+      <button type="button" class="btn" id="o-double"><svg class="adi"><use href="#i-ad"/></svg><span>×2</span><svg><use href="#i-coin"/></svg></button>
     </div>
   </section>
   <div class="toast" id="toast"></div>
