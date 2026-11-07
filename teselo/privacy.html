@@ -28,7 +28,7 @@ a { color: var(--acc); }
 <body>
 <main>
 <h1>Teselo</h1>
-<p class="mute">Última actualización / Last updated: 02-11-2026 (versión 0.10.3 / version 0.10.3)</p>
+<p class="mute">Última actualización / Last updated: 07-11-2026 (versión 0.11.0, política v7 / version 0.11.0, policy v7)</p>
 <nav><a href="#es">Español</a><a href="#en">English</a><a href="terms.html">Condiciones / Terms</a><a href="./">Jugar / Play</a></nav>
 
 <section id="es" lang="es">
@@ -40,6 +40,7 @@ a { color: var(--acc); }
 <li>No hay cuenta con email ni contraseña, y no te pedimos nombre real, email, contactos, ubicación precisa, micrófono ni cámara.</li>
 <li>Tu partida vive en tu móvil. Cuando hay conexión, el juego habla con nuestro servidor para el ranking, las ligas, los equipos, las compras y guardar tu progreso.</li>
 <li>Los anuncios (Google AdMob) y las estadísticas (Google Analytics para Firebase) usan servicios de Google. En el Espacio Económico Europeo, el Reino Unido y Suiza te pedimos permiso antes.</li>
+<li>El juego se adapta a cómo juegas (piezas, ayudas, ofertas y ritmo de anuncios). Esas estimaciones se calculan en tu móvil; ver «Adaptación del juego».</li>
 <li>No vendemos datos.</li>
 </ul>
 
@@ -48,17 +49,23 @@ a { color: var(--acc); }
 <table>
 <tr><th>Qué</th><th>Para qué</th><th>Cuánto tiempo</th></tr>
 <tr><td>Un identificador anónimo aleatorio creado en tu móvil y una clave para firmar los envíos (no son tu ID de Google ni tu ID de publicidad)</td><td>Reconocer tu partida en el ranking, las ligas, los equipos y las compras</td><td>Mientras exista el servicio o hasta que pidas el borrado</td></tr>
+<tr><td>Código de perfil: desde la 0.11.0, en las listas que ven otros jugadores (ranking, liga, equipo, amigos, duelos, torneos) tu fila lleva un código opaco en lugar de tu identificador. Solo nuestro servidor puede traducirlo</td><td>Abrir tu perfil desde tu nombre sin mostrar tu identificador</td><td>Igual</td></tr>
 <tr><td>Apodo (se genera solo y puedes cambiarlo; no uses tu nombre real) y bandera del país, deducida del idioma del móvil, que puedes quitar</td><td>Mostrarte a otros jugadores en las tablas</td><td>Igual</td></tr>
+<tr><td>Perfil de jugador: al tocar tu nombre, otros jugadores ven tu apodo, bandera, aspecto, nivel, copas, liga y equipo. Con «No salir en el ranking» tu perfil no se muestra</td><td>Perfiles, solicitudes de amistad e invitaciones a equipos</td><td>Se calcula al abrirlo con los datos de esta tabla; no se guarda aparte</td></tr>
 <tr><td>Puntuaciones del reto diario con la lista de movimientos de esa partida, puntuaciones de Infinito, puntos de liga y copas</td><td>Ranking y ligas; el servidor repite la partida para comprobar que la puntuación es válida</td><td>Igual</td></tr>
+<tr><td>Desde la 0.11.0, cada puntuación de Infinito va con un registro compacto de la partida (piezas colocadas, ayudas, deshacer y revivir) y su día de inicio</td><td>El servidor repite la partida para comprobar la puntuación (juego limpio en el ranking). Si no cuadra, se rechaza</td><td>El registro se usa al recibirlo y no se guarda: guardamos la puntuación, si se comprobó y el número de movimientos</td></tr>
 <tr><td>Comunidad autónoma o país, solo si tú lo eliges</td><td>Ranking regional (no usamos geolocalización)</td><td>Hasta que lo quites o pidas el borrado</td></tr>
 <tr><td>Equipo: a cuál perteneces, tus victorias de la semana, tus peticiones de ayuda y de vidas, las ayudas que envías y recibes y las frases o emojis predefinidos que eliges</td><td>Equipos, cofre del equipo y avisos entre compañeros. No hay texto libre ni chat</td><td>Igual</td></tr>
 <tr><td>Amigos y retos (si los usas): un código anónimo de 5 caracteres, la lista de amigos y tu nivel y estrellas, que ven tus amigos</td><td>Retos entre amigos y su tabla</td><td>Igual</td></tr>
+<tr><td>Solicitudes de amistad e invitaciones a equipos (si las usas): quién la envía, a quién, el equipo, la fecha y si se rechazó; un aviso al invitado si acepta «Avisos»</td><td>Mostrar y responder solicitudes e invitaciones; evitar el spam (20 solicitudes y 10 invitaciones al día; una rechazada no se repite en 30 días la solicitud, 7 días la invitación)</td><td>Una solicitud se muestra 30 días y una invitación 7 días; el registro se conserva mientras exista el servicio o hasta que pidas el borrado</td></tr>
 <tr><td>Compras: producto, número de pedido, precio y moneda mostrados, país de la tienda, estado y el token de compra de Google Play</td><td>Comprobar la compra con Google Play, entregártela, restaurarla y detectar reembolsos y fraude. No vemos tus datos de pago</td><td>Mientras exista el servicio (por obligaciones contables y de reclamación)</td></tr>
 <tr><td>Copia de tu progreso: una copia completa de tu partida, asociada a tu identificador</td><td>Llevar tu progreso a otro móvil (ver «Conservar tu progreso»)</td><td>Se sustituye en cada copia. Una copia sin usar durante 400 días se da por perdida</td></tr>
 <tr><td>Si inicias sesión con Google Play Juegos: una huella irreversible (SHA-256) de tu ID de jugador de Play Juegos, ligada a tu identificador</td><td>Reconocer tu cuenta de Google en otro móvil. No guardamos tu ID de Play Juegos ni el permiso temporal de Google</td><td>Hasta que pidas el borrado</td></tr>
 <tr><td>Códigos de traspaso (solo su huella SHA-256 y una copia de tu partida)</td><td>Pasar tu partida a otro móvil</td><td>El código caduca a los 30 minutos y la copia se borra al usarlo</td></tr>
 <tr><td>Avisos: el token de notificaciones de Firebase Cloud Messaging, tu zona horaria, tu idioma y los tipos de aviso que apagas. Solo si aceptas «Avisos» en el permiso de Android</td><td>Enviarte avisos (liga, equipo, reto diario…) como máximo uno al día y no entre las 22:00 y las 09:00</td><td>Hasta que los desactives, desinstales (el token inválido se borra) o pidas el borrado</td></tr>
 <tr><td>Estadísticas anónimas: eventos con nombre, hora y un número (sesiones, niveles, anuncios vistos, ofertas, compras y su importe de catálogo), el origen de la instalación (Play Install Referrer) y un identificador aleatorio de la instalación que guardamos con hash. No guardamos la IP</td><td>Entender cómo se juega y mejorar el juego; las ofertas y anuncios se ajustan en tu móvil según cómo juegas</td><td>Recuentos agregados mientras exista el servicio</td></tr>
+<tr><td>Desde la 0.11.0, dentro de esas estadísticas: contadores por nivel y día (intentos, ayudas usadas, continuaciones, importe de catálogo de las compras, anuncios, primer intento y si se ganó), sumados entre todos los jugadores; y, por instalación con hash, el nivel más lejano jugado y el último día visto</td><td>Ver qué niveles son demasiado difíciles o hacen que la gente deje de jugar</td><td>Se borran a los 200 días</td></tr>
+<tr><td>Desde la 0.11.0, eventos de reglas: qué regla de adaptación actuó (su nombre, variante, si actuó y un código corto del motivo, con un número como el paso de la Racha), como mucho 30 al día por regla; y cuántas veces se cerró la app con un anuncio en pantalla (intersticial o con recompensa)</td><td>Comprobar que las reglas de «Cómo se mantiene gratis Teselo» (ver las <a href="terms.html#es-gratis">condiciones</a>) funcionan como se describen</td><td>Recuentos diarios agregados mientras exista el servicio</td></tr>
 <tr><td>Mensajes de nosotros y códigos regalo que canjeas</td><td>Entregarte recompensas</td><td>Mientras exista el servicio</td></tr>
 </table>
 <p>Los jugadores ven tu apodo, bandera, puntuaciones y puesto, y tus compañeros de equipo ven tus acciones en el equipo. Tu dirección IP solo se usa para limitar abusos y no la guardamos en nuestra base de datos; el proveedor de alojamiento puede registrarla en sus registros técnicos durante un tiempo limitado.</p>
@@ -75,6 +82,16 @@ a { color: var(--acc); }
 </ul>
 <p>Es un traspaso, no una copia: solo un móvil juega cada partida. El móvil anterior deja de poder firmar y muestra «Partida movida». Existe además un código de copia permanente, que copia tu partida sin moverla.</p>
 <p>Android también puede restaurar los datos del juego al cambiar de móvil con su copia de seguridad del sistema, si la tienes activada. Si desinstalas la app, se borran los datos del móvil (salvo esa copia); los del servidor se conservan hasta que pidas su borrado.</p>
+
+<h3 id="es-adapt">Adaptación del juego (perfilado)</h3>
+<p>Para las reglas que describen las <a href="terms.html#es-gratis">condiciones</a> («Cómo se mantiene gratis Teselo»), el juego calcula en tu móvil, a partir de cómo juegas, unas pocas estimaciones:</p>
+<ul>
+<li><strong>Tolerancia a los anuncios</strong> (una puntuación de 0 a 20): sube cuando cierras un anuncio con normalidad y baja si la app se cierra con un anuncio en pantalla. Solo hace que los anuncios entre partidas salgan menos. Se guarda solo en tu móvil, no va en las copias de tu partida.</li>
+<li><strong>Riesgo de dejar de jugar</strong> (de 0 a 1): según los días sin jugar, si tus sesiones se acortan y si te atascas. Sirve para darte ayudas (una continuación gratis, piezas más amables, un regalo).</li>
+<li><strong>Tendencia a revivir</strong>: qué parte de tus últimas 20 ofertas de revivir aceptaste. Decide si la 2.ª vida de Infinito se ofrece también con anuncio.</li>
+<li><strong>Habilidad y ritmo</strong> en cada nivel, para ajustar piezas y ayudas en Aventura.</li>
+</ul>
+<p>Nuestro servidor no recibe estas puntuaciones: solo recibe los eventos de reglas descritos arriba. Ninguna estimación usa si has comprado ni cuánto has gastado, no calculamos cuánto vales para los anuncios y no se usan para personalizar precios ni anuncios. No producen efectos jurídicos ni te afectan de forma importante: solo cambian ayudas, ofertas del catálogo y el ritmo de anuncios dentro del juego. Base legal: nuestro interés legítimo en mantener el juego gratis y justo. Puedes oponerte escribiéndonos (ver «Tus derechos»).</p>
 
 <h3>Anuncios (Google AdMob)</h3>
 <p>La app muestra anuncios de Google AdMob: anuncios con recompensa, que tú eliges ver, y anuncios intersticiales entre partidas (nunca a mitad de un nivel). Para servirlos, medirlos y prevenir el fraude, el SDK de Google puede recoger y compartir con Google:</p>
@@ -105,18 +122,19 @@ a { color: var(--acc); }
 <h3>Lo que no hacemos</h3>
 <ul>
 <li>No pedimos nombre real, email, contactos, ubicación precisa, micrófono ni cámara.</li>
-<li>No vendemos datos. No usamos otras redes de anuncios.</li>
+<li>No vendemos datos. No usamos otras redes de anuncios: solo Google AdMob.</li>
+<li>No calculamos el valor publicitario de cada jugador y no personalizamos precios.</li>
 </ul>
 
 <h3>Base legal y tus derechos</h3>
-<p>Los anuncios personalizados y las estadísticas en la UE se basan en tu consentimiento; los anuncios no personalizados, la prevención del fraude y las compras, en nuestro interés legítimo y en la ejecución del contrato de compra; el ranking, los equipos y guardar tu progreso, en prestarte el servicio que usas al jugar. Google conserva sus datos según su política.</p>
+<p>Los anuncios personalizados y las estadísticas en la UE se basan en tu consentimiento; los anuncios no personalizados, la prevención del fraude y las compras, en nuestro interés legítimo y en la ejecución del contrato de compra; el ranking, los equipos, los perfiles, las solicitudes e invitaciones, la comprobación de puntuaciones y guardar tu progreso, en prestarte el servicio que usas al jugar; la adaptación del juego y las estadísticas propias por nivel y por regla, en nuestro interés legítimo. Google conserva sus datos según su política.</p>
 <p>Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad, y retirar tu consentimiento, escribiendo a <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a> con tu apodo (lo ves en Ranking → Perfil). Respondemos en un mes como máximo. Puedes reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es">aepd.es</a>) o tu autoridad local. Google puede tratar datos fuera de la UE bajo sus propias garantías.</p>
 
 <h3>Edad</h3>
 <p>Teselo es un juego de contenido apto para todos los públicos (PEGI 3), pero incluye compras de objetos aleatorios y anuncios, y está pensado para personas adultas (18+). No está dirigido a menores de 13 años y no recogemos a sabiendas datos suyos; si sabes de algún caso, escríbenos y borraremos esos datos.</p>
 
 <h3>Cambios</h3>
-<p>Si esta política cambia, publicaremos la nueva versión en esta misma página con su fecha.</p>
+<p>Si esta política cambia, publicaremos la nueva versión en esta misma página con su fecha. v7 (0.11.0, 07-11-2026): código de perfil en las listas públicas, perfiles, solicitudes de amistad e invitaciones a equipos, registro de partida de Infinito para comprobar puntuaciones, contadores por nivel, eventos de reglas y la sección «Adaptación del juego».</p>
 </section>
 
 <section id="en" lang="en">
@@ -128,6 +146,7 @@ a { color: var(--acc); }
 <li>There is no account with email or password, and we do not ask for your real name, email, contacts, precise location, microphone or camera.</li>
 <li>Your game lives on your phone. When online, the game talks to our server for the ranking, leagues, teams, purchases and keeping your progress.</li>
 <li>Ads (Google AdMob) and statistics (Google Analytics for Firebase) use Google services. In the European Economic Area, the UK and Switzerland we ask for your permission first.</li>
+<li>The game adapts to how you play (pieces, help, offers and ad pace). Those estimates are computed on your phone; see "Game adaptation".</li>
 <li>We do not sell data.</li>
 </ul>
 
@@ -136,17 +155,23 @@ a { color: var(--acc); }
 <table>
 <tr><th>What</th><th>Why</th><th>How long</th></tr>
 <tr><td>A random anonymous identifier created on your phone and a key used to sign what it sends (neither is your Google ID or your advertising ID)</td><td>Recognise your game in the ranking, leagues, teams and purchases</td><td>While the service runs or until you ask for deletion</td></tr>
+<tr><td>Profile token: from 0.11.0, in the lists other players see (ranking, league, team, friends, duels, tournaments) your row carries an opaque token instead of your identifier. Only our server can turn it back</td><td>Open your profile from your name without showing your identifier</td><td>Same</td></tr>
 <tr><td>Nickname (generated for you and editable; do not use your real name) and country flag, derived from the phone language, which you can turn off</td><td>Show you to other players in the tables</td><td>Same</td></tr>
+<tr><td>Player profile: when they tap your name, other players see your nickname, flag, look, level, cups, league and team. With "Hide me from the ranking" your profile is not shown</td><td>Profiles, friend requests and team invites</td><td>Built when opened from the data in this table; not stored separately</td></tr>
 <tr><td>Daily-challenge scores with the move list of that game, Endless scores, league points and cups</td><td>Ranking and leagues; the server replays the game to check the score is valid</td><td>Same</td></tr>
+<tr><td>From 0.11.0, every Endless score comes with a compact log of the game (pieces placed, boosters, undos and revives) and its start day</td><td>The server replays the game to check the score (fair play in the ranking). If it does not match, it is rejected</td><td>The log is used on arrival and not stored: we keep the score, whether it was verified and the number of moves</td></tr>
 <tr><td>Region or country, only if you choose one</td><td>Regional ranking (we use no geolocation)</td><td>Until you remove it or ask for deletion</td></tr>
 <tr><td>Team: which one you belong to, your wins this week, your requests for help and lives, the help you send and receive and the preset phrases or emojis you pick</td><td>Teams, the team chest and notices between teammates. There is no free text and no chat</td><td>Same</td></tr>
 <tr><td>Friends and challenges (if you use them): an anonymous 5-character code, your friend list, and your level and stars, which your friends see</td><td>Challenges between friends and their table</td><td>Same</td></tr>
+<tr><td>Friend requests and team invites (if you use them): who sent it, to whom, the team, the date and whether it was declined; a notice to the invited player if they accept "Notifications"</td><td>Show and answer requests and invites; prevent spam (20 requests and 10 invites a day; a declined request cannot be repeated for 30 days, an invite for 7 days)</td><td>A request is shown for 30 days and an invite for 7 days; the record is kept while the service runs or until you ask for deletion</td></tr>
 <tr><td>Purchases: product, order number, the price and currency shown, store country, status and the Google Play purchase token</td><td>Verify the purchase with Google Play, deliver it, restore it and detect refunds and fraud. We never see your payment details</td><td>While the service runs (accounting and claims)</td></tr>
 <tr><td>Backup of your progress: a full copy of your save, tied to your identifier</td><td>Carry your progress to another phone (see "Keeping your progress")</td><td>Replaced at each backup. A backup unused for 400 days is treated as gone</td></tr>
 <tr><td>If you sign in with Google Play Games: an irreversible hash (SHA-256) of your Play Games player ID, linked to your identifier</td><td>Recognise your Google account on another phone. We do not store your Play Games ID or Google's temporary permission</td><td>Until you ask for deletion</td></tr>
 <tr><td>Transfer codes (only their SHA-256 hash, and a copy of your save)</td><td>Move your game to another phone</td><td>The code expires after 30 minutes and the copy is deleted once used</td></tr>
 <tr><td>Notifications: the Firebase Cloud Messaging token, your time zone, your language and the notice types you turn off. Only if you accept "Notifications" in the Android permission</td><td>Send you notices (league, team, daily challenge...), at most one a day and never between 22:00 and 09:00</td><td>Until you turn them off, uninstall (an invalid token is deleted) or ask for deletion</td></tr>
 <tr><td>Anonymous statistics: named events with a time and a number (sessions, levels, ads watched, offers, purchases and their catalogue price), the install source (Play Install Referrer) and a random install identifier that we store hashed. We do not store the IP</td><td>Understand how the game is played and improve it; offers and ads adapt on your phone to how you play</td><td>Aggregate counts while the service runs</td></tr>
+<tr><td>From 0.11.0, inside those statistics: counters per level and day (attempts, boosters used, continues, catalogue price of purchases, ads, first attempt and whether it was won), summed over all players; and, per hashed install, the furthest level played and the last day seen</td><td>See which levels are too hard or make people stop playing</td><td>Deleted after 200 days</td></tr>
+<tr><td>From 0.11.0, rule events: which adaptation rule acted (its name, variant, whether it acted and a short reason code, with a number such as the Streak step), at most 30 a day per rule; and how many times the app closed with an ad on screen (interstitial or rewarded)</td><td>Check that the rules in "How Teselo stays free" (see the <a href="terms.html#en-free">terms</a>) work as described</td><td>Aggregate daily counts while the service runs</td></tr>
 <tr><td>Messages from us and gift codes you redeem</td><td>Deliver rewards to you</td><td>While the service runs</td></tr>
 </table>
 <p>Other players see your nickname, flag, scores and rank, and your teammates see your actions in the team. Your IP address is only used to limit abuse and we do not store it in our database; the hosting provider may keep it in technical logs for a limited time.</p>
@@ -163,6 +188,16 @@ a { color: var(--acc); }
 </ul>
 <p>It is a move, not a copy: only one phone plays a save. The previous phone can no longer sign requests and shows "Game moved". There is also a permanent backup code, which copies your save without moving it.</p>
 <p>Android can also restore the game's data when you change phone through its own system backup, if you have it turned on. If you uninstall the app, the data on the phone is deleted (except that backup); the server data is kept until you ask for its deletion.</p>
+
+<h3 id="en-adapt">Game adaptation (profiling)</h3>
+<p>For the rules described in the <a href="terms.html#en-free">terms</a> ("How Teselo stays free"), the game computes a few estimates on your phone from how you play:</p>
+<ul>
+<li><strong>Ad tolerance</strong> (a score from 0 to 20): it goes up when you close an ad normally and down if the app closes with an ad on screen. It only makes ads between games come less often. It is kept on your phone only and is not part of your save backups.</li>
+<li><strong>Risk of stopping playing</strong> (0 to 1): based on days away, shorter sessions and getting stuck. It is used to give you help (a free continue, kinder pieces, a gift).</li>
+<li><strong>Revive propensity</strong>: the share of your last 20 revive offers you accepted. It decides whether Endless's 2nd revive is also offered with an ad.</li>
+<li><strong>Skill and pace</strong> on each level, to tune pieces and help in Adventure.</li>
+</ul>
+<p>Our server does not receive these scores: it only receives the rule events described above. No estimate uses whether you bought anything or how much you spent, we do not compute your value for ads, and they are not used to personalise prices or ads. They have no legal effect and do not affect you in any significant way: they only change help, catalogue offers and ad pace inside the game. Legal basis: our legitimate interest in keeping the game free and fair. You can object by writing to us (see "Your rights").</p>
 
 <h3>Ads (Google AdMob)</h3>
 <p>The app shows Google AdMob ads: rewarded ads, which you choose to watch, and interstitial ads between games (never in the middle of a level). To serve and measure ads and to prevent fraud, Google's SDK may collect and share with Google:</p>
@@ -193,18 +228,19 @@ a { color: var(--acc); }
 <h3>What we do not do</h3>
 <ul>
 <li>We do not ask for your real name, email, contacts, precise location, microphone or camera.</li>
-<li>We do not sell data. We use no other ad networks.</li>
+<li>We do not sell data. We use no other ad networks: only Google AdMob.</li>
+<li>We do not compute each player's advertising value and we do not personalise prices.</li>
 </ul>
 
 <h3>Legal basis and your rights</h3>
-<p>Personalized ads and the statistics in the EU rely on your consent; non-personalized ads, fraud prevention and purchases rely on our legitimate interest and on performing the purchase contract; the ranking, teams and keeping your progress rely on providing the service you use by playing. Google keeps its data under its own policy.</p>
+<p>Personalized ads and the statistics in the EU rely on your consent; non-personalized ads, fraud prevention and purchases rely on our legitimate interest and on performing the purchase contract; the ranking, teams, profiles, requests and invites, score checks and keeping your progress rely on providing the service you use by playing; game adaptation and our own per-level and per-rule statistics rely on our legitimate interest. Google keeps its data under its own policy.</p>
 <p>You can exercise your rights of access, rectification, erasure, objection, restriction and portability, and withdraw your consent, by writing to <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a> with your nickname (shown in Ranking → Profile). We answer within one month at most. You can complain to the Spanish Data Protection Agency (<a href="https://www.aepd.es">aepd.es</a>) or your local authority. Google may process data outside the EU under its own safeguards.</p>
 
 <h3>Age</h3>
 <p>Teselo has content suitable for all audiences (PEGI 3), but it includes purchases of random items and ads, and it is meant for adults (18+). It is not directed at children under 13 and we do not knowingly collect their data; if you know of a case, write to us and we will delete that data.</p>
 
 <h3>Changes</h3>
-<p>If this policy changes, the new version will be posted on this page with its date.</p>
+<p>If this policy changes, the new version will be posted on this page with its date. v7 (0.11.0, 07-11-2026): profile token in public lists, profiles, friend requests and team invites, the Endless game log for score checks, per-level counters, rule events and the "Game adaptation" section.</p>
 </section>
 </main>
 </body>
