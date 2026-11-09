@@ -28,7 +28,7 @@ a { color: var(--acc); }
 <body>
 <main>
 <h1>Teselo</h1>
-<p class="mute">Última actualización / Last updated: 07-11-2026 (versión 0.11.0, política v7 / version 0.11.0, policy v7)</p>
+<p class="mute">Última actualización / Last updated: RELEASE_DATE (versión 0.12.0, política v8 / version 0.12.0, policy v8)</p>
 <nav><a href="#es">Español</a><a href="#en">English</a><a href="terms.html">Condiciones / Terms</a><a href="./">Jugar / Play</a></nav>
 
 <section id="es" lang="es">
@@ -40,6 +40,8 @@ a { color: var(--acc); }
 <li>No hay cuenta con email ni contraseña, y no te pedimos nombre real, email, contactos, ubicación precisa, micrófono ni cámara.</li>
 <li>Tu partida vive en tu móvil. Cuando hay conexión, el juego habla con nuestro servidor para el ranking, las ligas, los equipos, las compras y guardar tu progreso.</li>
 <li>Los anuncios (Google AdMob) y las estadísticas (Google Analytics para Firebase) usan servicios de Google. En el Espacio Económico Europeo, el Reino Unido y Suiza te pedimos permiso antes.</li>
+<li>Desde la 0.12.0 la app envía también, sin pedir permiso, unos recuentos diarios anónimos sin ningún identificador. Puedes apagarlos en Ajustes → «Estadísticas anónimas». Ver «Estadísticas anónimas».</li>
+<li>Si la app falla, Firebase Crashlytics (Google) nos envía un informe del fallo, sin tu apodo ni tu identificador de jugador.</li>
 <li>El juego se adapta a cómo juegas (piezas, ayudas, ofertas y ritmo de anuncios). Esas estimaciones se calculan en tu móvil; ver «Adaptación del juego».</li>
 <li>No vendemos datos.</li>
 </ul>
@@ -63,11 +65,14 @@ a { color: var(--acc); }
 <tr><td>Si inicias sesión con Google Play Juegos: una huella irreversible (SHA-256) de tu ID de jugador de Play Juegos, ligada a tu identificador</td><td>Reconocer tu cuenta de Google en otro móvil. No guardamos tu ID de Play Juegos ni el permiso temporal de Google</td><td>Hasta que pidas el borrado</td></tr>
 <tr><td>Códigos de traspaso (solo su huella SHA-256 y una copia de tu partida)</td><td>Pasar tu partida a otro móvil</td><td>El código caduca a los 30 minutos y la copia se borra al usarlo</td></tr>
 <tr><td>Avisos: el token de notificaciones de Firebase Cloud Messaging, tu zona horaria, tu idioma y los tipos de aviso que apagas. Solo si aceptas «Avisos» en el permiso de Android</td><td>Enviarte avisos (liga, equipo, reto diario…) como máximo uno al día y no entre las 22:00 y las 09:00</td><td>Hasta que los desactives, desinstales (el token inválido se borra) o pidas el borrado</td></tr>
-<tr><td>Estadísticas anónimas: eventos con nombre, hora y un número (sesiones, niveles, anuncios vistos, ofertas, compras y su importe de catálogo), el origen de la instalación (Play Install Referrer) y un identificador aleatorio de la instalación que guardamos con hash. No guardamos la IP</td><td>Entender cómo se juega y mejorar el juego; las ofertas y anuncios se ajustan en tu móvil según cómo juegas</td><td>Recuentos agregados mientras exista el servicio</td></tr>
+<tr><td>Estadísticas de uso, solo con tu consentimiento en el EEE, Reino Unido y Suiza: eventos con nombre, hora y un número (sesiones, niveles, anuncios vistos, ofertas, compras y su importe de catálogo), el origen de la instalación (Play Install Referrer) y un identificador aleatorio de la instalación que guardamos con hash. No guardamos la IP</td><td>Entender cómo se juega y mejorar el juego; las ofertas y anuncios se ajustan en tu móvil según cómo juegas</td><td>Recuentos agregados mientras exista el servicio</td></tr>
 <tr><td>Desde la 0.11.0, dentro de esas estadísticas: contadores por nivel y día (intentos, ayudas usadas, continuaciones, importe de catálogo de las compras, anuncios, primer intento y si se ganó), sumados entre todos los jugadores; y, por instalación con hash, el nivel más lejano jugado y el último día visto</td><td>Ver qué niveles son demasiado difíciles o hacen que la gente deje de jugar</td><td>Se borran a los 200 días</td></tr>
 <tr><td>Desde la 0.11.0, eventos de reglas: qué regla de adaptación actuó (su nombre, variante, si actuó y un código corto del motivo, con un número como el paso de la Racha), como mucho 30 al día por regla; y cuántas veces se cerró la app con un anuncio en pantalla (intersticial o con recompensa)</td><td>Comprobar que las reglas de «Cómo se mantiene gratis Teselo» (ver las <a href="terms.html#es-gratis">condiciones</a>) funcionan como se describen</td><td>Recuentos diarios agregados mientras exista el servicio</td></tr>
-<tr><td>Mensajes de nosotros y códigos regalo que canjeas</td><td>Entregarte recompensas</td><td>Mientras exista el servicio</td></tr>
+<tr><td>Desde la 0.12.0, estadísticas anónimas sin consentimiento: recuentos por día sin ningún identificador (ver «Estadísticas anónimas»)</td><td>Saber cuántas personas instalan, vuelven y superan cada nivel, también cuando no das permiso</td><td>Cada envío se suma al momento a los totales del día y no se guarda; los totales, 25 meses</td></tr>
+<tr><td>Desde la 0.12.0, mensajes que nos envías desde la app («Escribirme», en la tarjeta para valorar el juego; opcional): el texto (hasta 500 caracteres), el juego, la versión de la app, la plataforma y en qué momento salió la tarjeta, con tu identificador</td><td>Leer lo que nos cuentas y, si hace falta, responderte</td><td>Con los informes de error: guardamos los 500 más recientes</td></tr>
+<tr><td>Mensajes de nosotros y códigos regalo que canjeas. Desde la 0.12.0, también nuestras respuestas a lo que nos escribes: un mensaje corto (hasta 140 caracteres, sin premio) solo para quien escribió</td><td>Entregarte recompensas y responderte en el Buzón del juego</td><td>Mientras exista el servicio; una respuesta se ve 30 días en el Buzón</td></tr>
 </table>
+<p><strong>Copias de seguridad cifradas.</strong> Desde la 0.12.0, una vez al día copiamos toda la base de datos del servidor (apodos, identificadores, puntuaciones, registros de compras, informes de error y mensajes…), cifrada con AES-256-GCM, en un repositorio privado de GitHub (GitHub, de Microsoft, en EE. UU.). La clave solo la tenemos nosotros: GitHub no puede leer la copia. Cada copia se guarda 30 días y solo sirve para recuperar el servicio si algo se rompe. Si pides el borrado, tus datos desaparecen de las copias como mucho 30 días después.</p>
 <p>Los jugadores ven tu apodo, bandera, puntuaciones y puesto, y tus compañeros de equipo ven tus acciones en el equipo. Tu dirección IP solo se usa para limitar abusos y no la guardamos en nuestra base de datos; el proveedor de alojamiento puede registrarla en sus registros técnicos durante un tiempo limitado.</p>
 <p>El ranking, las ligas y los equipos <strong>incluyen rivales y compañeros CPU</strong>: jugadores simulados por el juego, marcados con un pequeño icono. No tienen datos personales.</p>
 
@@ -93,6 +98,16 @@ a { color: var(--acc); }
 </ul>
 <p>Nuestro servidor no recibe estas puntuaciones: solo recibe los eventos de reglas descritos arriba. Ninguna estimación usa si has comprado ni cuánto has gastado, no calculamos cuánto vales para los anuncios y no se usan para personalizar precios ni anuncios. No producen efectos jurídicos ni te afectan de forma importante: solo cambian ayudas, ofertas del catálogo y el ritmo de anuncios dentro del juego. Base legal: nuestro interés legítimo en mantener el juego gratis y justo. Puedes oponerte escribiéndonos (ver «Tus derechos»).</p>
 
+<h3 id="es-anon">Estadísticas anónimas (sin consentimiento)</h3>
+<p>Desde la 0.12.0, cada instalación de Android envía a nuestro servidor, también si rechazas el aviso de consentimiento, unos recuentos por día:</p>
+<ul>
+<li>instalaciones, móviles activos y sesiones, por versión de la app, versión con la que instalaste, región del idioma del móvil (2 letras, por ejemplo «ES») y antigüedad de la instalación (días 0 a 3, 7, 14 y 30 exactos; el resto, por tramos);</li>
+<li>por nivel: cuántas veces se empieza, se gana, se pierde, se abandona y se juega por primera vez.</li>
+</ul>
+<p><strong>No llevan ningún identificador</strong>: ni de instalación, ni de publicidad, ni de jugador, ni ningún número que permita unir dos envíos. No guardamos la IP (solo la ve, en memoria, el límite contra abusos). Cada envío se suma al momento a los totales del día y no se guarda. Los totales se guardan 25 meses. En tu móvil quedan los recuentos que aún no se han enviado, el último día contado y el día y la versión de instalación (estos dos se olvidan pasado el día 30).</p>
+<p>Base legal, según nuestra lectura prudente (no es asesoramiento legal): los totales guardados son datos anónimos (considerando 26 del RGPD); el tratamiento breve de cada envío se basa en nuestro interés legítimo en medir la audiencia del juego (art. 6.1.f del RGPD), con el mínimo de datos; y guardar los recuentos en tu móvil se apoya en la excepción de medición de audiencia tal como la aplica la CNIL francesa (solo nosotros, solo estadísticas agregadas, sin seguimiento entre apps, 25 meses como máximo y con derecho a oponerte). La guía de cookies de la AEPD no exime con claridad la analítica, así que te damos una forma fácil de oponerte. Si una revisión legal concluye que hace falta consentimiento, podemos apagar estos recuentos desde el servidor sin publicar una versión nueva.</p>
+<p><strong>Cómo oponerte:</strong> apaga Ajustes → «Estadísticas anónimas». Desde el siguiente inicio de la app no se cuenta nada y se borran los recuentos guardados en tu móvil. También puedes escribirnos (ver «Tus derechos»).</p>
+
 <h3>Anuncios (Google AdMob)</h3>
 <p>La app muestra anuncios de Google AdMob: anuncios con recompensa, que tú eliges ver, y anuncios intersticiales entre partidas (nunca a mitad de un nivel). Para servirlos, medirlos y prevenir el fraude, el SDK de Google puede recoger y compartir con Google:</p>
 <ul>
@@ -111,6 +126,7 @@ a { color: var(--acc); }
 <li><strong>Firebase Cloud Messaging</strong>: entrega los avisos si los aceptas. Sin tu permiso no se pide ningún token.</li>
 <li><strong>Google Analytics para Firebase</strong> (solo en Android): estadísticas de uso. Está apagado hasta que se conoce tu consentimiento; en el EEE, Reino Unido y Suiza solo se activa si lo aceptas, y se puede cambiar en la Tienda → «Privacidad». Fuera de esas zonas se activa por defecto.</li>
 <li><strong>Play Install Referrer</strong>: dice de qué anuncio o enlace viene la instalación; se lee una vez.</li>
+<li><strong>Firebase Crashlytics</strong> (desde la 0.12.0, solo en Android): si la app se cierra de golpe, se queda bloqueada (ANR) o la página del juego da un error, envía a Google un informe con el error (sin claves ni tokens), dónde ocurrió, la versión de la app, el modelo del móvil, la versión de Android, el estado de la memoria y un identificador de instalación de Crashlytics. No lleva tu apodo ni tu identificador de jugador. No depende del consentimiento, porque sirve para que la app funcione: base legal, nuestro interés legítimo en encontrar y arreglar fallos. Google conserva los informes 90 días.</li>
 </ul>
 
 <h3>Compras (Google Play)</h3>
@@ -118,6 +134,7 @@ a { color: var(--acc); }
 
 <h3 id="es-bugs">Informes de error</h3>
 <p>Algunas versiones incluyen un botón de informe de error. Solo se envía si lo pulsas. Lleva el texto que escribas (hasta 1000 caracteres), las últimas líneas del registro del juego (con claves y tokens tachados) y un resumen técnico (versión, pantalla, nivel, monedas, vidas, tamaño de pantalla). Puede llevar una captura del tablero del juego (activada por defecto, la puedes quitar, no es una captura del sistema) y una imagen que elijas tú. Conservamos los 500 informes más recientes y borramos las imágenes a los 30 días.</p>
+<p>Desde la 0.12.0, la tarjeta para valorar el juego tiene un botón «Escribirme». Lo que escribes (hasta 500 caracteres) solo se envía si pulsas «Enviar», lo leemos nosotros y se guarda junto a los informes de error (ver la tabla de arriba). No lleva registro, capturas ni imágenes. Podemos responderte con un mensaje en el Buzón del juego.</p>
 
 <h3>Lo que no hacemos</h3>
 <ul>
@@ -127,14 +144,14 @@ a { color: var(--acc); }
 </ul>
 
 <h3>Base legal y tus derechos</h3>
-<p>Los anuncios personalizados y las estadísticas en la UE se basan en tu consentimiento; los anuncios no personalizados, la prevención del fraude y las compras, en nuestro interés legítimo y en la ejecución del contrato de compra; el ranking, los equipos, los perfiles, las solicitudes e invitaciones, la comprobación de puntuaciones y guardar tu progreso, en prestarte el servicio que usas al jugar; la adaptación del juego y las estadísticas propias por nivel y por regla, en nuestro interés legítimo. Google conserva sus datos según su política.</p>
-<p>Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad, y retirar tu consentimiento, escribiendo a <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a> con tu apodo (lo ves en Ranking → Perfil). Respondemos en un mes como máximo. Puedes reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es">aepd.es</a>) o tu autoridad local. Google puede tratar datos fuera de la UE bajo sus propias garantías.</p>
+<p>Los anuncios personalizados y las estadísticas en la UE se basan en tu consentimiento; los anuncios no personalizados, la prevención del fraude y las compras, en nuestro interés legítimo y en la ejecución del contrato de compra; el ranking, los equipos, los perfiles, las solicitudes e invitaciones, la comprobación de puntuaciones y guardar tu progreso, en prestarte el servicio que usas al jugar; la adaptación del juego y las estadísticas propias por nivel y por regla, en nuestro interés legítimo. Desde la 0.12.0: las estadísticas anónimas sin consentimiento, como se explica en «Estadísticas anónimas»; los informes de fallos de Crashlytics y las copias de seguridad cifradas, en nuestro interés legítimo en que el servicio funcione y no pierda datos; los mensajes de «Escribirme» y nuestras respuestas, en atender lo que nos pides. Google conserva sus datos según su política.</p>
+<p>Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad, y retirar tu consentimiento, escribiendo a <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a> con tu apodo (lo ves en Ranking → Perfil). Respondemos en un mes como máximo. Puedes reclamar ante la Agencia Española de Protección de Datos (<a href="https://www.aepd.es">aepd.es</a>) o tu autoridad local. Google puede tratar datos fuera de la UE bajo sus propias garantías; GitHub guarda las copias cifradas en EE. UU. bajo las suyas, sin poder leerlas.</p>
 
 <h3>Edad</h3>
 <p>Teselo es un juego de contenido apto para todos los públicos (PEGI 3), pero incluye compras de objetos aleatorios y anuncios, y está pensado para personas adultas (18+). No está dirigido a menores de 13 años y no recogemos a sabiendas datos suyos; si sabes de algún caso, escríbenos y borraremos esos datos.</p>
 
 <h3>Cambios</h3>
-<p>Si esta política cambia, publicaremos la nueva versión en esta misma página con su fecha. v7 (0.11.0, 07-11-2026): código de perfil en las listas públicas, perfiles, solicitudes de amistad e invitaciones a equipos, registro de partida de Infinito para comprobar puntuaciones, contadores por nivel, eventos de reglas y la sección «Adaptación del juego».</p>
+<p>Si esta política cambia, publicaremos la nueva versión en esta misma página con su fecha. v8 (0.12.0, RELEASE_DATE): estadísticas anónimas sin consentimiento y cómo oponerte, informes de fallos con Firebase Crashlytics, copias de seguridad cifradas en GitHub (30 días), mensajes de «Escribirme» y nuestras respuestas en el Buzón. v7 (0.11.0, 07-11-2026): código de perfil en las listas públicas, perfiles, solicitudes de amistad e invitaciones a equipos, registro de partida de Infinito para comprobar puntuaciones, contadores por nivel, eventos de reglas y la sección «Adaptación del juego».</p>
 </section>
 
 <section id="en" lang="en">
@@ -146,6 +163,8 @@ a { color: var(--acc); }
 <li>There is no account with email or password, and we do not ask for your real name, email, contacts, precise location, microphone or camera.</li>
 <li>Your game lives on your phone. When online, the game talks to our server for the ranking, leagues, teams, purchases and keeping your progress.</li>
 <li>Ads (Google AdMob) and statistics (Google Analytics for Firebase) use Google services. In the European Economic Area, the UK and Switzerland we ask for your permission first.</li>
+<li>From 0.12.0 the app also sends, without asking, a few anonymous daily counts with no identifier at all. You can turn them off in Settings → "Anonymous statistics". See "Anonymous statistics".</li>
+<li>If the app crashes, Firebase Crashlytics (Google) sends us a crash report, without your nickname or your player identifier.</li>
 <li>The game adapts to how you play (pieces, help, offers and ad pace). Those estimates are computed on your phone; see "Game adaptation".</li>
 <li>We do not sell data.</li>
 </ul>
@@ -169,11 +188,14 @@ a { color: var(--acc); }
 <tr><td>If you sign in with Google Play Games: an irreversible hash (SHA-256) of your Play Games player ID, linked to your identifier</td><td>Recognise your Google account on another phone. We do not store your Play Games ID or Google's temporary permission</td><td>Until you ask for deletion</td></tr>
 <tr><td>Transfer codes (only their SHA-256 hash, and a copy of your save)</td><td>Move your game to another phone</td><td>The code expires after 30 minutes and the copy is deleted once used</td></tr>
 <tr><td>Notifications: the Firebase Cloud Messaging token, your time zone, your language and the notice types you turn off. Only if you accept "Notifications" in the Android permission</td><td>Send you notices (league, team, daily challenge...), at most one a day and never between 22:00 and 09:00</td><td>Until you turn them off, uninstall (an invalid token is deleted) or ask for deletion</td></tr>
-<tr><td>Anonymous statistics: named events with a time and a number (sessions, levels, ads watched, offers, purchases and their catalogue price), the install source (Play Install Referrer) and a random install identifier that we store hashed. We do not store the IP</td><td>Understand how the game is played and improve it; offers and ads adapt on your phone to how you play</td><td>Aggregate counts while the service runs</td></tr>
+<tr><td>Usage statistics, only with your consent in the EEA, the UK and Switzerland: named events with a time and a number (sessions, levels, ads watched, offers, purchases and their catalogue price), the install source (Play Install Referrer) and a random install identifier that we store hashed. We do not store the IP</td><td>Understand how the game is played and improve it; offers and ads adapt on your phone to how you play</td><td>Aggregate counts while the service runs</td></tr>
 <tr><td>From 0.11.0, inside those statistics: counters per level and day (attempts, boosters used, continues, catalogue price of purchases, ads, first attempt and whether it was won), summed over all players; and, per hashed install, the furthest level played and the last day seen</td><td>See which levels are too hard or make people stop playing</td><td>Deleted after 200 days</td></tr>
 <tr><td>From 0.11.0, rule events: which adaptation rule acted (its name, variant, whether it acted and a short reason code, with a number such as the Streak step), at most 30 a day per rule; and how many times the app closed with an ad on screen (interstitial or rewarded)</td><td>Check that the rules in "How Teselo stays free" (see the <a href="terms.html#en-free">terms</a>) work as described</td><td>Aggregate daily counts while the service runs</td></tr>
-<tr><td>Messages from us and gift codes you redeem</td><td>Deliver rewards to you</td><td>While the service runs</td></tr>
+<tr><td>From 0.12.0, anonymous statistics without consent: daily counts with no identifier at all (see "Anonymous statistics")</td><td>Know how many people install, come back and beat each level, also when you do not give consent</td><td>Each batch is added at once to the day's totals and not kept; the totals, 25 months</td></tr>
+<tr><td>From 0.12.0, messages you send us from the app ("Write to me", on the card that asks you to rate the game; optional): the text (up to 500 characters), the game, the app version, the platform and the moment the card showed, with your identifier</td><td>Read what you tell us and, when needed, answer you</td><td>With the bug reports: we keep the newest 500</td></tr>
+<tr><td>Messages from us and gift codes you redeem. From 0.12.0, also our answers to what you write: a short message (up to 140 characters, no reward) only for the player who wrote</td><td>Deliver rewards to you and answer you in the game's Mailbox</td><td>While the service runs; an answer shows for 30 days in the Mailbox</td></tr>
 </table>
+<p><strong>Encrypted backups.</strong> From 0.12.0, once a day we copy the whole server database (nicknames, identifiers, scores, purchase records, bug reports and messages...), encrypted with AES-256-GCM, to a private GitHub repository (GitHub, owned by Microsoft, in the US). Only we hold the key: GitHub cannot read the copy. Each copy is kept for 30 days and is only used to restore the service if something breaks. If you ask for deletion, your data is gone from the copies within 30 days at most.</p>
 <p>Other players see your nickname, flag, scores and rank, and your teammates see your actions in the team. Your IP address is only used to limit abuse and we do not store it in our database; the hosting provider may keep it in technical logs for a limited time.</p>
 <p>The ranking, the leagues and the teams <strong>include CPU rivals and teammates</strong>: players simulated by the game, marked with a small icon. They have no personal data.</p>
 
@@ -199,6 +221,16 @@ a { color: var(--acc); }
 </ul>
 <p>Our server does not receive these scores: it only receives the rule events described above. No estimate uses whether you bought anything or how much you spent, we do not compute your value for ads, and they are not used to personalise prices or ads. They have no legal effect and do not affect you in any significant way: they only change help, catalogue offers and ad pace inside the game. Legal basis: our legitimate interest in keeping the game free and fair. You can object by writing to us (see "Your rights").</p>
 
+<h3 id="en-anon">Anonymous statistics (without consent)</h3>
+<p>From 0.12.0, every Android install sends our server a few counts per day, also if you refuse the consent notice:</p>
+<ul>
+<li>installs, active devices and sessions, by app version, the version you installed, the region of the phone language (2 letters, for example "ES") and install age (days 0 to 3, 7, 14 and 30 exactly; the rest in ranges);</li>
+<li>per level: how many times it is started, won, lost, left and played for the first time.</li>
+</ul>
+<p><strong>They carry no identifier of any kind</strong>: no install, advertising or player identifier, and no number that could link two batches. We do not store the IP (only the abuse rate limit sees it, in memory). Each batch is added at once to the day's totals and not kept. The totals are kept for 25 months. On your phone there remain the counts not sent yet, the last day counted, and the install day and version (these two are forgotten after day 30).</p>
+<p>Legal basis, on our cautious reading (not legal advice): the stored totals are anonymous data (GDPR Recital 26); the brief processing of each batch relies on our legitimate interest in measuring the game's audience (GDPR Art. 6(1)(f)), with as little data as possible; and keeping the counts on your phone relies on the audience-measurement exemption as the French CNIL applies it (only us, aggregated statistics only, no tracking across apps, 25 months at most and with the right to object). The Spanish AEPD cookie guide does not clearly exempt analytics, so we give you an easy way to object. If a legal review finds that consent is needed, we can turn these counts off from the server without a new release.</p>
+<p><strong>How to object:</strong> turn off Settings → "Anonymous statistics". From the next app start nothing is counted and the counts stored on your phone are deleted. You can also write to us (see "Your rights").</p>
+
 <h3>Ads (Google AdMob)</h3>
 <p>The app shows Google AdMob ads: rewarded ads, which you choose to watch, and interstitial ads between games (never in the middle of a level). To serve and measure ads and to prevent fraud, Google's SDK may collect and share with Google:</p>
 <ul>
@@ -217,6 +249,7 @@ a { color: var(--acc); }
 <li><strong>Firebase Cloud Messaging</strong>: delivers notifications if you accept them. Without your permission no token is requested.</li>
 <li><strong>Google Analytics for Firebase</strong> (Android only): usage statistics. It is off until your consent is known; in the EEA, the UK and Switzerland it is turned on only if you accept, and you can change it in Shop → "Privacy options". Outside those areas it is on by default.</li>
 <li><strong>Play Install Referrer</strong>: tells which ad or link the install came from; it is read once.</li>
+<li><strong>Firebase Crashlytics</strong> (from 0.12.0, Android only): if the app crashes, freezes (ANR) or the game page hits an error, it sends Google a report with the error (keys and tokens removed), where it happened, the app version, the phone model, the Android version, the memory state and a Crashlytics installation identifier. It does not carry your nickname or your player identifier. It does not depend on consent, because it keeps the app working: legal basis, our legitimate interest in finding and fixing bugs. Google keeps the reports for 90 days.</li>
 </ul>
 
 <h3>Purchases (Google Play)</h3>
@@ -224,6 +257,7 @@ a { color: var(--acc); }
 
 <h3 id="en-bugs">Bug reports</h3>
 <p>Some versions include a bug-report button. Nothing is sent unless you tap it. It carries the text you write (up to 1,000 characters), the last lines of the game's log (keys and tokens blanked out) and a technical summary (version, screen, level, coins, lives, screen size). It may carry a capture of the game board (on by default, you can remove it, it is not a system screenshot) and an image you pick yourself. We keep the newest 500 reports and delete the images after 30 days.</p>
+<p>From 0.12.0, the card that asks you to rate the game has a "Write to me" button. What you write (up to 500 characters) is only sent if you tap "Send", is read by us and is kept with the bug reports (see the table above). It carries no log, captures or images. We may answer with a message in the game's Mailbox.</p>
 
 <h3>What we do not do</h3>
 <ul>
@@ -233,14 +267,14 @@ a { color: var(--acc); }
 </ul>
 
 <h3>Legal basis and your rights</h3>
-<p>Personalized ads and the statistics in the EU rely on your consent; non-personalized ads, fraud prevention and purchases rely on our legitimate interest and on performing the purchase contract; the ranking, teams, profiles, requests and invites, score checks and keeping your progress rely on providing the service you use by playing; game adaptation and our own per-level and per-rule statistics rely on our legitimate interest. Google keeps its data under its own policy.</p>
-<p>You can exercise your rights of access, rectification, erasure, objection, restriction and portability, and withdraw your consent, by writing to <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a> with your nickname (shown in Ranking → Profile). We answer within one month at most. You can complain to the Spanish Data Protection Agency (<a href="https://www.aepd.es">aepd.es</a>) or your local authority. Google may process data outside the EU under its own safeguards.</p>
+<p>Personalized ads and the statistics in the EU rely on your consent; non-personalized ads, fraud prevention and purchases rely on our legitimate interest and on performing the purchase contract; the ranking, teams, profiles, requests and invites, score checks and keeping your progress rely on providing the service you use by playing; game adaptation and our own per-level and per-rule statistics rely on our legitimate interest. From 0.12.0: the anonymous statistics without consent, as explained in "Anonymous statistics"; Crashlytics crash reports and the encrypted backups, on our legitimate interest in keeping the service working and not losing data; "Write to me" messages and our answers, on handling what you ask us. Google keeps its data under its own policy.</p>
+<p>You can exercise your rights of access, rectification, erasure, objection, restriction and portability, and withdraw your consent, by writing to <a href="mailto:cesar0407p@gmail.com">cesar0407p@gmail.com</a> with your nickname (shown in Ranking → Profile). We answer within one month at most. You can complain to the Spanish Data Protection Agency (<a href="https://www.aepd.es">aepd.es</a>) or your local authority. Google may process data outside the EU under its own safeguards; GitHub stores the encrypted backups in the US under its own, without being able to read them.</p>
 
 <h3>Age</h3>
 <p>Teselo has content suitable for all audiences (PEGI 3), but it includes purchases of random items and ads, and it is meant for adults (18+). It is not directed at children under 13 and we do not knowingly collect their data; if you know of a case, write to us and we will delete that data.</p>
 
 <h3>Changes</h3>
-<p>If this policy changes, the new version will be posted on this page with its date. v7 (0.11.0, 07-11-2026): profile token in public lists, profiles, friend requests and team invites, the Endless game log for score checks, per-level counters, rule events and the "Game adaptation" section.</p>
+<p>If this policy changes, the new version will be posted on this page with its date. v8 (0.12.0, RELEASE_DATE): anonymous statistics without consent and how to object, crash reports with Firebase Crashlytics, encrypted backups on GitHub (30 days), "Write to me" messages and our answers in the Mailbox. v7 (0.11.0, 07-11-2026): profile token in public lists, profiles, friend requests and team invites, the Endless game log for score checks, per-level counters, rule events and the "Game adaptation" section.</p>
 </section>
 </main>
 </body>
