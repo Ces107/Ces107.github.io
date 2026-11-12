@@ -51,6 +51,10 @@ var QRN = 41, QRHEX = 'fe871d2bbf882452e98a08ba0c9b10ae8ba66db0dae8baddc189ae882
 var cv = document.getElementById('c'), x = cv.getContext('2d'), sr = document.getElementById('sr'), body = document.body;
 // The only element properties the page needs, set from here (there is no stylesheet).
 document.documentElement.style.overflow = 'hidden'; body.style.margin = '0'; body.style.overflow = 'hidden';
+// Two layers: the static floor (tiles, glow, board shadow) is painted once on a canvas behind; the live canvas on top
+// is transparent and only carries what moves, so the browser never re-draws a full-screen image every frame.
+var bgc = document.createElement('canvas'), bs0 = bgc.style; body.insertBefore(bgc, cv);
+bs0.position = 'fixed'; bs0.left = '0'; bs0.top = '0'; bs0.display = 'block'; bs0.pointerEvents = 'none'; bs0.opacity = '0';
 var cs = cv.style; cs.position = 'fixed'; cs.left = '0'; cs.top = '0'; cs.display = 'block'; cs.touchAction = 'none';
 cs.userSelect = 'none'; cs.webkitUserSelect = 'none'; cs.webkitTapHighlightColor = 'rgba(0,0,0,0)';
 var ss = sr.style; ss.position = 'absolute'; ss.width = '1px'; ss.height = '1px'; ss.overflow = 'hidden'; ss.clipPath = 'inset(50%)'; ss.whiteSpace = 'nowrap';
@@ -110,31 +114,43 @@ badge.onerror = function(){ if (!/png$/.test(badge.src)) badge.src = 'img/google
 badge.src = 'img/google-play-es.svg';
 
 var SP = {}, FLOOR = null, dirty = true;
+// Each block sprite exists at three sizes (full, half, quarter), drawn as vectors at that size. The frame loop always
+// picks the nearest one, so no image is ever shrunk by more than 2× and plain bilinear filtering stays sharp.
+// (imageSmoothingQuality 'high' looked the same but made Chrome rebuild mipmaps and stall ~150 ms every second.)
+function blockSprite(k,s){
+  var p = PAL[k], c = mk(s,s), o = c.getContext('2d'), r = s*0.24;
+  o.fillStyle = p[2]; rr(o,0,0,s,s,r); o.fill();
+  var g = o.createLinearGradient(0,0,0,s*0.9); g.addColorStop(0,p[0]); g.addColorStop(1,p[1]);
+  o.fillStyle = g; rr(o,0,0,s,s*0.9,r); o.fill();
+  o.save(); rr(o,0,0,s,s*0.9,r); o.clip();
+  var rg = o.createRadialGradient(s*0.28,s*0.16,0,s*0.28,s*0.16,s*0.8);
+  rg.addColorStop(0,'rgba(255,255,255,.38)'); rg.addColorStop(1,'rgba(255,255,255,0)'); o.fillStyle = rg; o.fillRect(0,0,s,s);
+  var bg = o.createLinearGradient(0,s*0.5,0,s*0.9); bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.09)'); o.fillStyle = bg; o.fillRect(0,0,s,s);
+  o.restore();
+  o.strokeStyle = 'rgba(255,255,255,.28)'; o.lineWidth = Math.max(1, s*0.022); rr(o,s*0.03,s*0.03,s*0.94,s*0.83,r*0.9); o.stroke();
+  return c;
+}
+function glintSprite(s){
+  var gl = mk(s,s), go = gl.getContext('2d'); go.translate(s*0.33,s*0.21); go.rotate(-0.38); go.scale(1,0.5);
+  var gg = go.createRadialGradient(0,0,0,0,0,s*0.17); gg.addColorStop(0,'rgba(255,255,255,.95)'); gg.addColorStop(0.55,'rgba(255,255,255,.7)'); gg.addColorStop(1,'rgba(255,255,255,0)');
+  go.fillStyle = gg; go.beginPath(); go.arc(0,0,s*0.17,0,Math.PI*2); go.fill(); return gl;
+}
+function lvl(devicePx){ return devicePx > SP.lv[1]*1.05 ? '' : devicePx > SP.lv[2]*1.05 ? '1' : '2'; }
 function buildSprites(){
   var b = L.board, s = Math.ceil(Math.max(56, b.cell*1.3*DPR, 48*DPR));
+  SP.lv = [s, Math.max(8, Math.round(s/2)), Math.max(6, Math.round(s/4))];
   KEYS.forEach(function(k){
-    var p = PAL[k], c = mk(s,s), o = c.getContext('2d'), r = s*0.24;
-    o.fillStyle = p[2]; rr(o,0,0,s,s,r); o.fill();
-    var g = o.createLinearGradient(0,0,0,s*0.9); g.addColorStop(0,p[0]); g.addColorStop(1,p[1]);
-    o.fillStyle = g; rr(o,0,0,s,s*0.9,r); o.fill();
-    o.save(); rr(o,0,0,s,s*0.9,r); o.clip();
-    var rg = o.createRadialGradient(s*0.28,s*0.16,0,s*0.28,s*0.16,s*0.8);
-    rg.addColorStop(0,'rgba(255,255,255,.38)'); rg.addColorStop(1,'rgba(255,255,255,0)'); o.fillStyle = rg; o.fillRect(0,0,s,s);
-    var bg = o.createLinearGradient(0,s*0.5,0,s*0.9); bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.09)'); o.fillStyle = bg; o.fillRect(0,0,s,s);
-    o.restore();
-    o.strokeStyle = 'rgba(255,255,255,.28)'; o.lineWidth = Math.max(1, s*0.022); rr(o,s*0.03,s*0.03,s*0.94,s*0.83,r*0.9); o.stroke();
-    SP[k] = c;
+    var p = PAL[k], r = s*0.24, c = blockSprite(k, s);
+    SP[k] = c; SP[k+'1'] = blockSprite(k, SP.lv[1]); SP[k+'2'] = blockSprite(k, SP.lv[2]);
     var sd = mk(s,s), so = sd.getContext('2d'); so.fillStyle = p[2]; rr(so,0,0,s,s,r); so.fill();
     so.fillStyle = 'rgba(0,0,0,.2)'; rr(so,0,0,s,s,r); so.fill(); SP[k+'_s'] = sd;
     [0,1].forEach(function(lv){
       var n = 96, pad = 28, bc = mk(n + pad*2, n + pad*2), bo = bc.getContext('2d');
       if (lv && 'filter' in bo) bo.filter = 'blur(7px)';
-      bo.drawImage(c, pad, pad, n, n); SP[k+'_b'+lv] = bc;
+      bo.imageSmoothingQuality = 'high'; bo.drawImage(c, pad, pad, n, n); SP[k+'_b'+lv] = bc;
     });
   });
-  var gl = mk(s,s), go = gl.getContext('2d'); go.translate(s*0.33,s*0.21); go.rotate(-0.38); go.scale(1,0.5);
-  var gg = go.createRadialGradient(0,0,0,0,0,s*0.17); gg.addColorStop(0,'rgba(255,255,255,.95)'); gg.addColorStop(0.55,'rgba(255,255,255,.7)'); gg.addColorStop(1,'rgba(255,255,255,0)');
-  go.fillStyle = gg; go.beginPath(); go.arc(0,0,s*0.17,0,Math.PI*2); go.fill(); SP.glint = gl;
+  SP.glint = glintSprite(s); SP.glint1 = glintSprite(SP.lv[1]); SP.glint2 = glintSprite(SP.lv[2]);
   var fl = mk(s,s), fo = fl.getContext('2d'); fo.fillStyle = '#fff'; rr(fo,0,0,s,s,s*0.24); fo.fill(); SP.flash = fl;
   var wl = mk(s,s), wo = wl.getContext('2d'); wo.fillStyle = T.well; rr(wo,0,0,s,s,s*0.22); wo.fill();
   wo.save(); rr(wo,0,0,s,s,s*0.22); wo.clip(); var wg = wo.createLinearGradient(0,0,0,s*0.4);
@@ -160,7 +176,8 @@ function buildSprites(){
   buildQR();
 }
 function buildFloor(){
-  var c = mk(W*DPR, H*DPR), o = c.getContext('2d'); o.scale(DPR,DPR);
+  var c = bgc; c.width = Math.round(W*DPR); c.height = Math.round(H*DPR); bs0.width = W + 'px'; bs0.height = H + 'px';
+  var o = c.getContext('2d'); o.setTransform(DPR,0,0,DPR,0,0);
   var b = L.board, cx = b.cx, cy = b.cy, s = Math.round(clamp(Math.min(W,H)/8.5, 40, 58));
   o.fillStyle = T.bgc; o.fillRect(0,0,W,H);
   o.strokeStyle = T.tile; o.lineWidth = 1;
@@ -170,6 +187,7 @@ function buildFloor(){
   o.fillStyle = f; o.fillRect(0,0,W,H);
   var g = o.createRadialGradient(cx,cy + b.s*0.12,0,cx,cy,b.s*0.98); g.addColorStop(0,T.glow); g.addColorStop(1,T.bg0);
   o.fillStyle = g; o.fillRect(0,0,W,H);
+  o.globalAlpha = 0.62; o.drawImage(SP.shadow, cx - b.s*0.7, cy + b.s*0.07 - b.s*0.56, b.s*1.4, b.s*1.2); o.globalAlpha = 1;
   FLOOR = c;
 }
 var QR = null;
@@ -196,7 +214,7 @@ function buildQR(){
   finder(0,0,PAL.t[2]); finder(0,n - 7,PAL.p[2]); finder(n - 7,0,PAL.b[2]);
   var X = (c0 + qz)*m, Y = (c0 + qz)*m, Z = 7*m, bs = Z*0.27, gx = X + Z/2, gy = Y + Z/2;
   o.fillStyle = paper; rr(o,X,Y,Z,Z,m*1.2); o.fill();
-  [['t',-1.08,-0.54],['y',0,-0.54],['p',1.08,-0.54],['o',0,0.54]].forEach(function(e){ o.drawImage(SP[e[0]], gx + e[1]*bs - bs/2, gy + e[2]*bs - bs/2, bs, bs); });
+  [['t',-1.08,-0.54],['y',0,-0.54],['p',1.08,-0.54],['o',0,0.54]].forEach(function(e){ o.drawImage(SP[e[0] + lvl(bs)], gx + e[1]*bs - bs/2, gy + e[2]*bs - bs/2, bs, bs); });
   SP.qr = c;
 }
 
@@ -364,7 +382,7 @@ function clearLines(ls,isBot){
   var cx = sx/n, cy = sy/n, pts = ls.length*80 + (ls.length - 1)*120;
   if (!reduce){ rings.push({x:cx, y:cy, t0:now}); shakeT = now; }
   score += pts; pops.push({x:cx, y:cy, s:'+' + pts, t0:now});
-  toasts.push({s:ls.length > 1 ? '¡Combo ×' + ls.length + '!' : rnd(['¡Limpio!','¡Bien!','¡Eso es!','¡Genial!']), t0:now, big:ls.length > 1});
+  toast(ls.length > 1 ? '¡Combo ×' + ls.length + '!' : rnd(['¡Limpio!','¡Bien!','¡Eso es!','¡Genial!']), ls.length > 1);
   if (!isBot){
     sfx('clear', ls.length); buzz(ls.length > 1 ? [14,40,22] : 14);
     if (!won){ for (var q = cleared; q < Math.min(GOAL, cleared + ls.length); q++) pipT[q] = now + (q - cleared)*120;
@@ -373,10 +391,15 @@ function clearLines(ls,isBot){
   hintCache = null;
   setTimeout(after, 420);
 }
+// One message at a time: a new one sends the one on screen into its fade-out (they used to overlap on the win).
+function toast(s,big,life){
+  toasts.forEach(function(o){ var l = o.life || 1150, q = (now - o.t0)/l; if (q < 0.86) o.t0 = now - l*0.86; });
+  toasts.push({s:s, t0:now, big:big, life:life});
+}
 function after(){
   if (tray.every(function(p){ return !p; })){ newTray(); return; }
   if (!resetting && !tray.some(function(p){ return p && anyFit(p.s); })){
-    resetting = true; toasts.push({s:'¡Otra!', t0:now, big:true});
+    resetting = true; toast('¡Otra!', true);
     setTimeout(function(){
       board.forEach(function(k,i){ if (k) ghosts.push({i:i, k:k, t0:now + (((i/8)|0) + i%8)*18}); });
       board.fill(null); drop = {};
@@ -386,7 +409,7 @@ function after(){
 }
 function win(){
   won = true; wonT = now; sfx('win'); buzz([20,60,20,60,40]);
-  toasts.push({s:'¡Reto superado!', t0:now, big:true, life:1900});
+  toast('¡Reto superado!', true, 1900);
   if (!reduce){ burst(L.play.x + L.play.w/2, L.play.y + L.play.h*0.4, 70); burst(L.board.cx, L.board.y + L.board.s*0.3, 46); }
 }
 function burst(cx,cy,n){
@@ -481,15 +504,17 @@ function blk(u,v,k,sc,al,fl,sx,sy,off){
   var w0 = s*p[2]*sx, h0 = s*p[2]*sy, w1 = s*q[2]*sx, h1 = s*q[2]*sy, d0 = (1 - sy)*s*p[2]*0.5, d1 = (1 - sy)*s*q[2]*0.5;
   x.globalAlpha = al*BA;
   x.drawImage(SP[k+'_s'], p[0] - w0/2 + ox, p[1] - h0/2 + d0 + oy, w0, h0);
-  x.drawImage(SP[k], q[0] - w1/2 + ox, q[1] - h1/2 + d1 + oy, w1, h1);
-  x.drawImage(SP.glint, q[0] - w1/2 + ox - tilt.ry*w1*1.1, q[1] - h1/2 + d1 + oy + tilt.rx*h1*1.1, w1, h1);
+  var lv = lvl(w1*DPR);
+  x.drawImage(SP[k + lv], q[0] - w1/2 + ox, q[1] - h1/2 + d1 + oy, w1, h1);
+  x.drawImage(SP['glint' + lv], q[0] - w1/2 + ox - tilt.ry*w1*1.1, q[1] - h1/2 + d1 + oy + tilt.rx*h1*1.1, w1, h1);
   if (fl > 0){ x.globalAlpha = al*BA*fl; x.drawImage(SP.flash, q[0] - w1/2 + ox, q[1] - h1/2 + d1 + oy, w1, h1); }
   x.globalAlpha = 1;
 }
 function flat(cx,cy,s,k,al,sx,sy){
   if (s <= 0.5 || al <= 0) return; sx = sx || 1; sy = sy || 1;
   var w = s*sx, h = s*sy, dy = (1 - sy)*s*0.5;
-  x.globalAlpha = al; x.drawImage(SP[k], cx - w/2, cy - h/2 + dy, w, h); x.drawImage(SP.glint, cx - w/2, cy - h/2 + dy, w, h); x.globalAlpha = 1;
+  var lv = lvl(w*DPR);
+  x.globalAlpha = al; x.drawImage(SP[k + lv], cx - w/2, cy - h/2 + dy, w, h); x.drawImage(SP['glint' + lv], cx - w/2, cy - h/2 + dy, w, h); x.globalAlpha = 1;
 }
 
 function paintAmbient(dt){
@@ -545,8 +570,6 @@ function paintBoard(t){
   var b = L.board, a = intro(t,320,720); if (a <= 0) return;
   BA = eOut(a); var sc = lerp(0.9,1,eBack(a));
   x.save(); x.translate(b.cx,b.cy); x.scale(sc,sc); x.translate(-b.cx,-b.cy);
-  x.globalAlpha = BA*0.62;
-  x.drawImage(SP.shadow, b.cx - tilt.ry*b.s*0.4 - b.s*0.7, b.cy + b.s*0.07 + tilt.rx*b.s*0.3 - b.s*0.56, b.s*1.4, b.s*1.2);
   x.globalAlpha = BA;
   poly(b.s*0.045, b.s*0.02); x.fillStyle = T.lip; x.fill();
   poly(0,0); x.fillStyle = T.board; x.fill();
@@ -688,7 +711,7 @@ function paintFx(t,dt){
   parts = parts.filter(function(p){
     var e = t - p.t0; if (e < 0) return true; var q = e/p.life; if (q >= 1) return false; var s = e/1000;
     x.save(); x.globalAlpha = 1 - q*q; x.translate(p.x + p.vx*s, p.y + p.vy*s + 0.5*G*s*s); x.rotate(p.r + s*p.vr);
-    x.drawImage(SP[p.k], -p.s/2, -p.s/2, p.s, p.s); x.restore(); return true;
+    x.drawImage(SP[p.k + lvl(p.s*DPR)], -p.s/2, -p.s/2, p.s, p.s); x.restore(); return true;
   });
   pops = pops.filter(function(p){
     var q = (t - p.t0)/950; if (q >= 1) return false;
@@ -721,11 +744,21 @@ function paintHand(){
 }
 
 // ---------------------------------------------------------------- frame
+var odd = false;
+function busyNow(t){
+  return t - start < 3200 || drag || bot || hover || t - lastUser < 2500 || parts.length || conf.length || ghosts.length || toasts.length ||
+    pops.length || rings.length || resetting || won && t - wonT < 5000 || Object.keys(drop).length > 0 || tray.some(function(p){ return p && p.ret; });
+}
 function frame(t){
   if (start === null){ start = t; lastT = t; introSetup(); }
+  // Nothing interactive going on: paint every other frame (30 fps) — the slow drift looks the same, the GPU does half.
+  var active = dirty || reduce || busyNow(t);
+  odd = !odd; if (!active && odd){ requestAnimationFrame(frame); return; }
   now = t; var dt = Math.min(0.05, (t - lastT)/1000); lastT = t;
   if (dirty){ buildSprites(); buildFloor(); dirty = false; }
-  x.setTransform(DPR,0,0,DPR,0,0); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  var fa0 = eOut(intro(t,0,520)); if (bs0.opacity !== String(fa0)) bs0.opacity = String(fa0);
+  x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,cv.width,cv.height);
+  x.setTransform(DPR,0,0,DPR,0,0); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'low';
   var b = L.board, mt = reduce ? 0 : 0.17, trx = 0, trY = 0;
   if (!drag && !reduce){
     if (gyro){ trY = gyro.dx*mt; trx = -gyro.dy*mt; }
@@ -736,13 +769,10 @@ function frame(t){
   var kk = drag ? 0.25 : 0.07; tilt.rx += (trx - tilt.rx)*kk; tilt.ry += (trY - tilt.ry)*kk;
   var se = (t - shakeT)/300; SHK = se < 1 ? Math.sin(se*32)*(1 - se)*b.cell*0.07 : 0;
   prep(); stepBot(t);
-  var fa = eOut(intro(t,0,520));
-  if (fa < 1){ x.globalAlpha = 1; x.fillStyle = T.bgc; x.fillRect(0,0,W,H); }
-  x.globalAlpha = fa; x.drawImage(FLOOR,0,0,W,H); x.globalAlpha = 1;
   paintRings(t); paintAmbient(dt); paintCopy(t); paintBoard(t); paintTray(t); paintCTA(t); paintTop(t); paintFoot(t); paintFx(t,dt);
   if (drag) paintDrag(t);
   paintHand(); attract(t);
-  if (t - start > 2600 && !document.hidden){ slowEMA = slowEMA*0.95 + dt*1000*0.05;
+  if (active && t - start > 2600 && !document.hidden){ slowEMA = slowEMA*0.95 + dt*1000*0.05;
     if (slowEMA > 26 && DPR > 1){ if (++slowN > 90){ DPRCAP = Math.max(1, DPR - 0.5); slowN = 0; slowEMA = 16; size(); } } else slowN = 0; }
   requestAnimationFrame(frame);
 }
@@ -804,7 +834,7 @@ cv.addEventListener('pointerup', function(e){
   }
   var h = hit(e.clientX, e.clientY);
   if (h && h.url && press && press.url === h.url) window.location.href = h.url;
-  press = null;
+  press = null; if (e.pointerType !== 'mouse'){ hover = null; cursor(); }
 });
 cv.addEventListener('pointercancel', function(){ if (drag && !drag.bot){ drag.p.ret = retFrom(drag); drag = null; } press = null; });
 cv.addEventListener('pointerleave', function(e){ if (e.pointerType === 'mouse' && !drag){ hover = null; mouse.x = -1; cursor(); } });
