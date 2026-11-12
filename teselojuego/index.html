@@ -172,7 +172,8 @@ function buildSprites(){
   ig.addColorStop(0,PAL.t[0]); ig.addColorStop(1,PAL.t[1]); io.fillStyle = ig; io.beginPath(); io.arc(isz/2,isz/2,isz/2,0,Math.PI*2); io.fill();
   io.fillStyle = '#fff'; io.beginPath(); io.moveTo(isz*0.35,isz*0.28); io.lineTo(isz*0.75,isz*0.5); io.lineTo(isz*0.35,isz*0.72); io.closePath(); io.fill();
   SP.play = ic; SP.mente = null;
-  if (badgeOk){ var bw = L.play.w*DPR*1.08, bh = L.play.h*DPR*1.08, bc2 = mk(bw,bh); bc2.getContext('2d').drawImage(badge,0,0,bc2.width,bc2.height); SP.badge = bc2; }
+  if (badgeOk){ var bw = L.play.w*DPR*1.08, bh = L.play.h*DPR*1.08, bc2 = mk(bw,bh); bc2.getContext('2d').drawImage(badge,0,0,bc2.width,bc2.height); SP.badge = bc2;
+    var bc3 = mk(L.lockPlay.w*DPR*1.08, L.lockPlay.h*DPR*1.08); bc3.getContext('2d').drawImage(badge,0,0,bc3.width,bc3.height); SP.badge2 = bc3; }
   buildQR();
 }
 function buildFloor(){
@@ -275,6 +276,16 @@ function layout(){
   b.gx = b.x + b.fp; b.gy = b.y + b.fp; b.cx = b.x + b.s/2; b.cy = b.y + b.s/2;
   o.board = b; HZ = b.cell*0.22;
   o.tray = {x:b.x, y:b.y + b.s*1.05, w:b.s, h:b.s*0.235};
+  // the lock panel covers board + tray: fox, title, line, a big Google Play badge, a small web link
+  var lp = b.s*0.03, Lk = {x:b.x - lp, y:b.y - lp, w:b.s + lp*2, h:o.tray.y + o.tray.h - b.y + lp*2};
+  var lbw = Math.min(Lk.w*0.84, 470), lbh = lbw*53.333/180, fsz = Math.min(Lk.w*0.3, Lk.h*0.23);
+  Lk.ts = b.s*0.088; Lk.ss = Math.max(13, b.s*0.042); Lk.ls = Math.max(13, b.s*0.04);
+  var lh = fsz*1.02 + b.s*0.03 + Lk.ts*1.1 + Lk.ss*1.9 + b.s*0.035 + lbh + Lk.ls*2.8, ly0 = Lk.y + (Lk.h - lh)/2;
+  Lk.fox = {s:fsz, y:ly0}; Lk.ty = ly0 + fsz*1.02 + b.s*0.03 + Lk.ts*0.9; Lk.sy = Lk.ty + Lk.ss*1.75;
+  o.lockPlay = {x:Lk.x + Lk.w/2 - lbw/2, y:Lk.sy + b.s*0.04, w:lbw, h:lbh};
+  Lk.ly = o.lockPlay.y + lbh + Lk.ls*1.9;
+  o.lockWeb = {x:Lk.x + Lk.w*0.18, y:Lk.ly - Lk.ls*1.2, w:Lk.w*0.64, h:Lk.ls*2.4};
+  o.lock = Lk;
   CL = [];
   for (var i = 0; i < 64; i++) CL.push([-b.s/2 + b.fp + (i%8)*b.pitch + b.cell/2, -b.s/2 + b.fp + ((i/8)|0)*b.pitch + b.cell/2]);
   var hh = b.s/2, R = b.s*0.065, n = 6; OUT = [];
@@ -303,6 +314,14 @@ var board = new Array(64).fill(null), drop = {}, ghosts = [], parts = [], rings 
 var tray = [], drag = null, bot = null, hover = null, press = null, kb = null, hintCache = null;
 var score = 0, shown = 0, cleared = 0, pipT = [0,0,0], won = false, wonT = 0, userEver = false, userMoved = false;
 var lastUser = -1e9, lastBotEnd = -1e9, demoDone = false, resetting = false, shakeT = -1e9, start = null, now = 0, lastT = 0, BA = 1;
+// The taste is free, the meal is in the app: after the first loss or 40 s of play the board locks and asks for the install.
+var LOCK_MS = 40000, firstPlayT = null, lockT = null, lockWhy = '';
+var fox = new Image(); fox.src = 'img/teselo-fox.webp';
+function lock(why){
+  if (lockT !== null) return;
+  lockT = now; lockWhy = why; if (bot) cancelBot(); if (drag){ drag.p.ret = retFrom(drag); drag = null; }
+  sfx('lock'); buzz([16,50,16]); cursor();
+}
 var mouse = {x:-1, y:-1, type:''}, gyro = null, g0 = null, b0 = null;
 
 function seed(){
@@ -397,8 +416,10 @@ function toast(s,big,life){
   toasts.push({s:s, t0:now, big:big, life:life});
 }
 function after(){
+  if (lockT !== null) return;
   if (tray.every(function(p){ return !p; })){ newTray(); return; }
   if (!resetting && !tray.some(function(p){ return p && anyFit(p.s); })){
+    if (userEver){ lock('lost'); return; }   // the visitor lost: no free restart, the app has the rest
     resetting = true; toast('¡Otra!', true);
     setTimeout(function(){
       board.forEach(function(k,i){ if (k) ghosts.push({i:i, k:k, t0:now + (((i/8)|0) + i%8)*18}); });
@@ -464,7 +485,7 @@ function cancelBot(){
   bot = null; lastBotEnd = now; demoDone = true;
 }
 function attract(t){
-  if (reduce || bot || drag || resetting || document.hidden || start === null) return;
+  if (reduce || bot || drag || resetting || lockT !== null || document.hidden || start === null) return;
   if (!demoDone && !userEver){ if (t - start > 2900 && tray[0] && fits(tray[0].s,7,3)) startBot({i:0, r:7, c:3}); else if (t - start > 2900) demoDone = true; return; }
   var idle = t - Math.max(lastUser, lastBotEnd);
   if (idle > (userEver ? 16000 : 8000)) startBot();
@@ -491,6 +512,7 @@ function sfx(name,n){
   else if (name === 'place'){ tone(196, t, 0.14, 'sine', 0.55); tone(392, t, 0.07, 'triangle', 0.12); }
   else if (name === 'back') tone(330, t, 0.09, 'sine', 0.18);
   else if (name === 'clear'){ var base = Math.min(3, (n || 1) - 1)*2; for (var i = 0; i < 4 + (n || 1); i++) tone(NOTES[Math.min(NOTES.length - 1, base + i)], t + i*0.052, 0.34, 'sine', 0.3); }
+  else if (name === 'lock'){ tone(NOTES[4], t, 0.4, 'triangle', 0.22); tone(NOTES[2], t + 0.12, 0.5, 'triangle', 0.2); tone(NOTES[5], t + 0.26, 0.7, 'sine', 0.18); }
   else if (name === 'win'){ [0,2,4,5,7,9].forEach(function(q,i){ tone(NOTES[q], t + i*0.085, 0.55, 'triangle', 0.24); tone(NOTES[q]/2, t + i*0.085, 0.4, 'sine', 0.16); }); }
 }
 function buzz(p){ if (userEver && navigator.vibrate) try { navigator.vibrate(p); } catch (e) {} }
@@ -637,6 +659,7 @@ function paintCTA(t){
   x.save(); x.translate(0,dy);
   var hp = hover && hover.url === PLAY, pp = press && press.url === PLAY;
   var pulse = won ? 1 + 0.04*Math.sin((t - wonT)/130)*Math.max(0, 1 - (t - wonT)/3600) : 1, s = (pp ? 0.97 : hp ? 1.035 : 1)*pulse;
+  if (lockT !== null && !reduce) s *= 1 + 0.025*Math.max(0, Math.sin((t - lockT)/260));
   x.save(); x.translate(p.x + p.w/2, p.y + p.h/2); x.scale(s,s);
   if (won && !reduce){ var gl = Math.max(0, 1 - (t - wonT)/5000); if (gl > 0){ x.globalAlpha = 0.76*gl; x.drawImage(SP.glow, -p.w*0.75, -p.w*0.75, p.w*1.5, p.w*1.5); x.globalAlpha = 1; } }
   x.globalAlpha = a*(hp ? 0.6 : 0.45); x.drawImage(SP.shadow, -p.w*0.58, -p.h*0.15, p.w*1.16, p.h*1.3); x.globalAlpha = a;
@@ -668,6 +691,36 @@ function paintCTA(t){
     x.restore();
     x.globalAlpha = qa; text('Escanéalo con el móvil', qb.x + qb.s/2, qb.y + qb.s + 20, font(500,12.5,SANS), T.soft, 'center'); x.globalAlpha = 1;
   }
+  x.restore();
+}
+function paintLock(t){
+  if (lockT === null) return;
+  var Lk = L.lock, b = L.board, q = reduce ? 1 : eOut((t - lockT)/520);
+  x.save(); x.globalAlpha = q*0.93; x.fillStyle = T.bgc; rr(x, Lk.x, Lk.y, Lk.w, Lk.h, b.s*0.07); x.fill();
+  x.globalAlpha = q*0.5; x.lineWidth = 1; x.strokeStyle = T.faint; x.stroke(); x.restore();
+  var a = reduce ? 1 : eOut((t - lockT - 140)/560); if (a <= 0) return;
+  var cx = Lk.x + Lk.w/2, rise = (1 - a)*b.s*0.04;
+  x.save(); x.globalAlpha = a; x.translate(0, rise);
+  if (fox.complete && fox.naturalWidth){ var fs = Lk.fox.s, fh = fs*fox.naturalHeight/fox.naturalWidth, bob = reduce ? 0 : Math.sin(t/420)*fs*0.03;
+    x.drawImage(fox, cx - fs/2, Lk.fox.y + bob, fs, fh); }
+  spacing((-Lk.ts*0.02) + 'px');
+  text(lockWhy === 'lost' ? '¡Sin hueco!' : '¿Te gusta?', cx, Lk.ty, font(600, Lk.ts, SERIF), T.ink, 'center');
+  spacing('0px');
+  text(lockWhy === 'lost' ? 'Puntuación: ' + score + ' · sigue en la app' : 'Sigue en la app: 300 niveles', cx, Lk.sy, font(500, Lk.ss, SANS), T.soft, 'center');
+  var p = L.lockPlay, hp = hover && hover.url === PLAY, pul = (reduce ? 1 : 1 + 0.045*Math.max(0, Math.sin((t - lockT)/240)))*(hp ? 1.04 : 1);
+  x.save(); x.translate(p.x + p.w/2, p.y + p.h/2); x.scale(pul, pul);
+  x.globalAlpha = a*0.8; x.drawImage(SP.glow, -p.w*0.7, -p.w*0.42, p.w*1.4, p.w*0.84);
+  x.globalAlpha = a*0.5; x.drawImage(SP.shadow, -p.w*0.58, -p.h*0.15, p.w*1.16, p.h*1.3); x.globalAlpha = a;
+  if (SP.badge2) x.drawImage(SP.badge2, -p.w/2, -p.h/2, p.w, p.h);
+  else { x.fillStyle = '#100f0d'; rr(x,-p.w/2,-p.h/2,p.w,p.h,p.h*0.125); x.fill(); text('Google Play', 0, 2, font(600,p.h*0.36,SANS), '#fff', 'center', 'middle'); }
+  var cyc = (t - lockT) % 2600;
+  if (!reduce && cyc < 900){ var sq = cyc/900, band = p.h*0.9, gx = lerp(-p.w*0.75, p.w*0.75, eIO(sq));
+    x.save(); rr(x,-p.w/2,-p.h/2,p.w,p.h,p.h*0.125); x.clip(); x.transform(1,0,-0.45,1,0,0); x.drawImage(SP.shine, gx - band, -p.h/2, band*2, p.h); x.restore(); }
+  if (kb === 'play'){ x.lineWidth = 3; x.strokeStyle = PAL.t[1]; rr(x,-p.w/2 - 6,-p.h/2 - 6,p.w + 12,p.h + 12,p.h*0.2); x.stroke(); }
+  x.restore();
+  var hw = hover && hover.url === WEB, wt = 'o juega en el navegador →';
+  var ww = text(wt, cx, Lk.ly, font(600, Lk.ls, SANS), hw ? T.ink : T.soft, 'center');
+  x.fillStyle = hw ? T.ink : T.faint; x.fillRect(cx - ww/2, Lk.ly + Lk.ls*0.25, ww, 1.5);
   x.restore();
 }
 function speaker(cx,cy,s,on){
@@ -747,7 +800,8 @@ function paintHand(){
 var odd = false;
 function busyNow(t){
   return t - start < 3200 || drag || bot || hover || t - lastUser < 2500 || parts.length || conf.length || ghosts.length || toasts.length ||
-    pops.length || rings.length || resetting || won && t - wonT < 5000 || Object.keys(drop).length > 0 || tray.some(function(p){ return p && p.ret; });
+    pops.length || rings.length || resetting || won && t - wonT < 5000 || Object.keys(drop).length > 0 || tray.some(function(p){ return p && p.ret; }) ||
+    lockT !== null && t - lockT < 6000;
 }
 function frame(t){
   if (start === null){ start = t; lastT = t; introSetup(); }
@@ -769,7 +823,8 @@ function frame(t){
   var kk = drag ? 0.25 : 0.07; tilt.rx += (trx - tilt.rx)*kk; tilt.ry += (trY - tilt.ry)*kk;
   var se = (t - shakeT)/300; SHK = se < 1 ? Math.sin(se*32)*(1 - se)*b.cell*0.07 : 0;
   prep(); stepBot(t);
-  paintRings(t); paintAmbient(dt); paintCopy(t); paintBoard(t); paintTray(t); paintCTA(t); paintTop(t); paintFoot(t); paintFx(t,dt);
+  if (lockT === null && firstPlayT !== null && t - firstPlayT > LOCK_MS && !drag) lock('time');
+  paintRings(t); paintAmbient(dt); paintCopy(t); paintBoard(t); paintTray(t); paintLock(t); paintCTA(t); paintTop(t); paintFoot(t); paintFx(t,dt);
   if (drag) paintDrag(t);
   paintHand(); attract(t);
   if (active && t - start > 2600 && !document.hidden){ slowEMA = slowEMA*0.95 + dt*1000*0.05;
@@ -786,10 +841,12 @@ function introSetup(){
 function inR(r,X,Y,pd){ pd = pd || 0; return X >= r.x - pd && X <= r.x + r.w + pd && Y >= r.y - pd && Y <= r.y + r.h + pd; }
 function hit(X,Y){
   if (inR(L.sound,X,Y,8)) return {sound:true};
+  if (lockT !== null){ if (inR(L.lockPlay,X,Y,6)) return {url:PLAY}; if (inR(L.lockWeb,X,Y,6)) return {url:WEB}; }
   if (inR(L.play,X,Y)) return {url:PLAY};
   if (inR(L.web,X,Y)) return {url:WEB};
   if (L.qrBox && inR({x:L.qrBox.x, y:L.qrBox.y, w:L.qrBox.s, h:L.qrBox.s},X,Y)) return {url:PLAY, qr:true};
   for (var i = 0; i < L.foot.length; i++){ var f = L.foot[i]; if (inR(f,X,Y,7)) return {url:f.url}; }
+  if (lockT !== null) return null;   // locked: the pieces don't move any more
   for (var j = 0; j < 3; j++) if (tray[j] && inR(trayRect(j),X,Y)) return {tray:j};
   if (!coarse) return null;
   // touch: a finger that lands just above the tray still grabs the closest piece
@@ -817,6 +874,7 @@ cv.addEventListener('pointerdown', function(e){
     try { cv.setPointerCapture(e.pointerId); } catch (er) {}
     var p = tray[h.tray];
     drag = {i:h.tray, p:p, x:X, y:Y, lift:e.pointerType === 'mouse' ? 0 : L.board.cell*1.35, t0:now, from:trayPos(h.tray,p), ok:false};
+    if (firstPlayT === null) firstPlayT = now;
     aim(); sfx('pick'); buzz(5);
   }
   cursor();
@@ -850,8 +908,9 @@ if (darkQ.addEventListener) darkQ.addEventListener('change', theme);
 window.addEventListener('resize', size);
 
 // ---------------------------------------------------------------- automated checks (only with #qa in the URL)
-if (location.hash === '#qa') window.__qa = {
-  state:function(){ return {cleared:cleared, won:won, score:score, demoDone:demoDone, bot:!!bot, drag:!!drag, tray:tray.map(function(p){ return p ? p.s.length : 0; }),
+if (/^#qa/.test(location.hash) && /lock=(\d+)/.test(location.hash)) LOCK_MS = +location.hash.match(/lock=(\d+)/)[1];
+if (/^#qa/.test(location.hash)) window.__qa = {
+  state:function(){ return {cleared:cleared, won:won, score:score, demoDone:demoDone, bot:!!bot, drag:!!drag, lock:lockWhy || null, tray:tray.map(function(p){ return p ? p.s.length : 0; }),
     filled:board.map(function(k){ return k ? 1 : 0; }).join(''), sound:soundOn, L:{play:L.play, web:L.web, qr:L.qrBox || null, board:{x:L.board.x, y:L.board.y, s:L.board.s}, tray:L.tray, sound:L.sound, portrait:L.portrait}}; },
   trayCenter:function(i){ var p = tray[i]; if (!p) return null; var tp = trayPos(i,p), bx = box(p.s); return [tp.ox + (bx[1] - 1)*tp.pitch/2, tp.oy + (bx[0] - 1)*tp.pitch/2]; },
   target:function(i,r,c){ var p = tray[i]; if (!p) return null; var b = L.board, bx = box(p.s); return [b.gx + c*b.pitch + (bx[1]*b.pitch - b.gap)/2, b.gy + r*b.pitch + (bx[0]*b.pitch - b.gap)/2]; },
