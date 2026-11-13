@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Teselo · Un puzle al día para tu mente</title>
-<meta name="description" content="Teselo es un puzle de bloques tranquilo: encaja piezas, limpia líneas y encadena combos. 300 niveles, reto diario y modo infinito. Gratis en Android y en el navegador.">
+<meta name="description" content="Teselo es un puzle de bloques tranquilo: encaja piezas, limpia líneas y encadena combos. 500 niveles, reto diario y modo infinito. Gratis en Android y en el navegador.">
 <link rel="canonical" href="https://ces107.github.io/teselojuego/">
 <meta name="theme-color" content="#f6efe4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#17100c" media="(prefers-color-scheme: dark)">
@@ -32,7 +32,7 @@
      readers and browsers without JavaScript get; its two links also drive the keyboard focus ring on the canvas. -->
 <main id="sr">
   <h1>Teselo: un puzle al día para tu mente</h1>
-  <p>Encaja piezas. Limpia líneas. Respira. 300 niveles, reto diario y modo infinito.</p>
+  <p>Encaja piezas. Limpia líneas. Respira. 500 niveles, reto diario y modo infinito.</p>
   <p><a id="l-play" href="https://play.google.com/store/apps/details?id=io.github.ces107.teselo&amp;hl=es">Descargar Teselo en Google Play</a></p>
   <p><a id="l-web" href="https://ces107.github.io/teselo/">Jugar a Teselo en el navegador</a></p>
   <p><a href="https://www.youtube.com/@teselojuego">YouTube</a> · <a href="https://ces107.github.io/teselo/privacy.html">Privacidad</a> · <a href="https://ces107.github.io/teselo/terms.html">Términos</a></p>
@@ -706,7 +706,7 @@ function paintLock(t){
   spacing((-Lk.ts*0.02) + 'px');
   text(lockWhy === 'lost' ? '¡Sin hueco!' : '¿Te gusta?', cx, Lk.ty, font(600, Lk.ts, SERIF), T.ink, 'center');
   spacing('0px');
-  text(lockWhy === 'lost' ? 'Puntuación: ' + score + ' · sigue en la app' : 'Sigue en la app: 300 niveles', cx, Lk.sy, font(500, Lk.ss, SANS), T.soft, 'center');
+  text(lockWhy === 'lost' ? 'Puntuación: ' + score + ' · sigue en la app' : 'Sigue en la app: 500 niveles', cx, Lk.sy, font(500, Lk.ss, SANS), T.soft, 'center');
   var p = L.lockPlay, hp = hover && hover.url === PLAY, pul = (reduce ? 1 : 1 + 0.045*Math.max(0, Math.sin((t - lockT)/240)))*(hp ? 1.04 : 1);
   x.save(); x.translate(p.x + p.w/2, p.y + p.h/2); x.scale(pul, pul);
   x.globalAlpha = a*0.8; x.drawImage(SP.glow, -p.w*0.7, -p.w*0.42, p.w*1.4, p.w*0.84);
