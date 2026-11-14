@@ -33,18 +33,18 @@
 <div id="app">
   <header id="hud">
     <div class="left">
-      <button type="button" class="ic" id="b-home" aria-label="Home"><svg><use href="#i-home"/></svg></button>
+      <button type="button" class="ic" id="b-home" aria-label="Home" data-gk-act="break"><svg><use href="#i-home"/></svg></button>
       <!-- 0.10.1 HUD: Aventura in-level bar (game/ui.js updateHud, #hud.lv-hud): exit X | goal capsule | moves pill -->
-      <button type="button" class="gk-topbtn gk-tok" id="b-exit" aria-label="Salir"><svg viewBox="0 0 24 24"><use href="#gk-ic-ui-close"/></svg></button>
+      <button type="button" class="gk-topbtn gk-tok tz-x" id="b-exit" aria-label="Salir"><svg viewBox="0 0 24 24"><use href="#gk-ic-ui-close"/></svg></button>
       <button type="button" class="chip flame" id="streak" aria-label="Racha diaria"><svg><use href="#i-flame"/></svg><span id="streak-v">0</span></button>
     </div>
     <div id="scorebox">
       <div id="score">0</div>
       <div id="best"><svg class="bi"><use href="#i-crown"/></svg><span id="best-v">0</span></div>
-      <div id="lvgoal" role="status"><span id="lv-gi"></span><span class="lv-gn"><b id="lv-have">0</b><small>/<span id="lv-target">0</span></small></span><span class="lv-bar"><i id="lv-fill"></i></span></div>
+      <div id="lvgoal" class="tz-goal" role="status"><span id="lv-gi"></span><span class="lv-gn"><b id="lv-have">0</b><small>/<span id="lv-target">0</span></small></span><span class="lv-bar"><i id="lv-fill"></i></span></div>
     </div>
     <div class="right">
-      <div id="lvmoves" role="status" aria-label="Movimientos"><svg viewBox="0 0 512 512"><use href="#gk-ic-steps"/></svg><b id="lv-mv">0</b></div>
+      <div id="lvmoves" class="tz-mvp" role="status" aria-label="Movimientos"><svg viewBox="0 0 512 512"><use href="#gk-ic-steps"/></svg><b id="lv-mv">0</b></div>
       <button type="button" class="chip" id="b-coins" aria-label="Coins"><svg><use href="#i-coin"/></svg><span id="coins">0</span></button>
       <button type="button" class="ic" id="b-sound" aria-label="Sound"><svg class="on"><use href="#gk-ic-ui-sound"/></svg><svg class="off"><use href="#gk-ic-ui-mute"/></svg></button>
     </div>
@@ -54,12 +54,12 @@
     <div id="fx"></div>
     <div id="boosters"></div>
     <!-- 0.9.1 T item 9: "Sin movimientos" grace banner (game/ui.js noMovesStart): countdown ring, hint, Abandonar -->
-    <div id="nomoves" hidden role="alert">
+    <div id="nomoves" class="tz-nm" hidden role="alert">
       <div class="nm-row">
         <span class="nm-clock"><svg viewBox="0 0 44 44" aria-hidden="true"><circle class="bg" cx="22" cy="22" r="19"/><circle class="fg" id="nm-ring" cx="22" cy="22" r="19"/></svg><b id="nm-n">5</b></span>
         <span class="nm-txt"><b id="nm-t"></b><small id="nm-h"></small></span>
       </div>
-      <button type="button" class="mini ghost" id="nm-x"></button>
+      <button type="button" class="mini ghost tz-nmx" id="nm-x"></button>
     </div>
   </main>
 
@@ -115,10 +115,10 @@
     <div class="ov-coins" id="o-coins"></div>
     <div class="ov-card" id="o-card" hidden></div>
     <div class="row">
-      <button type="button" class="btn pri" id="o-next"><svg><use href="#i-play"/></svg><span data-t="nextLv">Next</span></button>
+      <button type="button" class="btn pri" id="o-next" data-gk-act="break"><svg><use href="#i-play"/></svg><span data-t="nextLv">Next</span></button>
       <button type="button" class="btn pri" id="o-cont"></button>
       <button type="button" class="btn pri" id="o-share"><svg><use href="#i-share"/></svg><span data-t="share">Share</span></button>
-      <button type="button" class="btn" id="o-again"><svg><use href="#i-again"/></svg><span data-t="again">Again</span></button>
+      <button type="button" class="btn" id="o-again" data-gk-act="break"><svg><use href="#i-again"/></svg><span data-t="again">Again</span></button>
       <button type="button" class="btn" id="o-double"><svg class="adi"><use href="#i-ad"/></svg><span>×2</span><svg><use href="#i-coin"/></svg></button>
     </div>
   </section>
