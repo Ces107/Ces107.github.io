@@ -24,7 +24,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Unbounded:wght@800&family=IBM+Plex+Mono:wght@500;600&family=Golos+Text:wght@400;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){var t='dark';try{var s=localStorage.getItem('cesio-theme');if(s==='light'||s==='dark')t=s;}catch(e){}
-document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.add('js');})();
+document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.add('js');try{if(localStorage.getItem('cesio-motion')==='calm')document.documentElement.classList.add('calm');}catch(e){}})();
 </script>
 <style>
 :root{
@@ -359,8 +359,8 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink);text-decoration:un
   body{font-size:16px}
   .wrap{padding:0 16px}
   .nav ul{display:none}
-  .nav .btn{margin-left:0}
-  .nav .tbtn{margin-left:auto}
+  .nav .tbtn.mo{margin-left:auto}
+  .nav .btn{display:none}
   .logo b{font-size:19px}
   .cta .btn{flex:1 1 auto}
   .hero{min-height:max(calc(100svh - var(--nav)),680px)}
@@ -383,12 +383,12 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink);text-decoration:un
   .list{padding:6px 18px}.li{grid-template-columns:1fr}.li em{grid-row:auto;grid-column:1}
   .browser{box-shadow:5px 5px 0 var(--shc)}
 }
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-  .js .rv{opacity:1;transform:none}
-  .js .sec-head.rv h2::after{display:none}
-  .ticker{overflow-x:auto}
-}
+.calm *,.calm *::before,.calm *::after{animation:none!important;transition:none!important}
+.calm{scroll-behavior:auto}
+.js.calm .rv{opacity:1;transform:none}
+.calm .sec-head.rv h2::after{display:none}
+.calm .ticker{overflow-x:auto}
+.tbtn.mo[aria-pressed=true]{background:var(--yel);color:var(--blk);border-color:var(--blk)}
 </style>
 </head>
 <body>
@@ -408,6 +408,9 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink);text-decoration:un
       <li><a href="#lab">Laboratorio</a></li>
       <li><a href="#contacto">Contacto</a></li>
     </ul>
+    <button class="tbtn mo" id="motion" type="button" aria-pressed="false" aria-label="Pausar el movimiento" title="Movimiento: activar / pausar">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14"/><rect x="13.8" y="5" width="4.2" height="14"/></svg>
+    </button>
     <button class="tbtn" id="theme" type="button" aria-label="Cambiar entre modo oscuro y claro" title="Oscuro / claro">
       <svg class="moon-i" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7Z"/></svg>
       <svg class="sun-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
@@ -1058,6 +1061,16 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink);text-decoration:un
 <script src="js/matter.min.js" defer></script>
 <script>
 (function(){
+  /* motion: full by default (the OS setting is not forced on you); the pause button turns the movement off and remembers it */
+  var mb = document.getElementById('motion');
+  if (mb) {
+    var calm = document.documentElement.classList.contains('calm');
+    mb.setAttribute('aria-pressed', calm ? 'true' : 'false');
+    mb.addEventListener('click', function(){
+      try { localStorage.setItem('cesio-motion', calm ? 'full' : 'calm'); } catch (e) {}
+      location.reload();
+    });
+  }
   /* theme: dark by default, paper as an option */
   var root = document.documentElement, btn = document.getElementById('theme');
   if (btn) btn.addEventListener('click', function(){
@@ -1076,7 +1089,7 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink);text-decoration:un
 })();
 
 (function(){
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches && !/[?&]motion=full/.test(location.search);
+  var reduce = document.documentElement.classList.contains('calm');
   var fine = matchMedia('(pointer: fine)').matches;
   var hero = document.getElementById('hero');
 
@@ -1177,7 +1190,7 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink);text-decoration:un
 (function(){
   var hero = document.getElementById('hero'), cv = document.getElementById('fx');
   if (!hero || !cv) return;
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches && !/[?&]motion=full/.test(location.search);
+  var reduce = document.documentElement.classList.contains('calm');
   var fine = matchMedia('(pointer: fine)').matches;
   var hud = document.getElementById('hud');
 
@@ -1316,7 +1329,11 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink);text-decoration:un
         for (var i = 0; i < tiles.length; i++) { var b = tiles[i], dx = ptr.x - b.position.x, dy = ptr.y - b.position.y, d = Math.sqrt(dx * dx + dy * dy) + 1;
           if (d < 520) { Sleeping.set(b, false); Body.setVelocity(b, {x: b.velocity.x + dx / d * .06, y: b.velocity.y + dy / d * .06}); } }
       }
-      Engine.update(engine, dt); draw();
+      Engine.update(engine, dt);
+      for (var q = 0; q < tiles.length; q++) { var tb = tiles[q], ps = tb.cs.s;
+        if (tb.position.x < -ps * .2 || tb.position.x > W + ps * .2 || tb.position.y > H + ps * .2 || tb.position.y < -ps * 6) {
+          Body.setPosition(tb, {x: Math.min(W - ps, Math.max(ps, tb.position.x)), y: Math.min(H - ps, Math.max(ps, tb.position.y))}); Body.setVelocity(tb, {x: 0, y: 0}); Sleeping.set(tb, false); } }
+      draw();
       if (reduce && !drag && !(mc && mc.body) && tiles.every(function(b){ return b.isSleeping; }) && mode !== 'zero') { looping = false; return; }
       requestAnimationFrame(loop);
     }
@@ -1325,6 +1342,7 @@ footer a{text-decoration:none}footer a:hover{color:var(--ink);text-decoration:un
     /* pointer: drag + click-to-go (desktop) / tap-to-go (touch) */
     hero.addEventListener('pointermove', function(e){ var r = hero.getBoundingClientRect(); ptr.x = e.clientX - r.left; ptr.y = e.clientY - r.top; ptr.on = true; if (!looping) draw(); });
     hero.addEventListener('pointerleave', function(){ ptr.on = false; hov = null; if (!looping) draw(); });
+    hero.addEventListener('pointerdown', function(){ tiles.forEach(function(b){ Sleeping.set(b, false); }); kick(); });
     function pick(x, y){ var hit = Query.point(tiles, {x: x, y: y}); return hit.length ? hit[hit.length - 1] : null; }
     if (fine) {
       var mouse = M.Mouse.create(cv); mouse.pixelRatio = 1 / dpr;
