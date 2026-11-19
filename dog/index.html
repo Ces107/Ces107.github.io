@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dog</title>
+<meta name="description" content="Clica una provincia para ver cómo resolver sus problemas.">
+<style>
+  :root { --ink:#111; --soft:#777; --line:#d6d6d6; --hover:#efefef; --bg:#fff; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:1000px; margin:0 auto; padding:24px 16px 32px; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; }
+  h1 { font-weight:500; font-size:clamp(18px, 3.2vw, 26px); text-align:center; margin:8px 0 20px; }
+  #map { width:100%; height:auto; display:block; }
+  .prov { fill:#fff; stroke:var(--line); stroke-width:.8; cursor:pointer;
+    transition: fill .15s; vector-effect:non-scaling-stroke; }
+  .prov:hover, .prov:focus { fill:var(--hover); outline:none; }
+  .prov.on { fill:#e4e4e4; }
+  .inset { fill:none; stroke:var(--line); stroke-width:.8; }
+
+  dialog { border:none; border-radius:14px; padding:28px 26px 24px; width:min(420px, calc(100vw - 32px));
+    box-shadow:0 10px 40px rgba(0,0,0,.12); color:var(--ink); background:#fff; }
+  dialog::backdrop { background:rgba(255,255,255,.7); }
+  dialog[open] { animation:pop .18s ease-out; }
+  @keyframes pop { from { opacity:0; transform:translateY(6px) scale(.98); } to { opacity:1; transform:none; } }
+  .x { position:absolute; top:10px; right:12px; border:none; background:none; font-size:22px;
+    line-height:1; color:var(--soft); cursor:pointer; padding:4px 8px; }
+  .name { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); margin:0 0 10px; }
+  .problem { font-size:18px; line-height:1.35; margin:0 0 22px; }
+  .answer { display:flex; align-items:center; gap:10px; border-top:1px solid var(--line); padding-top:16px; }
+  .answer strong { font-size:17px; font-weight:600; flex:1; }
+  .i { flex:none; width:28px; height:28px; border-radius:50%; border:1.5px solid var(--ink); background:#fff;
+    font:italic 600 15px Georgia, serif; cursor:pointer; color:var(--ink); }
+  .i[aria-expanded="true"] { background:var(--ink); color:#fff; }
+  .info { font-size:14px; line-height:1.5; color:#444; margin:12px 0 0; display:none; }
+  .info.show { display:block; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Clica una provincia para ver cómo resolver sus problemas</h1>
+  <svg id="map" viewBox="0 0 960 700" role="img" aria-label="Mapa de España por provincias"></svg>
+</main>
+
+<dialog id="pop">
+  <button class="x" aria-label="Cerrar">×</button>
+  <p class="name" id="pName"></p>
+  <p class="problem" id="pProblem"></p>
+  <div class="answer">
+    <strong>Socializar los medios de producción</strong>
+    <button class="i" id="iBtn" aria-expanded="false" aria-controls="pInfo" aria-label="Más información">i</button>
+  </div>
+  <p class="info" id="pInfo"></p>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-composite-projections@1.4.0/d3-composite-projections.min.js"></script>
+<script>
+const T = {
+  despob: ["Los pueblos se vacían y los jóvenes se van.",
+    "Con la tierra, la industria y los servicios en manos colectivas, la riqueza se reinvierte donde vive la gente en lugar de irse con el beneficio. La solidaridad entre campo y ciudad sostiene escuelas, médicos y empleo en cada pueblo."],
+  vivienda: ["Quien trabaja aquí no puede pagar un alquiler.",
+    "La vivienda socializada deja de ser un activo para especular y pasa a ser un derecho gestionado en común. Vecinos organizados deciden su uso, y nadie vive de la necesidad de otro."],
+  turismo: ["El turismo masivo expulsa a los vecinos y paga sueldos bajos.",
+    "Hoteles y viviendas gestionados por sus trabajadores y vecinos: el beneficio del turismo se reparte entre quienes lo hacen posible, y la comunidad decide cuánto turismo aguanta su territorio."],
+  campo: ["El campo vende por debajo de coste; las grandes cadenas fijan el precio.",
+    "Cooperativas que unen a productores y consumidores sustituyen a los intermediarios. Quien trabaja la tierra controla el precio y el valor de lo que produce, y la ciudad se compromete a comprarlo."],
+  jornal: ["Jornaleros y temporeros trabajan en condiciones precarias.",
+    "Si la tierra es de quien la trabaja, el jornal deja de ser un coste a recortar y se convierte en parte del reparto común. La solidaridad entre trabajadores, vengan de donde vengan, impide competir a la baja."],
+  fabrica: ["Las fábricas cierran o se van sin preguntar a nadie.",
+    "Con las fábricas en manos de sus plantillas, cierres y traslados se deciden en asamblea y no en un consejo lejano. La solidaridad entre plantillas evita que unas compitan contra otras."],
+  paro: ["El paro castiga sobre todo a los jóvenes.",
+    "Planificar en común los medios de producción permite repartir el trabajo necesario entre todos, en vez de dejar a una parte fuera para abaratar a la otra."],
+  pobreza: ["Barrios enteros atrapados en la pobreza y sin servicios.",
+    "Socializar la riqueza que el barrio produce y los servicios básicos, como la luz o la vivienda, garantiza mínimos para todos. La solidaridad vecinal organiza lo que el mercado abandonó."],
+  coche: ["Toda la provincia depende de una gran fábrica de coches.",
+    "Si la planta perteneciera a quien trabaja en ella y a la comunidad, su futuro se planificaría con la provincia: qué producir, cómo reconvertirse y sin chantajes de cierre."],
+  mina: ["Cerró la minería y no llegó ninguna alternativa.",
+    "La reconversión se planifica en común con quienes trabajaban: los recursos y las instalaciones pasan a ser colectivos y se dedican a nuevos empleos en la propia comarca, sin dejar a nadie atrás."],
+  agua: ["El agua se agota por un uso intensivo que beneficia a pocos.",
+    "El agua y la tierra gestionadas como bienes comunes se reparten según las necesidades colectivas y los límites del ecosistema, no según lo que rinde más este año."],
+  ceuta: ["Paro muy alto y mucha economía sumergida.",
+    "Planificar en común la economía de la ciudad permite crear empleo estable y sacar a la luz el trabajo informal. La solidaridad entre orillas sustituye a la explotación del que llega."]
+};
+const P = {
+  "01":["Araba/Álava", T.fabrica], "02":["Albacete", T.despob], "03":["Alicante", T.turismo],
+  "04":["Almería", T.jornal], "05":["Ávila", T.despob], "06":["Badajoz", T.paro],
+  "07":["Illes Balears", T.turismo], "08":["Barcelona", T.vivienda], "09":["Burgos", T.despob],
+  "10":["Cáceres", T.despob], "11":["Cádiz", T.paro], "12":["Castellón",
+    ["La industria cerámica tiembla con cada subida del gas.",
+     "Energía socializada y fábricas en manos de sus plantillas: el precio del gas deja de decidirse en un mercado especulativo y los empleos no dependen de él. Las plantillas se apoyan entre sí en vez de cargar con la crisis."]],
+  "13":["Ciudad Real", T.agua], "14":["Córdoba",
+    ["Grandes latifundios conviven con jornaleros sin tierra.",
+     "Repartir y socializar la tierra devuelve el campo a quienes lo trabajan. Las cooperativas deciden qué sembrar y reparten lo cosechado; la solidaridad sustituye al señorito."]],
+  "15":["A Coruña", T.fabrica], "16":["Cuenca", T.despob], "17":["Girona", T.turismo],
+  "18":["Granada", T.pobreza], "19":["Guadalajara",
+    ["Macroalmacenes logísticos con empleo precario y ritmos imposibles.",
+     "La logística gestionada por quienes la mueven fija ritmos humanos y salarios dignos. Lo que se ahorra en accionistas se reparte entre trabajadores y territorio."]],
+  "20":["Gipuzkoa", T.vivienda], "21":["Huelva", T.jornal], "22":["Huesca", T.despob],
+  "23":["Jaén", T.campo], "24":["León", T.mina], "25":["Lleida", T.jornal],
+  "26":["La Rioja", T.campo], "27":["Lugo", T.campo], "28":["Madrid", T.vivienda],
+  "29":["Málaga", T.turismo], "30":["Murcia",
+    ["El Mar Menor agoniza por la agricultura intensiva.",
+     "Tierra y agua como bienes comunes: la producción se planifica según lo que la laguna puede soportar, no según la exportación. Agricultores y vecinos deciden juntos y comparten el coste de cuidarla."]],
+  "31":["Navarra", T.coche], "32":["Ourense",
+    ["Montes abandonados que arden cada verano.",
+     "Galicia ya conoce los montes vecinales en mano común. Gestionados en colectivo, con trabajo y recursos compartidos, se cuidan todo el año en lugar de abandonarse hasta que arden."]],
+  "33":["Asturias", T.mina], "34":["Palencia", T.despob], "35":["Las Palmas", T.turismo],
+  "36":["Pontevedra",
+    ["El mar se paga barato en la lonja y caro en el súper.",
+     "Cofradías y cooperativas que venden directamente eliminan a los intermediarios. Quien sale a pescar o a mariscar recibe el valor completo de su trabajo."]],
+  "37":["Salamanca", T.despob], "38":["Santa Cruz de Tenerife", T.vivienda],
+  "39":["Cantabria", T.vivienda], "40":["Segovia", T.despob], "41":["Sevilla", T.pobreza],
+  "42":["Soria", T.despob], "43":["Tarragona",
+    ["La petroquímica contamina y decide sola sobre la vida de la zona.",
+     "Con la industria socializada, vecinos y plantillas deciden juntos qué se produce, con qué riesgos y cómo se reconvierte. La salud de la comarca pesa más que el dividendo."]],
+  "44":["Teruel", T.despob], "45":["Toledo",
+    ["El Tajo llega con poco caudal y contaminado.",
+     "El río gestionado como bien común se reparte según las necesidades reales y la vida del cauce. La solidaridad entre cuencas sustituye a la guerra por el agua."]],
+  "46":["Valencia",
+    ["La reconstrucción tras la dana avanza lenta y desigual.",
+     "Los voluntarios demostraron lo que puede la solidaridad. Con los medios de producción y la vivienda en común, la reconstrucción se planifica según la necesidad de cada barrio, no según quién puede pagarla."]],
+  "47":["Valladolid", T.coche], "48":["Bizkaia", T.fabrica], "49":["Zamora", T.despob],
+  "50":["Zaragoza",
+    ["Grandes centros de datos gastan agua y energía y dejan poco empleo.",
+     "Infraestructura digital socializada: la comunidad decide si se construye, cuánta agua y energía usa y cómo revierte en la provincia."]],
+  "51":["Ceuta", T.ceuta], "52":["Melilla", T.ceuta]
+};
+
+const svg = d3.select("#map");
+const dlg = document.getElementById("pop");
+const iBtn = document.getElementById("iBtn");
+const info = document.getElementById("pInfo");
+let current = null;
+
+function openProv(id, el) {
+  const [name, [problem, text]] = P[id];
+  document.getElementById("pName").textContent = name;
+  document.getElementById("pProblem").textContent = problem;
+  info.textContent = text;
+  info.classList.remove("show");
+  iBtn.setAttribute("aria-expanded", "false");
+  if (current) current.classList.remove("on");
+  current = el; el.classList.add("on");
+  dlg.showModal();
+}
+function closePop() { dlg.close(); }
+dlg.addEventListener("close", () => { if (current) current.classList.remove("on"); });
+dlg.querySelector(".x").addEventListener("click", closePop);
+dlg.addEventListener("click", e => { if (e.target === dlg) closePop(); });
+iBtn.addEventListener("click", () => {
+  const on = info.classList.toggle("show");
+  iBtn.setAttribute("aria-expanded", on);
+});
+
+d3.json("provincias.json").then(topo => {
+  const all = topojson.feature(topo, topo.objects.provinces);
+  const feats = all.features.filter(f => P[f.id]);
+  const proj = d3.geoConicConformalSpain().fitSize([960, 700], { type: "FeatureCollection", features: feats });
+  const path = d3.geoPath(proj);
+  svg.append("path").attr("class", "inset").attr("d", proj.getCompositionBorders());
+  svg.selectAll("path.prov").data(feats).join("path")
+    .attr("class", "prov").attr("d", path)
+    .attr("tabindex", 0).attr("role", "button")
+    .attr("aria-label", d => P[d.id][0])
+    .on("click", function (e, d) { openProv(d.id, this); })
+    .on("keydown", function (e, d) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openProv(d.id, this); } })
+    .append("title").text(d => P[d.id][0]);
+});
+</script>
+</body>
+</html>
