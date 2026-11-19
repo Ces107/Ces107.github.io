@@ -36,6 +36,12 @@
   .i[aria-expanded="true"] { background:var(--ink); color:#fff; }
   .info { font-size:14px; line-height:1.5; color:#444; margin:12px 0 0; display:none; }
   .info.show { display:block; }
+  .reveal { width:100%; padding:12px 16px; border:1.5px solid var(--ink); border-radius:10px; background:#fff;
+    color:var(--ink); font:500 16px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor:pointer;
+    transition: background .15s, color .15s; }
+  .reveal:hover, .reveal:focus-visible { background:var(--ink); color:#fff; }
+  .answer[hidden], .reveal[hidden] { display:none; }
+  .answer:not([hidden]) { animation:pop .25s ease-out; }
 </style>
 </head>
 <body>
@@ -48,7 +54,8 @@
   <button class="x" aria-label="Cerrar">×</button>
   <p class="name" id="pName"></p>
   <p class="problem" id="pProblem"></p>
-  <div class="answer">
+  <button class="reveal" id="reveal">Click para ver la solución</button>
+  <div class="answer" id="answer" hidden>
     <strong>Socializar los medios de producción</strong>
     <button class="i" id="iBtn" aria-expanded="false" aria-controls="pInfo" aria-label="Más información">i</button>
   </div>
@@ -134,7 +141,14 @@ const svg = d3.select("#map");
 const dlg = document.getElementById("pop");
 const iBtn = document.getElementById("iBtn");
 const info = document.getElementById("pInfo");
+const reveal = document.getElementById("reveal");
+const answer = document.getElementById("answer");
 let current = null;
+reveal.addEventListener("click", () => {
+  reveal.hidden = true;
+  answer.hidden = false;
+  iBtn.focus();
+});
 
 function openProv(id, el) {
   const [name, [problem, text]] = P[id];
@@ -143,6 +157,8 @@ function openProv(id, el) {
   info.textContent = text;
   info.classList.remove("show");
   iBtn.setAttribute("aria-expanded", "false");
+  reveal.hidden = false;
+  answer.hidden = true;
   if (current) current.classList.remove("on");
   current = el; el.classList.add("on");
   dlg.showModal();
