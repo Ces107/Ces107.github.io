@@ -17,6 +17,59 @@
 <script>if ('serviceWorker' in navigator && window.self === window.top && !navigator.webdriver) addEventListener('load', function () { navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {}); });</script>
 </head>
 <body>
+<!--BOOT-->
+<!-- 0.16.0 E (Cesio boot): the developer splash + the loading bar and «by Cesio» sello. TEMPLATE: tools/make_boot.py fills the
+     casilla path (the Cs 55 casilla, brand kit logo/simbolo) and writes src/shell/boot.html, the block every game page carries
+     right after the body tag (the tool syncs it). Self-contained: no stylesheet / script entry to keep in step, so it paints
+     with the first frame, before game.js. SVG + CSS only; the native splash (Android 12+) is the same casilla. -->
+<style>
+#gk-boot, #gk-ld { pointer-events: none; }
+/* developer splash: papel, the casilla centred (the native splash icon is the same size: 120 dp), the small sello below.
+   Pure CSS timing from the first paint: held 0.8 s, 0.3 s fade, gone by 1.1 s whatever the page is doing (no JS needed) */
+#gk-boot { position: fixed; inset: 0; z-index: calc(var(--z-splash, 9999) + 2); background: #EFE4CC; display: grid; place-items: center;
+  animation: gk-boot-out .3s ease-in .8s forwards; }
+#gk-boot svg { width: 120px; height: 120px; display: block; }
+#gk-boot b { position: absolute; left: 0; right: 0; text-align: center; bottom: max(24px, calc(env(safe-area-inset-bottom) + 24px));
+  font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; letter-spacing: .2em; color: #161412; opacity: .62; }
+@keyframes gk-boot-out { to { opacity: 0; visibility: hidden; } }
+/* the game's own loading screen: a thin red bar that always moves (eased to 90 % in ~2.7 s, then a slow creep to 99 %, a light
+   sweep on top; the animation runs on the compositor, so it keeps moving while the main thread parses the game) and the small
+   «by Cesio» sello at the bottom. GamekitBoot.finish() takes the bar to 100 % when the first screen is ready */
+#gk-ld { position: fixed; left: 0; right: 0; bottom: 0; z-index: calc(var(--z-splash, 9999) + 1); display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding-bottom: max(22px, calc(env(safe-area-inset-bottom) + 22px)); transition: opacity .25s ease-out; }
+#gk-ld.out { opacity: 0; }
+#gk-ld i { display: block; position: relative; overflow: hidden; width: min(52vw, 210px); height: 3px; border-radius: 2px; background: rgba(22, 20, 18, .16); }
+#gk-ld u { display: block; height: 100%; background: #C8321E; transform-origin: 0 50%; transform: scaleX(.02); animation: gk-ld-run 120s linear forwards; }
+#gk-ld u::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 34%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .45), rgba(255, 255, 255, 0));
+  animation: gk-ld-sweep 1.1s ease-in-out infinite; }
+#gk-ld span { display: flex; align-items: center; gap: 7px; font: 500 10.5px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+  letter-spacing: .2em; text-transform: uppercase; color: #161412; opacity: .7; }
+#gk-ld span svg { width: 20px; height: 20px; display: block; }
+@keyframes gk-ld-run { 0% { transform: scaleX(.02); animation-timing-function: cubic-bezier(.12, .6, .25, 1); } 2.25% { transform: scaleX(.9); animation-timing-function: linear; } 100% { transform: scaleX(.99); } }
+@keyframes gk-ld-sweep { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gk-cs" viewBox="0 0 100 100"><rect width="100" height="100" fill="#C8321E"/><path fill="#F2B705" d="M15.5 25.2L15.5 25.2Q14.5 25.2 13.8 24.9Q13.1 24.7 12.7 24.2Q12.2 23.8 12 23.2Q11.8 22.7 11.8 22.1L11.8 22.1L14 22.1Q14 22.6 14.4 22.9Q14.8 23.3 15.5 23.3L15.5 23.3Q16.3 23.3 16.7 22.8Q17.1 22.4 17.1 21.4L17.1 21.4Q17.1 20.8 16.9 20.4Q16.7 20 16.3 19.8Q15.9 19.6 15.5 19.6L15.5 19.6Q15 19.6 14.6 19.8Q14.3 20 14.1 20.3L14.1 20.3L12 20.3L12 14.5L18.8 14.5L18.8 16.4L14.2 16.4L14.2 18.3Q14.5 18 15 17.9Q15.4 17.8 16 17.8L16 17.8Q17.1 17.8 17.8 18.2Q18.6 18.6 19 19.4Q19.4 20.2 19.4 21.4L19.4 21.4Q19.4 22.6 18.9 23.4Q18.4 24.2 17.6 24.7Q16.7 25.2 15.5 25.2ZM24.5 25.2L24.5 25.2Q23.5 25.2 22.8 24.9Q22.1 24.7 21.6 24.2Q21.2 23.8 21 23.2Q20.8 22.7 20.7 22.1L20.7 22.1L23 22.1Q23 22.6 23.4 22.9Q23.8 23.3 24.5 23.3L24.5 23.3Q25.3 23.3 25.7 22.8Q26.1 22.4 26.1 21.4L26.1 21.4Q26.1 20.8 25.9 20.4Q25.7 20 25.3 19.8Q24.9 19.6 24.5 19.6L24.5 19.6Q24 19.6 23.6 19.8Q23.3 20 23.1 20.3L23.1 20.3L21 20.3L21 14.5L27.8 14.5L27.8 16.4L23.2 16.4L23.2 18.3Q23.5 18 24 17.9Q24.4 17.8 25 17.8L25 17.8Q26 17.8 26.8 18.2Q27.5 18.6 28 19.4Q28.4 20.2 28.4 21.4L28.4 21.4Q28.4 22.6 27.9 23.4Q27.4 24.2 26.5 24.7Q25.7 25.2 24.5 25.2ZM42 67.2L53.8 67.2Q53.1 72.2 50.3 76Q47.4 79.8 42.7 81.9Q38 84 31.9 84L31.9 84Q25.2 84 20.3 81.5Q15.3 79.1 12.6 74.7Q9.8 70.3 9.8 64.4L9.8 64.4Q9.8 58.5 12.6 54.1Q15.3 49.7 20.3 47.2Q25.2 44.8 31.9 44.8L31.9 44.8Q38 44.8 42.7 46.9Q47.4 49 50.3 52.8Q53.1 56.5 53.8 61.6L53.8 61.6L42 61.6Q41.5 59.5 40.2 57.9Q38.9 56.4 36.8 55.6Q34.7 54.8 31.9 54.8L31.9 54.8Q28.6 54.8 26.4 55.9Q24.1 57 22.8 59.2Q21.6 61.4 21.6 64.4L21.6 64.4Q21.6 67.4 22.8 69.5Q24.1 71.7 26.4 72.9Q28.6 74 31.9 74L31.9 74Q34.7 74 36.8 73.3Q38.9 72.5 40.2 71Q41.5 69.4 42 67.2L42 67.2ZM90.2 73.6L90.2 73.6Q90.2 77 88 79.4Q85.9 81.7 82 82.8Q78.2 84 72.8 84L72.8 84Q67.4 84 63.3 82.7Q59.2 81.4 56.9 79Q54.5 76.7 54.4 73.5L54.4 73.5L66 73.5Q66.3 74.5 67.2 75.2Q68.2 76 69.8 76.3Q71.3 76.7 73.5 76.7L73.5 76.7Q76.2 76.7 77.6 76.2Q79 75.7 79 74.8L79 74.8Q79 73.9 77.9 73.5Q76.8 73.1 74.1 72.9L74.1 72.9L69.2 72.5Q64 72.2 60.9 71Q57.8 69.9 56.5 68Q55.1 66.1 55.1 63.5L55.1 63.5Q55.1 60.2 57.2 58Q59.3 55.8 63.1 54.7Q66.8 53.6 71.8 53.6L71.8 53.6Q76.8 53.6 80.7 54.9Q84.5 56.1 86.8 58.4Q89.2 60.6 89.5 63.6L89.5 63.6L77.9 63.6Q77.7 62.8 76.8 62.1Q76 61.4 74.7 61Q73.3 60.6 71.3 60.6L71.3 60.6Q68.8 60.6 67.5 61.1Q66.3 61.5 66.3 62.5L66.3 62.5Q66.3 63.2 67.1 63.6Q67.8 64 70 64.2L70 64.2L76.5 64.7Q81.7 65 84.7 66.1Q87.7 67.2 88.9 69.1Q90.2 71 90.2 73.6Z"/></symbol></svg>
+<div id="gk-boot" aria-hidden="true"><svg><use href="#gk-cs"/></svg><b>cesio.dev</b></div>
+<div id="gk-ld" aria-hidden="true"><i><u></u></i><span><svg><use href="#gk-cs"/></svg>by Cesio</span></div>
+<script>
+(function () {
+  var d = document, w = window, ld = d.getElementById('gk-ld'), fill = ld && ld.getElementsByTagName('u')[0], done = 0;
+  function rm(id) { var e = d.getElementById(id); if (e && e.parentNode) e.parentNode.removeChild(e); }
+  setTimeout(function () { rm('gk-boot'); }, 1500);   // already invisible by CSS since ~1.1 s
+  function cur() { try { var m = /matrix\(([-\d.e]+)/.exec(w.getComputedStyle(fill).transform); return m ? +m[1] : 0.9; } catch (e) { return 0.9; } }
+  // finish(cb): the bar runs on to 100 % from where it is (never back), then the loading bar + sello fade and cb() runs
+  w.GamekitBoot = { finish: function (cb) {
+    if (done || !fill) { done = 1; if (cb) cb(); return; }
+    done = 1;
+    var c = cur();
+    fill.style.animation = 'none'; fill.style.transform = 'scaleX(' + c + ')';
+    void fill.offsetWidth;
+    fill.style.transition = 'transform .16s ease-out'; fill.style.transform = 'scaleX(1)';
+    setTimeout(function () { ld.className = 'out'; setTimeout(function () { rm('gk-ld'); }, 300); if (cb) cb(); }, 180);
+  } };
+})();
+</script>
+<!--/BOOT-->
 <!-- 0.10.3 ART: the loading screen (art-final.css, generated): the logo over loading.png until the first menu frame (game/ui.js) -->
 <div id="gk-splash" aria-hidden="true"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
