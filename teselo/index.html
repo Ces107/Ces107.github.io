@@ -89,7 +89,8 @@
       <button type="button" class="ic" id="b-home" aria-label="Home" data-gk-act="break"><svg><use href="#i-home"/></svg></button>
       <!-- 0.10.1 HUD: Aventura in-level bar (game/ui.js updateHud, #hud.lv-hud): exit X | goal capsule | moves pill -->
       <button type="button" class="gk-topbtn gk-tok tz-x" id="b-exit" aria-label="Salir"><svg viewBox="0 0 24 24"><use href="#gk-ic-ui-close"/></svg></button>
-      <button type="button" class="chip flame" id="streak" aria-label="Racha diaria"><svg><use href="#i-flame"/></svg><span id="streak-v">0</span></button>
+      <!-- 1.0.1 C: the days-in-a-row chip wears the calendar (the flame is the level-win Racha's); its name says what it counts -->
+      <button type="button" class="chip flame tz-dayschip" id="streak" aria-label="Días seguidos"><svg viewBox="0 0 512 512"><use href="#gk-ic-calendar"/></svg><span id="streak-v">0</span></button>
     </div>
     <div id="scorebox">
       <div id="score">0</div>
@@ -116,7 +117,7 @@
     </div>
   </main>
 
-  <section id="menu" class="panel show">
+  <section id="menu" class="panel show" data-gk-blobs><!-- 1.1.0 HOME: the rail as side blobs (gamekit hub-ui BLOBS) -->
     <!-- 0.9.1 M: quick access band (money-ui.js): Pase + Hucha | XP bar | Ofertas. The wordmark stays on the splash / app icon -->
     <div class="gk-hq" id="m-quick"><div class="gk-hq-l"></div><div class="gk-xp" id="m-xp"></div><div class="gk-hq-r"></div></div>
     <button type="button" class="card" id="m-adv">

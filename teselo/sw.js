@@ -3,7 +3,7 @@
    new release installs, takes over (skipWaiting + clients.claim) and deletes the older teselo-* caches (only those:
    ces107.github.io is shared with other sites). Cross-origin requests (gamekit-api, store links) never touch the cache. */
 'use strict';
-const CACHE = 'teselo-1.0.0-f9866f152c';
+const CACHE = 'teselo-1.1.1-348bdfa2a3';
 const API = 'https://gamekit-api.onrender.com';
 const FILES = ["apple-touch-icon.png", "game.js", "icon-192.png", "icon-512.png", "index.html", "manifest.webmanifest", "music/mu_d1b63d9bdf.opus", "style.css"];
 const ROOT = new URL('./', self.location).href;
